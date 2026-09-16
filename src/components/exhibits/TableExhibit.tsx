@@ -1,7 +1,11 @@
-import type { ExhibitDefinition } from "@/core/schema";
+import type { LearnerExhibitDefinition } from "@/core/learner-case";
 import styles from "./exhibits.module.css";
 
-export function TableExhibit({ definition }: { definition: ExhibitDefinition }) {
+export function TableExhibit({
+  definition,
+}: {
+  definition: LearnerExhibitDefinition;
+}) {
   return (
     <table
       className={styles.table}

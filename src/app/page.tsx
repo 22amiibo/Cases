@@ -12,7 +12,7 @@ const practicePaths = [
     eyebrow: "02 / Integrate",
     title: "Practice a case",
     description: "Work from an ambiguous prompt to a defensible recommendation.",
-    href: null,
+    href: "/cases",
   },
   {
     eyebrow: "03 / Improve",

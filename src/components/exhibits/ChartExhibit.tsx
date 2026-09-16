@@ -12,12 +12,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { ExhibitDefinition } from "@/core/schema";
+import type { LearnerExhibitDefinition } from "@/core/learner-case";
 import styles from "./exhibits.module.css";
 
 const colors = ["#294c3b", "#c0693f", "#78937d", "#d4a45d"];
 
-export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) {
+export function ChartExhibit({
+  definition,
+}: {
+  definition: LearnerExhibitDefinition;
+}) {
   const data = definition.categories.map((category, categoryIndex) => {
     const row: Record<string, string | number> = { category };
     definition.series.forEach((series) => {
@@ -113,7 +117,9 @@ export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) 
   );
 }
 
-function createWaterfallData(definition: ExhibitDefinition): Record<string, string | number>[] {
+function createWaterfallData(
+  definition: LearnerExhibitDefinition,
+): Record<string, string | number>[] {
   const values = definition.series[0]?.data ?? [];
   let runningTotal = values[0] ?? 0;
 

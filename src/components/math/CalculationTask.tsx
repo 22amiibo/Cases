@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { LearnerCalculationDefinition } from "@/core/learner-case";
 import type { CalculationDefinition } from "@/core/schema";
 import { withinTolerance } from "@/core/validation";
 import styles from "./CalculationTask.module.css";
@@ -9,8 +10,11 @@ export function CalculationTask({
   definition,
   onSubmit,
 }: {
-  definition: CalculationDefinition;
-  onSubmit: (result: { taskId: string; answer: number }) => void;
+  definition: LearnerCalculationDefinition &
+    Partial<Pick<CalculationDefinition, "expectedAnswer" | "tolerance">>;
+  onSubmit: (
+    result: { taskId: string; answer: number },
+  ) => boolean | void | Promise<boolean | void>;
 }) {
   const [answer, setAnswer] = useState("");
   const [correct, setCorrect] = useState<boolean | null>(null);
@@ -18,18 +22,26 @@ export function CalculationTask({
   return (
     <form
       className={styles.task}
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         if (!answer) return;
         const numericAnswer = Number(answer);
+        const serverResult = await onSubmit({
+          taskId: definition.id,
+          answer: numericAnswer,
+        });
         setCorrect(
-          withinTolerance(
+          typeof serverResult === "boolean"
+            ? serverResult
+            : definition.expectedAnswer !== undefined &&
+                definition.tolerance !== undefined
+              ? withinTolerance(
             numericAnswer,
             definition.expectedAnswer,
             definition.tolerance,
-          ),
+                )
+              : false,
         );
-        onSubmit({ taskId: definition.id, answer: numericAnswer });
       }}
     >
       <div className={styles.heading}>

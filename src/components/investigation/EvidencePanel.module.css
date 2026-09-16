@@ -1,0 +1,46 @@
+.panel {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  border: 1px solid #b8c0b8;
+  border-radius: 18px;
+  padding: 24px;
+  background: rgba(255, 254, 249, 0.74);
+}
+
+.heading > span {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.heading h2 {
+  margin-top: 7px;
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+}
+
+.empty {
+  color: #68736c;
+  line-height: 1.55;
+}
+
+.facts {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.facts li {
+  border-left: 3px solid #d28c5d;
+  padding-left: 12px;
+  color: #344238;
+  line-height: 1.5;
+}
+
+.exhibits {
+  display: grid;
+  gap: 16px;
+}

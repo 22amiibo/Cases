@@ -180,17 +180,27 @@ npm run build
   tests pass, lint and typecheck exit successfully, and the focused 320px
   Playwright regression passes.
 
-### Task 9: Interactive full-case workspace — paused before implementation
+### Task 9: Interactive full-case workspace — complete
 
 - Prepared the SDD task brief at
   `.superpowers/sdd/2026-09-15-case-interview-practice-mvp/task-9-brief.md`.
-- A Task 9 implementer reviewed the brief, deterministic engine, AlpineFit
-  content, existing components, and current tests, then was interrupted at the
-  user's request before making any edits or commits.
-- No Task 9 tests have been run and no Task 9 production files have changed.
-- The worktree was clean at commit `543d1d5` when the pause was requested.
-- Task 10's brief is also prepared, but Task 10 must not begin until Task 9 is
-  implemented, verified, and independently reviewed.
+- Added the case library and AlpineFit workspace with prompt/objective,
+  structured framework and investigation controls, evidence/exhibits, and a
+  session-backed scratchpad.
+- Added the complete guest browser journey through clarification, framework,
+  investigation, exhibit reveal, calculation, synthesis, and recommendation.
+- Guest event history, clarification draft state, and scratchpad recover after
+  refresh. Event timestamps remain monotonic across refresh boundaries.
+- Full case definitions remain server-only. A deterministic session endpoint
+  replays events with the case engine and returns only currently available
+  actions, revealed evidence, and stage-appropriate choices. Hidden causal
+  flags, future responses, scoring metadata, and calculation answers are not
+  sent to the browser.
+- Independent review found and verified fixes for hidden data exposure,
+  timestamp resets, the missing home-page route, incomplete recovery coverage,
+  clarification checkbox behavior, and stale API response races.
+- Fresh verification: 36 unit/component tests pass; lint and typecheck pass;
+  all 4 Playwright journeys pass.
 
 ## Decisions and Notes
 
@@ -206,14 +216,7 @@ npm run build
 
 ## Next Action
 
-Resume Task 9 from its first TDD step:
-
-1. Read the prepared Task 9 brief and this context file.
-2. Add the required full-case browser journey to `e2e/case-flow.spec.ts`.
-3. Run that focused Playwright test and confirm it fails for the expected
-   missing-workspace behavior before writing production code.
-4. Implement the workspace, session recovery, and four required UI regions by
-   reusing the deterministic engine, framework builder, exhibit renderer, and
-   calculation task.
-5. Run Task 9 verification and its independent review loop, update this file,
-   then continue to the already prepared Task 10 brief.
+Begin Task 10 from its prepared SDD brief. Add scoring tests first, observe the
+expected failures, implement deterministic event-based case scoring, run the
+full verification and independent review loop, then commit with the plan's
+prescribed message.

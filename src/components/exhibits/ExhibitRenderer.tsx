@@ -1,4 +1,4 @@
-import type { ExhibitDefinition } from "@/core/schema";
+import type { LearnerExhibitDefinition } from "@/core/learner-case";
 import { ChartExhibit } from "./ChartExhibit";
 import { TableExhibit } from "./TableExhibit";
 import styles from "./exhibits.module.css";
@@ -7,7 +7,7 @@ export function ExhibitRenderer({
   definition,
   revealed,
 }: {
-  definition: ExhibitDefinition;
+  definition: LearnerExhibitDefinition;
   revealed: boolean;
 }) {
   if (!revealed) return null;

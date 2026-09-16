@@ -223,6 +223,30 @@ npm run build
 - Fresh controller verification: 42 unit/component tests pass; lint, typecheck,
   and `git diff --check` pass.
 
+### Task 11: Structured recommendation and case replay — review fixes pending
+
+- Implementation commit: `0731be1 feat: add recommendation builder and case
+  replay`; pushed to both `origin/feature/case-practice-mvp` and
+  `origin/main`.
+- Added the structured recommendation builder, completed-session review route,
+  replay graph, score breakdown, deterministic feedback, example efficient
+  path, and browser journey through review.
+- Implementer verification reported 43 unit/component tests and 2 focused
+  case-flow Playwright tests passing; lint, typecheck, and diff check passed.
+- Independent review found one Critical issue: a shape-valid early
+  `recommendation_submitted` event can forge completion and expose
+  critical-derived replay states and the efficient path. Server-side event
+  validation must enforce legal stages, authored choices, and discovered
+  evidence before returning review data.
+- Important review findings: tie cross-exhibit feedback to one valid synthesis
+  event; show pending/error/retry state for recommendation submission; add
+  focused projection/API safety and positive scoring/replay tests.
+- Minor findings: derive evidence-count copy from authored minimum, handle
+  sessionStorage exceptions, distinguish network errors from incomplete cases,
+  and rename the expanded browser test.
+- Task 11 is not complete until a fix round, scoped re-review, and fresh
+  controller verification pass.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -237,7 +261,9 @@ npm run build
 
 ## Next Action
 
-Begin Task 11 from its prepared SDD brief. Write the undiscovered-evidence
-component test first, then build the structured recommendation, replay graph,
-score breakdown, review route, and full browser journey through review. Run
-the independent review loop before Task 12.
+Resume Task 11 fix round 1. Add failing regression tests for forged early
+completion and temporal/cross-exhibit feedback, then enforce semantic event
+validation server-side. Add recommendation pending/error handling and focused
+review projection tests. Address the recorded minor findings, append evidence
+to the Task 11 report, commit, run scoped re-review and fresh verification,
+then update this file before Task 12.

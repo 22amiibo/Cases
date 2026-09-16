@@ -1,0 +1,95 @@
+.builder {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #aeb8ad;
+  border-radius: 18px;
+  padding: 28px;
+  background: #fffef9;
+}
+
+.builder > span {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.builder h2 {
+  margin-top: -9px;
+  font-size: 1.62rem;
+  letter-spacing: -0.045em;
+}
+
+.builder > p {
+  color: #59665e;
+  line-height: 1.55;
+}
+
+.selectLabel,
+.evidence {
+  display: grid;
+  gap: 7px;
+  color: #526057;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.selectLabel select {
+  min-height: 44px;
+  border: 1px solid #aeb6ad;
+  border-radius: 9px;
+  padding: 0 10px;
+  color: #18211c;
+  background: #fffef9;
+  font: inherit;
+  text-transform: none;
+}
+
+.evidence {
+  border: 0;
+  padding: 0;
+}
+
+.evidence label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #d0d6cf;
+  border-radius: 10px;
+  padding: 12px;
+  color: #2e3c33;
+  font-size: 0.94rem;
+  font-weight: 650;
+  letter-spacing: normal;
+  line-height: 1.42;
+  text-transform: none;
+}
+
+.evidence input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: #294c3b;
+}
+
+.builder button {
+  justify-self: start;
+  min-height: 43px;
+  border: 1px solid #294c3b;
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #fffdf6;
+  background: #294c3b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.builder button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}

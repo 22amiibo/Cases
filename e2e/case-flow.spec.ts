@@ -75,11 +75,30 @@ test("guest can work through AlpineFit to the recommendation stage", async ({
     page.getByRole("heading", { name: "Make your recommendation" }),
   ).toBeVisible();
 
+  await page
+    .getByRole("combobox", { name: "Recommendation" })
+    .selectOption("stabilize-staffing");
+  await page
+    .getByLabel("Labor expense grew 34%, while staffed service hours grew only 11%.")
+    .check();
+  await page.getByLabel("Risk to manage").selectOption("retention-cost");
+  await page.getByLabel("First next step").selectOption("six-club-pilot");
+  await page.getByRole("button", { name: "Submit recommendation" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your case review" }),
+  ).toBeVisible();
+  await expect(page.getByText("Example efficient path")).toBeVisible();
+  await expect(page.getByText("critical found").first()).toBeVisible();
+  await expect(
+    page.getByRole("progressbar", { name: "Recommendation: 0%" }),
+  ).toBeVisible();
+  await expect(page.getByText("unsupported_recommendation")).toBeVisible();
+
   await page.waitForFunction(() => {
     const stored = window.sessionStorage.getItem(
       "casework:guest-session:alpinefit-profitability",
     );
-    return stored && JSON.parse(stored).events.length === 9;
+    return stored && JSON.parse(stored).events.length === 10;
   });
   const eventTimes = await page.evaluate(() => {
     const stored = window.sessionStorage.getItem(

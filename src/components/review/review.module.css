@@ -1,0 +1,94 @@
+.reviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  gap: 24px;
+}
+
+.replayCard,
+.scoreCard,
+.feedbackCard,
+.efficientPath,
+.emptyState {
+  display: grid;
+  gap: 15px;
+  border: 1px solid #aeb8ad;
+  border-radius: 18px;
+  padding: 28px;
+  background: #fffef9;
+}
+
+.replayCard > span,
+.scoreCard > span,
+.feedbackCard > span,
+.efficientPath > span {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.replayCard h2,
+.scoreCard h2,
+.feedbackCard h2,
+.efficientPath h2,
+.emptyState h2 {
+  font-size: 1.62rem;
+  letter-spacing: -0.045em;
+}
+
+.replayCard > p,
+.feedbackCard p,
+.emptyState p {
+  color: #59665e;
+  line-height: 1.55;
+}
+
+.graph {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.graph li {
+  display: grid;
+  gap: 4px;
+  border-left: 4px solid #aeb8ad;
+  padding: 11px 13px;
+  background: #f7f6ef;
+}
+
+.graph li > span {
+  color: #5e6a62;
+  font-family: var(--font-geist-mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.graph li > strong { color: #294c3b; }
+.graph li > small { color: #68736c; line-height: 1.4; }
+.graph .visited { border-left-color: #789b7d; }
+.graph .critical-found { border-left-color: #294c3b; background: #e5eee7; }
+.graph .critical-missed { border-left-color: #a14724; background: #f8ebe3; }
+
+.analysis { display: grid; gap: 24px; }
+.scoreList { display: grid; gap: 13px; }
+.scoreRow { display: grid; gap: 6px; }
+.scoreRow > div:first-child { display: flex; justify-content: space-between; gap: 14px; color: #36453b; font-weight: 700; }
+.track { height: 9px; overflow: hidden; border-radius: 999px; background: #dfe5db; }
+.track span { display: block; height: 100%; border-radius: inherit; background: #294c3b; }
+
+.feedbackCard ul { display: grid; gap: 10px; list-style: none; }
+.feedbackCard li { display: grid; gap: 4px; border-left: 3px solid #d28c5d; padding-left: 11px; }
+.feedbackCard code { color: #a14724; font-family: var(--font-geist-mono); font-size: 0.74rem; }
+
+.efficientPath { grid-column: 1 / -1; }
+.efficientPath ol { display: flex; flex-wrap: wrap; gap: 9px 24px; padding-left: 20px; color: #294c3b; font-weight: 700; line-height: 1.45; }
+.emptyState { max-width: 620px; }
+.emptyState a { color: #294c3b; font-weight: 700; }
+
+@media (max-width: 850px) {
+  .reviewGrid { grid-template-columns: 1fr; }
+}

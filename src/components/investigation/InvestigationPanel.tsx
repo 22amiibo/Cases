@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import concepts from "@/content/concepts.json";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { CalculationTask } from "@/components/math/CalculationTask";
+import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
 import type {
   LearnerCaseDefinition,
-  LearnerRecommendation,
   LearnerSessionView,
   StoredCaseWorkspace,
 } from "@/core/learner-case";
@@ -90,6 +91,7 @@ export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) 
 }
 
 function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
+  const router = useRouter();
   const storageKey = caseStorageKey(caseDefinition.id);
   const [workspace, setWorkspace] = useState(() =>
     restoreWorkspace(window.sessionStorage.getItem(storageKey)),
@@ -103,12 +105,6 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const [view, setView] = useState<LearnerSessionView | null>(null);
   const [synthesisEvidenceIds, setSynthesisEvidenceIds] = useState<string[]>([]);
   const [nextStepNodeId, setNextStepNodeId] = useState("");
-  const [recommendation, setRecommendation] = useState({
-    decisionId: "",
-    evidenceIds: [] as string[],
-    riskId: "",
-    nextStepId: "",
-  });
 
   const { clarificationComplete, clarificationDraftIds, events } = workspace;
 
@@ -337,18 +333,17 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           )}
 
           {view?.currentStage === "recommend" && view.recommendation && (
-            <RecommendationStep
-              recommendationDefinition={view.recommendation}
+            <RecommendationBuilder
+              recommendation={view.recommendation}
               facts={facts}
-              value={recommendation}
-              onChange={setRecommendation}
-              onSubmit={() =>
-                record({
+              onSubmit={async (recommendation) => {
+                await record({
                   type: "recommendation_submitted",
                   ...recommendation,
                   atMs: timestamp(),
-                })
-              }
+                });
+                router.push(`/cases/${caseDefinition.id}/review`);
+              }}
             />
           )}
 
@@ -484,108 +479,6 @@ function SynthesisStep({
         onClick={onSubmit}
       >
         Move to recommendation
-      </button>
-    </StepCard>
-  );
-}
-
-function RecommendationStep({
-  recommendationDefinition,
-  facts,
-  value,
-  onChange,
-  onSubmit,
-}: {
-  recommendationDefinition: LearnerRecommendation;
-  facts: RevealedFact[];
-  value: {
-    decisionId: string;
-    evidenceIds: string[];
-    riskId: string;
-    nextStepId: string;
-  };
-  onChange: (value: {
-    decisionId: string;
-    evidenceIds: string[];
-    riskId: string;
-    nextStepId: string;
-  }) => void;
-  onSubmit: () => void;
-}) {
-  const ready =
-    Boolean(value.decisionId) &&
-    value.evidenceIds.length > 0 &&
-    Boolean(value.riskId) &&
-    Boolean(value.nextStepId);
-
-  return (
-    <StepCard eyebrow="Recommend" title="Make your recommendation">
-      <p>Commit to a decision and make the evidence, risk, and first step explicit.</p>
-      <label className={styles.selectLabel}>
-        Recommendation
-        <select
-          value={value.decisionId}
-          onChange={(event) => onChange({ ...value, decisionId: event.target.value })}
-        >
-          <option value="">Choose a decision</option>
-          {recommendationDefinition.decisions.map((decision) => (
-            <option value={decision.id} key={decision.id}>
-              {decision.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className={styles.options}>
-        {facts.map((fact) => (
-          <label key={fact.id}>
-            <input
-              type="checkbox"
-              checked={value.evidenceIds.includes(fact.id)}
-              onChange={() =>
-                onChange({
-                  ...value,
-                  evidenceIds: value.evidenceIds.includes(fact.id)
-                    ? value.evidenceIds.filter((id) => id !== fact.id)
-                    : value.evidenceIds.length < 3
-                      ? [...value.evidenceIds, fact.id]
-                      : value.evidenceIds,
-                })
-              }
-            />
-            <span>{evidenceLabel(fact.id)}</span>
-          </label>
-        ))}
-      </div>
-      <label className={styles.selectLabel}>
-        Risk to manage
-        <select
-          value={value.riskId}
-          onChange={(event) => onChange({ ...value, riskId: event.target.value })}
-        >
-          <option value="">Choose a risk</option>
-          {recommendationDefinition.risks.map((risk) => (
-            <option value={risk.id} key={risk.id}>
-              {risk.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className={styles.selectLabel}>
-        First next step
-        <select
-          value={value.nextStepId}
-          onChange={(event) => onChange({ ...value, nextStepId: event.target.value })}
-        >
-          <option value="">Choose a next step</option>
-          {recommendationDefinition.nextSteps.map((nextStep) => (
-            <option value={nextStep.id} key={nextStep.id}>
-              {nextStep.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button type="button" className={styles.primaryButton} disabled={!ready} onClick={onSubmit}>
-        Submit recommendation
       </button>
     </StepCard>
   );

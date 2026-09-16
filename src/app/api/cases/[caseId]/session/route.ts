@@ -6,6 +6,9 @@ import {
   getAvailableActions,
   getRevealedFacts,
 } from "@/core/case-engine";
+import {
+  toLearnerCaseReview,
+} from "@/core/learner-case";
 import type {
   LearnerExhibitDefinition,
   LearnerSessionView,
@@ -85,6 +88,10 @@ export async function POST(
           nextSteps: alpineFit.recommendation.nextSteps,
         }
       : null,
+    review:
+      session.currentStage === "complete"
+        ? toLearnerCaseReview(alpineFit, session.events)
+        : null,
   };
 
   return NextResponse.json(view);

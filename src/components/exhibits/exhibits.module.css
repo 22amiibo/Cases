@@ -1,0 +1,61 @@
+.exhibit {
+  overflow: hidden;
+  border: 1px solid #b8c0b8;
+  border-radius: 16px;
+  background: #fffef9;
+}
+
+.exhibit > header {
+  padding: 22px 24px 0;
+}
+
+.exhibit > header span,
+.table caption {
+  color: #9b4a29;
+  font-family: var(--font-geist-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.exhibit > header h2 {
+  margin-top: 8px;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.table {
+  width: calc(100% - 48px);
+  margin: 20px 24px 24px;
+  border-collapse: collapse;
+}
+
+.table caption {
+  padding-bottom: 10px;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #d9ddd6;
+  padding: 11px 8px;
+  text-align: right;
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.chartBlock {
+  overflow: hidden;
+}
+
+.chart {
+  overflow-x: auto;
+  padding: 18px 10px 0;
+}
+
+.chartBlock .table {
+  margin-top: 4px;
+}

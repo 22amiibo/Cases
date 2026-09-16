@@ -9,6 +9,7 @@ import {
   type SynthesisSubmission,
 } from "@/core/drill-engine";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
+import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import styles from "./DrillSession.module.css";
 
 type DrillSessionProps = {
@@ -207,31 +208,7 @@ function ExhibitForm({
 
   return (
     <div className={styles.exhibitLayout}>
-      <section className={styles.exhibitPreview}>
-        <span>{definition.exhibit.unit}</span>
-        <h2>{definition.exhibit.title}</h2>
-        {definition.exhibit.rows.length > 0 ? (
-          <table>
-            <thead>
-              <tr>{definition.exhibit.columns.map((cell) => <th key={cell}>{cell}</th>)}</tr>
-            </thead>
-            <tbody>
-              {definition.exhibit.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className={styles.series}>
-            {definition.exhibit.categories.map((category, categoryIndex) => (
-              <div key={category}>
-                <span>{category}</span>
-                <strong>{definition.exhibit.series.map((series) => series.data[categoryIndex]).join(" · ")}</strong>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <ExhibitRenderer definition={definition.exhibit} revealed />
       <form
         className={styles.form}
         onSubmit={(event: FormEvent) => {

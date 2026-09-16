@@ -153,6 +153,23 @@ npm run build
   Playwright journey. The browser test first failed on the absent route and then
   passed after implementation.
 
+### Task 8: Exhibits and calculation tasks — paused in progress
+
+- Wrote the exhibit and calculation component tests first and observed the
+  expected missing-module failures.
+- Implemented table exhibits plus grouped-bar, stacked-bar, line, and waterfall
+  chart modes with units sourced from content.
+- Every chart includes a visible data-table alternative; hidden exhibits render
+  nothing.
+- Implemented calculation input, optional scratch work, tolerance grading, and
+  `{ taskId, answer }` submission output.
+- Wired the reusable exhibit renderer into exhibit drill sessions.
+- Task-specific verification is green: 5 component tests pass; lint and
+  typecheck pass.
+- Paused at the user's request before completing the visual smoke check. A local
+  dev server was started successfully and then stopped cleanly; no server is
+  currently running.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -167,6 +184,14 @@ npm run build
 
 ## Next Action
 
-Implement Task 8 from the plan: test and build exhibit renderers and deterministic
-calculation UI, complete a visual smoke check, and commit as
-`feat: render case exhibits and grade calculations`.
+Resume Task 8 at the visual smoke check:
+
+1. Start the app with `npm run dev -- --hostname 127.0.0.1` (this environment
+   requires elevated permission to bind port 3000).
+2. Inspect `/drills/exhibit` at desktop and mobile widths; confirm chart/table
+   layout, units, and no horizontal page overflow.
+3. Run `npm test`, `npm run lint`, and `npm run typecheck`.
+4. If green, replace the temporary WIP checkpoint with normal forward history
+   by making the planned commit `feat: render case exhibits and grade calculations`
+   for any remaining Task 8 changes. Do not rewrite existing commits.
+5. Continue with Task 9, the interactive full-case workspace.

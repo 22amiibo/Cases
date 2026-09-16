@@ -119,6 +119,18 @@ npm run build
 - Verified the content-loader test failed with no cases, then passed after the
   case was authored; typecheck also passed.
 
+### Task 5: Deterministic case engine — complete
+
+- Added immutable case sessions with events, revealed facts/exhibits, completed
+  calculations, and explicit interaction stages.
+- Investigation availability and reveal behavior derive only from authored
+  prerequisites and references.
+- Repeated investigations remain in the event stream for diagnostics without
+  duplicating revealed evidence.
+- Correct calculations reveal their authored evidence fact.
+- Verified the engine suite failed before implementation, then passed after
+  implementation (5 tests); typecheck also passed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -133,6 +145,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 5 from the plan: write failing deterministic engine tests, add
-`src/core/case-engine.ts`, verify stage/reveal behavior, and commit as
-`feat: add deterministic case state engine`.
+Implement Task 6 from the plan: build and test deterministic framework scoring
+and the accessible structured framework builder, then commit as
+`feat: add structured framework practice and scoring`.

@@ -98,6 +98,23 @@
   backdrop-filter: blur(16px);
 }
 
+.active {
+  transition: color 180ms ease, background 180ms ease;
+}
+
+.active:hover,
+.active:focus-visible {
+  color: #fffdf6;
+  background: #294c3b;
+}
+
+.active:hover > span,
+.active:focus-visible > span,
+.active:hover p,
+.active:focus-visible p {
+  color: #f0bf96;
+}
+
 .card > span {
   color: #a14724;
 }

@@ -142,6 +142,17 @@ npm run build
 - Verified the scoring/component suites failed before implementation, then
   passed after implementation. Full suite: 23 tests; lint and typecheck pass.
 
+### Task 7: Five deterministic drill modes — complete
+
+- Added deterministic evaluators for structure, prioritization, quantitative,
+  exhibit, and synthesis submissions with explicit feedback codes.
+- Authored and schema-validated 50 exercises: 10 per V1 skill.
+- Added the drill library and interactive session routes with immediate scoring
+  and next-question progression; enabled the home-page skill-practice route.
+- Verified the evaluator and content gates, lint, typecheck, and the quantitative
+  Playwright journey. The browser test first failed on the absent route and then
+  passed after implementation.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -156,6 +167,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 7 from the plan: build the five deterministic drill evaluators,
-author 50 validated exercises, add immediate-feedback drill routes, and commit
-as `feat: add five deterministic case-interview drill modes`.
+Implement Task 8 from the plan: test and build exhibit renderers and deterministic
+calculation UI, complete a visual smoke check, and commit as
+`feat: render case exhibits and grade calculations`.

@@ -144,7 +144,7 @@ describe("scoreCase", () => {
     expect(score.recommendation).toBe(0);
   });
 
-  it("does not credit a calculation attempted before its authored prerequisites", () => {
+  it("does not credit submissions made before later supporting investigations", () => {
     const score = scoreCase(alpineFit, [
       {
         type: "calculation_submitted",
@@ -152,9 +152,29 @@ describe("scoreCase", () => {
         answer: 756000,
         atMs: 1,
       },
+      {
+        type: "synthesis_submitted",
+        evidenceIds: ["labor-growth", "overtime-spike"],
+        nextStepNodeId: "turnover",
+        atMs: 2,
+      },
+      {
+        type: "recommendation_submitted",
+        decisionId: "stabilize-staffing",
+        evidenceIds: ["labor-growth", "overtime-spike"],
+        riskId: "retention-cost",
+        nextStepId: "six-club-pilot",
+        atMs: 3,
+      },
+      { type: "node_investigated", nodeId: "costs", atMs: 4 },
+      { type: "node_investigated", nodeId: "variable_cost", atMs: 5 },
+      { type: "node_investigated", nodeId: "labor", atMs: 6 },
+      { type: "node_investigated", nodeId: "overtime", atMs: 7 },
     ]);
 
     expect(score.quantitative).toBe(0);
+    expect(score.synthesis).toBe(0);
+    expect(score.recommendation).toBe(0);
   });
 
   it("gives a legitimate authored alternate path the same credit", () => {

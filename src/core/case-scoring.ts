@@ -36,25 +36,43 @@ function investigatedNodeIds(events: CaseEvent[], definition: CaseDefinition) {
     .map((event) => event.nodeId);
 }
 
-function discoveredFactIds(
+function investigatedNodeIdsBefore(
+  events: CaseEvent[],
+  definition: CaseDefinition,
+  beforeAtMs: number,
+) {
+  return investigatedNodeIds(
+    events.filter((event) => event.atMs < beforeAtMs),
+    definition,
+  );
+}
+
+function discoveredFactIdsBefore(
   definition: CaseDefinition,
   events: CaseEvent[],
-  nodeIds: string[],
+  beforeAtMs: number,
 ) {
+  const nodeIds = investigatedNodeIdsBefore(events, definition, beforeAtMs);
   const visited = new Set(nodeIds);
   const facts = definition.investigationNodes.flatMap((node) =>
     visited.has(node.id) ? node.factIds : [],
   );
 
   events.forEach((event) => {
-    if (event.type !== "calculation_submitted") {
+    if (event.type !== "calculation_submitted" || event.atMs >= beforeAtMs) {
       return;
     }
 
     const calculation = definition.calculations.find(
       (candidate) => candidate.id === event.taskId,
     );
-    if (calculation && isCorrectCalculation(calculation, event.answer, visited)) {
+    const nodesBeforeCalculation = new Set(
+      investigatedNodeIdsBefore(events, definition, event.atMs),
+    );
+    if (
+      calculation &&
+      isCorrectCalculation(calculation, event.answer, nodesBeforeCalculation)
+    ) {
       facts.push(calculation.evidenceFactId);
     }
   });
@@ -120,13 +138,11 @@ function scoreStructure(definition: CaseDefinition, events: CaseEvent[]) {
 function scoreQuantitative(
   definition: CaseDefinition,
   events: CaseEvent[],
-  nodeIds: string[],
 ) {
   if (definition.calculations.length === 0) {
     return 0;
   }
 
-  const visited = new Set(nodeIds);
   const correctCalculationIds = new Set(
     events.flatMap((event) => {
       if (event.type !== "calculation_submitted") {
@@ -135,7 +151,11 @@ function scoreQuantitative(
       const calculation = definition.calculations.find(
         (candidate) => candidate.id === event.taskId,
       );
-      return calculation && isCorrectCalculation(calculation, event.answer, visited)
+      const nodesBeforeCalculation = new Set(
+        investigatedNodeIdsBefore(events, definition, event.atMs),
+      );
+      return calculation &&
+        isCorrectCalculation(calculation, event.answer, nodesBeforeCalculation)
         ? [calculation.id]
         : [];
     }),
@@ -188,13 +208,17 @@ function scoreExhibits(
 function scoreSynthesis(
   definition: CaseDefinition,
   events: CaseEvent[],
-  discoveredFacts: Set<string>,
 ) {
   const nodeIds = new Set(definition.investigationNodes.map((node) => node.id));
   return events.some((event) => {
     if (event.type !== "synthesis_submitted" || !nodeIds.has(event.nextStepNodeId)) {
       return false;
     }
+    const discoveredFacts = discoveredFactIdsBefore(
+      definition,
+      events,
+      event.atMs,
+    );
     const discoveredEvidenceCount = unique(event.evidenceIds).filter((factId) =>
       discoveredFacts.has(factId),
     ).length;
@@ -207,7 +231,6 @@ function scoreSynthesis(
 function scoreRecommendation(
   definition: CaseDefinition,
   events: CaseEvent[],
-  discoveredFacts: Set<string>,
 ) {
   const riskIds = new Set(definition.recommendation.risks.map((risk) => risk.id));
   const nextStepIds = new Set(
@@ -221,6 +244,11 @@ function scoreRecommendation(
         if (event.type !== "recommendation_submitted") {
           return [];
         }
+        const discoveredFacts = discoveredFactIdsBefore(
+          definition,
+          events,
+          event.atMs,
+        );
         const decision = definition.recommendation.decisions.find(
           (candidate) => candidate.id === event.decisionId,
         );
@@ -274,17 +302,16 @@ export function scoreCase(
   events: CaseEvent[],
 ): CaseScore {
   const nodeIds = investigatedNodeIds(events, definition);
-  const discoveredFacts = discoveredFactIds(definition, events, nodeIds);
   const framework = scoreStructure(definition, events);
 
   return {
     clarification: scoreClarification(definition, events),
     structure: framework.structure,
     prioritization: framework.prioritization,
-    quantitative: scoreQuantitative(definition, events, nodeIds),
+    quantitative: scoreQuantitative(definition, events),
     exhibit: scoreExhibits(definition, events, nodeIds),
-    synthesis: scoreSynthesis(definition, events, discoveredFacts),
-    recommendation: scoreRecommendation(definition, events, discoveredFacts),
+    synthesis: scoreSynthesis(definition, events),
+    recommendation: scoreRecommendation(definition, events),
     diagnostic: diagnostics(definition, nodeIds),
   };
 }

@@ -26,6 +26,8 @@ export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) 
     return row;
   });
   const isLine = definition.type === "line";
+  const isWaterfall = definition.type === "waterfall";
+  const chartData = isWaterfall ? createWaterfallData(definition) : data;
 
   return (
     <div className={styles.chartBlock}>
@@ -53,20 +55,29 @@ export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) 
               ))}
             </LineChart>
           ) : (
-            <BarChart data={data}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d9ddd6" />
               <XAxis dataKey="category" />
               <YAxis label={{ value: definition.unit, angle: -90, position: "insideLeft" }} />
               <Tooltip />
               <Legend />
-              {definition.series.map((series, index) => (
-                <Bar
-                  key={series.name}
-                  dataKey={series.name}
-                  fill={colors[index % colors.length]}
-                  stackId={definition.type === "stacked_bar" ? "stack" : undefined}
-                />
-              ))}
+              {isWaterfall ? (
+                <>
+                  <Bar dataKey="waterfallOffset" stackId="waterfall" fill="transparent" legendType="none" />
+                  <Bar dataKey="waterfallIncrease" stackId="waterfall" fill="#78937d" name="Increase" />
+                  <Bar dataKey="waterfallDecrease" stackId="waterfall" fill="#c0693f" name="Decrease" />
+                  <Bar dataKey="waterfallTotal" stackId="waterfall" fill="#294c3b" name="Total" />
+                </>
+              ) : (
+                definition.series.map((series, index) => (
+                  <Bar
+                    key={series.name}
+                    dataKey={series.name}
+                    fill={colors[index % colors.length]}
+                    stackId={definition.type === "stacked_bar" ? "stack" : undefined}
+                  />
+                ))
+              )}
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -100,4 +111,26 @@ export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) 
       </table>
     </div>
   );
+}
+
+function createWaterfallData(definition: ExhibitDefinition): Record<string, string | number>[] {
+  const values = definition.series[0]?.data ?? [];
+  let runningTotal = values[0] ?? 0;
+
+  return definition.categories.map((category, index): Record<string, string | number> => {
+    const value = values[index] ?? 0;
+
+    if (index === 0 || index === definition.categories.length - 1) {
+      return { category, waterfallOffset: 0, waterfallTotal: value };
+    }
+
+    if (value >= 0) {
+      const row = { category, waterfallIncrease: value, waterfallOffset: runningTotal };
+      runningTotal += value;
+      return row;
+    }
+
+    runningTotal += value;
+    return { category, waterfallDecrease: Math.abs(value), waterfallOffset: runningTotal };
+  });
 }

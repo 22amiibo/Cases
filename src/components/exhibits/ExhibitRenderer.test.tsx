@@ -1,7 +1,24 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ExhibitDefinitionSchema } from "@/core/schema";
 import { ExhibitRenderer } from "./ExhibitRenderer";
+
+vi.mock("recharts", () => ({
+  Bar: ({ dataKey }: { dataKey: string }) => <span data-bar-key={dataKey} />,
+  BarChart: ({ children, data }: { children: React.ReactNode; data: unknown }) => (
+    <div data-chart-data={JSON.stringify(data)} data-testid="bar-chart">
+      {children}
+    </div>
+  ),
+  CartesianGrid: () => null,
+  Legend: () => null,
+  Line: () => null,
+  LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+}));
 
 const table = ExhibitDefinitionSchema.parse({
   id: "cost-table",
@@ -25,6 +42,17 @@ const chart = ExhibitDefinitionSchema.parse({
   insights: [{ id: "growth", label: "Members grew.", strength: 1 }],
 });
 
+const waterfall = ExhibitDefinitionSchema.parse({
+  id: "material-waterfall",
+  title: "Material cost variance",
+  type: "waterfall",
+  unit: "$m",
+  sourceFactIds: ["material-fact"],
+  categories: ["Prior", "Price", "Waste", "Current"],
+  series: [{ name: "Change", data: [20, 5, 2, 27] }],
+  insights: [{ id: "price-largest", label: "Supplier price is the largest variance.", strength: 1 }],
+});
+
 describe("ExhibitRenderer", () => {
   it("renders authored table cells and unit", () => {
     render(<ExhibitRenderer definition={table} revealed />);
@@ -43,6 +71,23 @@ describe("ExhibitRenderer", () => {
     );
     expect(screen.getByRole("table", { name: "Member trend data (000s)" })).toHaveTextContent(
       "47",
+    );
+  });
+
+  it("renders waterfall deltas from their cumulative totals while retaining authored values", () => {
+    render(<ExhibitRenderer definition={waterfall} revealed />);
+
+    expect(JSON.parse(screen.getByTestId("bar-chart").dataset.chartData ?? "[]")).toEqual([
+      { category: "Prior", waterfallOffset: 0, waterfallTotal: 20 },
+      { category: "Price", waterfallIncrease: 5, waterfallOffset: 20 },
+      { category: "Waste", waterfallIncrease: 2, waterfallOffset: 25 },
+      { category: "Current", waterfallOffset: 0, waterfallTotal: 27 },
+    ]);
+    expect(screen.getByRole("table", { name: "Material cost variance data ($m)" })).toHaveTextContent(
+      "20",
+    );
+    expect(screen.getByRole("table", { name: "Material cost variance data ($m)" })).toHaveTextContent(
+      "27",
     );
   });
 

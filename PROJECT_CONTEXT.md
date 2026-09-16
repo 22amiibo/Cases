@@ -180,6 +180,18 @@ npm run build
   tests pass, lint and typecheck exit successfully, and the focused 320px
   Playwright regression passes.
 
+### Task 9: Interactive full-case workspace — paused before implementation
+
+- Prepared the SDD task brief at
+  `.superpowers/sdd/2026-09-15-case-interview-practice-mvp/task-9-brief.md`.
+- A Task 9 implementer reviewed the brief, deterministic engine, AlpineFit
+  content, existing components, and current tests, then was interrupted at the
+  user's request before making any edits or commits.
+- No Task 9 tests have been run and no Task 9 production files have changed.
+- The worktree was clean at commit `543d1d5` when the pause was requested.
+- Task 10's brief is also prepared, but Task 10 must not begin until Task 9 is
+  implemented, verified, and independently reviewed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -194,8 +206,14 @@ npm run build
 
 ## Next Action
 
-Implement Task 9, the interactive full-case workspace, using the prepared SDD
-brief at `.superpowers/sdd/2026-09-15-case-interview-practice-mvp/task-9-brief.md`.
-Preserve the existing deterministic engine/events and guest-session recovery,
-then run the task's Playwright flow and independent review loop before moving
-to Task 10.
+Resume Task 9 from its first TDD step:
+
+1. Read the prepared Task 9 brief and this context file.
+2. Add the required full-case browser journey to `e2e/case-flow.spec.ts`.
+3. Run that focused Playwright test and confirm it fails for the expected
+   missing-workspace behavior before writing production code.
+4. Implement the workspace, session recovery, and four required UI regions by
+   reusing the deterministic engine, framework builder, exhibit renderer, and
+   calculation task.
+5. Run Task 9 verification and its independent review loop, update this file,
+   then continue to the already prepared Task 10 brief.

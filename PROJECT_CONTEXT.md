@@ -100,6 +100,16 @@ npm run build
 - Verified the schema suite failed before `schema.ts` existed, then passed after
   implementation (4 tests); typecheck also passed.
 
+### Task 3: Content validation and invariants — complete
+
+- Added deterministic formula evaluation and tolerance checking.
+- Added validation for duplicate IDs, unknown graph/fact/exhibit references,
+  invalid recommendation evidence, unreachable critical nodes, invalid efficient
+  paths, and calculation-answer mismatches.
+- `assertValidCase` reports all discovered issues together before content loads.
+- Verified the validation suite failed before implementation, then passed after
+  implementation (7 tests); typecheck also passed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -114,6 +124,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 3 from the plan: write failing content-invariant tests, then add
-`src/core/validation.ts`, verify the tests, and commit as
-`feat: validate case content and numerical invariants`.
+Implement Task 4 from the plan: add the failing all-case content loader test,
+author and validate `alpinefit-profitability.json`, then commit as
+`content: add first validated profitability case`.

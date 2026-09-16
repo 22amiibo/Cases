@@ -202,6 +202,27 @@ npm run build
 - Fresh verification: 36 unit/component tests pass; lint and typecheck pass;
   all 4 Playwright journeys pass.
 
+### Task 10: Full-case scoring — complete
+
+- Commits: `3fcb9eb feat: score case reasoning from user events` and
+  `00d7670 fix: score case events chronologically`.
+- Added deterministic scoring for clarification, structure, prioritization,
+  quantitative reasoning, exhibit interpretation, synthesis, and
+  recommendation quality.
+- Scores derive from authored case rubrics and recorded events rather than one
+  required investigation sequence. Authored alternate paths receive credit.
+- Recommendation and synthesis evidence only receive credit when discovered
+  before submission. Calculation evidence and credit require prerequisites
+  investigated before the calculation event.
+- Investigation efficiency remains separate diagnostic output: critical nodes
+  found/missed, low-value investigations, and repeated investigations.
+- Independent review found a temporal ordering defect where later discoveries
+  could retroactively support earlier submissions. Fix round 1 added a
+  regression test and chronological evidence snapshots; scoped re-review found
+  all findings addressed with no new breakage.
+- Fresh controller verification: 42 unit/component tests pass; lint, typecheck,
+  and `git diff --check` pass.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -216,7 +237,7 @@ npm run build
 
 ## Next Action
 
-Begin Task 10 from its prepared SDD brief. Add scoring tests first, observe the
-expected failures, implement deterministic event-based case scoring, run the
-full verification and independent review loop, then commit with the plan's
-prescribed message.
+Begin Task 11 from its prepared SDD brief. Write the undiscovered-evidence
+component test first, then build the structured recommendation, replay graph,
+score breakdown, review route, and full browser journey through review. Run
+the independent review loop before Task 12.

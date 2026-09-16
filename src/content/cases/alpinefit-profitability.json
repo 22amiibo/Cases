@@ -1,0 +1,296 @@
+{
+  "id": "alpinefit-profitability",
+  "version": 1,
+  "title": "AlpineFit's shrinking margin",
+  "category": "profitability",
+  "difficulty": "beginner",
+  "prompt": "AlpineFit operates 18 premium fitness clubs across the Mountain West. Revenue grew 8% last year, yet EBITDA margin fell from 19% to 13%. Management wants to understand the primary driver and choose a practical response before the next planning cycle.",
+  "objective": "Identify the primary cause of AlpineFit's EBITDA-margin decline and recommend a practical response that protects the member experience.",
+  "clarificationOptions": [
+    {
+      "id": "target-metric",
+      "label": "Which performance metric should we explain?",
+      "response": "Focus on the six-point decline in EBITDA margin, not absolute revenue growth.",
+      "highValue": true
+    },
+    {
+      "id": "time-period",
+      "label": "Over what period did performance change?",
+      "response": "Compare the most recent twelve months with the prior twelve months.",
+      "highValue": true
+    },
+    {
+      "id": "case-scope",
+      "label": "Is the issue concentrated in a product or geography?",
+      "response": "All 18 clubs are in scope, though the decline varies meaningfully by location.",
+      "highValue": true
+    },
+    {
+      "id": "competitor-pricing",
+      "label": "Have competitors changed prices?",
+      "response": "Competitor pricing has been broadly stable and is not management's immediate concern.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    { "id": "revenue-growth", "text": "Revenue grew 8%, led by member volume rather than price." },
+    { "id": "price-flat", "text": "Average membership price was effectively flat year over year." },
+    { "id": "volume-up", "text": "Average active membership increased 9%." },
+    { "id": "cost-growth", "text": "Operating costs grew 17%, substantially faster than revenue." },
+    { "id": "fixed-stable", "text": "Fixed occupancy and corporate costs grew 3%, below revenue growth." },
+    { "id": "variable-growth", "text": "Variable operating costs grew 28% and explain most of the margin decline." },
+    { "id": "labor-growth", "text": "Club labor expense grew 34%, while staffed service hours grew only 11%." },
+    { "id": "materials-stable", "text": "Cleaning supplies and member amenities rose in line with visits." },
+    { "id": "overtime-spike", "text": "Overtime hours nearly tripled, with the highest usage in six clubs." },
+    { "id": "vacancies-high", "text": "Open trainer and front-desk roles have remained unfilled for an average of 74 days." },
+    { "id": "turnover-link", "text": "The six high-overtime clubs have 31% annual staff turnover versus 12% elsewhere." },
+    { "id": "incremental-labor", "text": "Current overtime creates approximately $756,000 of incremental annual labor expense." }
+  ],
+  "investigationNodes": [
+    {
+      "id": "revenue",
+      "conceptId": "revenue",
+      "label": "Understand revenue performance",
+      "interviewerResponse": "Revenue is not declining; it grew 8%, mostly from more members.",
+      "factIds": ["revenue-growth"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "price",
+      "conceptId": "price",
+      "label": "Check membership pricing",
+      "interviewerResponse": "Average membership price was essentially unchanged.",
+      "factIds": ["price-flat"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["revenue"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "volume",
+      "conceptId": "volume",
+      "label": "Check member volume",
+      "interviewerResponse": "Membership increased 9%, so volume is a tailwind rather than the problem.",
+      "factIds": ["volume-up"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["revenue"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "costs",
+      "conceptId": "variable_cost",
+      "label": "Break down operating costs",
+      "interviewerResponse": "Operating costs grew 17%. The cost-category exhibit is now available.",
+      "factIds": ["cost-growth"],
+      "exhibitIds": ["cost-category"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "fixed_cost",
+      "conceptId": "fixed_cost",
+      "label": "Inspect fixed costs",
+      "interviewerResponse": "Fixed costs grew more slowly than revenue and do not explain the decline.",
+      "factIds": ["fixed-stable"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["costs"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "variable_cost",
+      "conceptId": "variable_cost",
+      "label": "Inspect variable costs",
+      "interviewerResponse": "Variable operating costs grew 28% and warrant a deeper breakdown.",
+      "factIds": ["variable-growth"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["costs"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "labor",
+      "conceptId": "labor",
+      "label": "Inspect club labor",
+      "interviewerResponse": "Labor expense grew far faster than staffed hours. Overtime and vacancies can be investigated next.",
+      "factIds": ["labor-growth"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["variable_cost"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "materials",
+      "conceptId": "materials",
+      "label": "Inspect supplies and amenities",
+      "interviewerResponse": "These costs rose in line with club visits and are not driving the margin decline.",
+      "factIds": ["materials-stable"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["variable_cost"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "overtime",
+      "conceptId": "labor",
+      "label": "Inspect overtime usage",
+      "interviewerResponse": "Overtime nearly tripled and is concentrated in six clubs. The location exhibit is now available.",
+      "factIds": ["overtime-spike"],
+      "exhibitIds": ["location-turnover"],
+      "prerequisiteNodeIds": ["labor"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "vacancies",
+      "conceptId": "labor",
+      "label": "Inspect open roles",
+      "interviewerResponse": "Key club roles have remained open for an average of 74 days.",
+      "factIds": ["vacancies-high"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["labor"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "turnover",
+      "conceptId": "labor",
+      "label": "Compare staff turnover",
+      "interviewerResponse": "High-overtime clubs also have much higher turnover, creating a self-reinforcing staffing gap.",
+      "factIds": ["turnover-link"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["overtime"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "cost-category",
+      "title": "Operating cost by category",
+      "type": "grouped_bar",
+      "unit": "$m",
+      "sourceFactIds": ["cost-growth", "fixed-stable", "variable-growth", "labor-growth", "materials-stable"],
+      "columns": ["Category", "Prior year", "Current year"],
+      "rows": [
+        ["Club labor", 18.1, 24.3],
+        ["Occupancy", 15.2, 15.6],
+        ["Amenities", 4.7, 5.1],
+        ["Corporate", 5.3, 5.5]
+      ],
+      "categories": ["Club labor", "Occupancy", "Amenities", "Corporate"],
+      "series": [
+        { "name": "Prior year", "data": [18.1, 15.2, 4.7, 5.3] },
+        { "name": "Current year", "data": [24.3, 15.6, 5.1, 5.5] }
+      ],
+      "insights": [
+        { "id": "labor-outlier", "label": "Labor accounts for most of the cost increase.", "strength": 1 },
+        { "id": "all-costs-rise", "label": "Every cost category rose at the same rate.", "strength": 0.1 }
+      ]
+    },
+    {
+      "id": "location-turnover",
+      "title": "Overtime and staff turnover by club group",
+      "type": "table",
+      "unit": "% / hours per FTE",
+      "sourceFactIds": ["overtime-spike", "turnover-link"],
+      "columns": ["Club group", "Overtime hours per FTE", "Annual turnover"],
+      "rows": [
+        ["Six high-overtime clubs", 146, 31],
+        ["Twelve other clubs", 49, 12]
+      ],
+      "categories": [],
+      "series": [],
+      "insights": [
+        { "id": "overtime-turnover-link", "label": "High overtime and high turnover occur in the same six clubs.", "strength": 1 },
+        { "id": "network-wide", "label": "The issue is evenly distributed across all clubs.", "strength": 0 }
+      ]
+    }
+  ],
+  "calculations": [
+    {
+      "id": "incremental-overtime-expense",
+      "prompt": "The six affected clubs each use 3,600 annual overtime hours, and the overtime premium is $35 per hour. What is the total incremental annual expense?",
+      "unit": "$",
+      "formula": { "operation": "multiply", "inputs": [6, 3600, 35] },
+      "expectedAnswer": 756000,
+      "tolerance": 1000,
+      "prerequisiteNodeIds": ["overtime"],
+      "evidenceFactId": "incremental-labor"
+    }
+  ],
+  "frameworkRubric": {
+    "concepts": [
+      { "conceptId": "revenue", "weight": 1, "required": true },
+      { "conceptId": "price", "weight": 0.5, "required": false },
+      { "conceptId": "volume", "weight": 0.5, "required": false },
+      { "conceptId": "fixed_cost", "weight": 1, "required": true },
+      { "conceptId": "variable_cost", "weight": 2, "required": true },
+      { "conceptId": "labor", "weight": 1.5, "required": false },
+      { "conceptId": "materials", "weight": 0.5, "required": false }
+    ],
+    "overlapGroups": [["fixed_cost", "variable_cost"], ["price", "volume"]],
+    "priorityConceptIds": ["variable_cost", "fixed_cost"]
+  },
+  "recommendation": {
+    "minimumEvidence": 2,
+    "decisions": [
+      {
+        "id": "stabilize-staffing",
+        "label": "Stabilize staffing in the six affected clubs with targeted retention and faster hiring while tightening overtime controls.",
+        "supportingEvidenceIds": ["labor-growth", "overtime-spike", "turnover-link", "incremental-labor"],
+        "weight": 1
+      },
+      {
+        "id": "raise-prices",
+        "label": "Raise membership prices across every club immediately.",
+        "supportingEvidenceIds": ["price-flat"],
+        "weight": 0.4
+      },
+      {
+        "id": "cut-amenities",
+        "label": "Reduce member amenities across the network.",
+        "supportingEvidenceIds": ["materials-stable"],
+        "weight": 0.1
+      }
+    ],
+    "risks": [
+      { "id": "retention-cost", "label": "Retention incentives may not reduce turnover quickly enough." },
+      { "id": "service-disruption", "label": "Reducing overtime too quickly could disrupt club service." },
+      { "id": "member-churn", "label": "Broad price increases could trigger member churn." }
+    ],
+    "nextSteps": [
+      { "id": "six-club-pilot", "label": "Run a 90-day staffing pilot in the six high-overtime clubs." },
+      { "id": "network-price-test", "label": "Raise prices in all 18 clubs next month." },
+      { "id": "amenity-audit", "label": "Audit towel and beverage usage." }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "cost-first",
+      "label": "Cost growth to staffing root cause",
+      "nodeIds": ["costs", "variable_cost", "labor", "overtime", "turnover"]
+    },
+    {
+      "id": "confirm-revenue-then-cost",
+      "label": "Confirm the revenue trend, then isolate labor",
+      "nodeIds": ["revenue", "costs", "variable_cost", "labor", "overtime", "turnover"]
+    }
+  ]
+}

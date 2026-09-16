@@ -110,6 +110,15 @@ npm run build
 - Verified the validation suite failed before implementation, then passed after
   implementation (7 tests); typecheck also passed.
 
+### Task 4: First profitability case — complete
+
+- Added the validated AlpineFit vertical-slice case.
+- Hidden causal path: costs → variable cost → labor → overtime → turnover.
+- Included revenue/materials alternatives, two exhibits, an overtime-expense
+  calculation, evidence-gated recommendation choices, and two efficient paths.
+- Verified the content-loader test failed with no cases, then passed after the
+  case was authored; typecheck also passed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -124,6 +133,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 4 from the plan: add the failing all-case content loader test,
-author and validate `alpinefit-profitability.json`, then commit as
-`content: add first validated profitability case`.
+Implement Task 5 from the plan: write failing deterministic engine tests, add
+`src/core/case-engine.ts`, verify stage/reveal behavior, and commit as
+`feat: add deterministic case state engine`.

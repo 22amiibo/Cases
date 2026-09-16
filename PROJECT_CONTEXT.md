@@ -153,7 +153,7 @@ npm run build
   Playwright journey. The browser test first failed on the absent route and then
   passed after implementation.
 
-### Task 8: Exhibits and calculation tasks — implementation verified, review pending
+### Task 8: Exhibits and calculation tasks — complete
 
 - Wrote the exhibit and calculation component tests first and observed the
   expected missing-module failures.
@@ -172,9 +172,13 @@ npm run build
 - Completed desktop and 320px visual checks. All chart categories, legends,
   authored units, and the visible table alternative render without page-level
   horizontal overflow.
-- Fresh Task 8 verification: 34 unit/component tests pass; lint and typecheck
-  exit successfully. A Superpowers task review remains before Task 8 is marked
-  complete.
+- An independent task review caught that waterfall data was still displayed as
+  ordinary zero-baseline bars. Fix commit `ca1c100` now renders first/last
+  values as totals and intermediate signed values as cumulative deltas, with a
+  dedicated regression test; scoped re-review found no blocking breakage.
+- Fresh controller verification on the reviewed commit: 35 unit/component
+  tests pass, lint and typecheck exit successfully, and the focused 320px
+  Playwright regression passes.
 
 ## Decisions and Notes
 
@@ -190,7 +194,8 @@ npm run build
 
 ## Next Action
 
-1. Complete the Superpowers task review for Task 8 and address any Important or
-   Critical findings through the review loop.
-2. Mark Task 8 complete in this file and the SDD ledger.
-3. Continue with Task 9, the interactive full-case workspace.
+Implement Task 9, the interactive full-case workspace, using the prepared SDD
+brief at `.superpowers/sdd/2026-09-15-case-interview-practice-mvp/task-9-brief.md`.
+Preserve the existing deterministic engine/events and guest-session recovery,
+then run the task's Playwright flow and independent review loop before moving
+to Task 10.

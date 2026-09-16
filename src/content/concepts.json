@@ -1,0 +1,17 @@
+[
+  { "id": "revenue", "label": "Revenue", "aliases": ["sales"] },
+  { "id": "price", "label": "Price", "aliases": ["pricing", "rate"] },
+  { "id": "volume", "label": "Volume", "aliases": ["units", "transactions"] },
+  { "id": "mix", "label": "Mix", "aliases": ["product mix", "customer mix"] },
+  { "id": "fixed_cost", "label": "Fixed cost", "aliases": ["overhead"] },
+  { "id": "variable_cost", "label": "Variable cost", "aliases": ["unit cost"] },
+  { "id": "labor", "label": "Labor", "aliases": ["people cost", "staffing"] },
+  { "id": "materials", "label": "Materials", "aliases": ["inputs", "raw materials"] },
+  { "id": "customers", "label": "Customers", "aliases": ["segments", "buyers"] },
+  { "id": "competitors", "label": "Competitors", "aliases": ["competition"] },
+  { "id": "market_size", "label": "Market size", "aliases": ["TAM", "addressable market"] },
+  { "id": "growth", "label": "Growth", "aliases": ["market growth"] },
+  { "id": "capacity", "label": "Capacity", "aliases": ["throughput"] },
+  { "id": "utilization", "label": "Utilization", "aliases": ["occupancy"] },
+  { "id": "risk", "label": "Risk", "aliases": ["downside", "uncertainty"] }
+]

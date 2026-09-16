@@ -90,6 +90,16 @@ npm run build
 - Latest Task 1 checks: lint passed, typecheck passed, unit harness passed, and
   the Chromium smoke test passed (1 test).
 
+### Task 2: Define the domain schema — complete
+
+- Added the canonical concept bank with stable IDs and aliases.
+- Added Zod schemas and exported TypeScript types for cases, drills, events,
+  frameworks, exhibits, calculations, and recommendations.
+- Added cross-content schema validation for exhibit source facts and enforced a
+  non-zero recommendation evidence requirement.
+- Verified the schema suite failed before `schema.ts` existed, then passed after
+  implementation (4 tests); typecheck also passed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -104,6 +114,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 2 from the plan: write failing schema tests, then add
-`src/core/schema.ts` and `src/content/concepts.json`, verify tests/typecheck, and
-commit as `feat: define deterministic case and drill schemas`.
+Implement Task 3 from the plan: write failing content-invariant tests, then add
+`src/core/validation.ts`, verify the tests, and commit as
+`feat: validate case content and numerical invariants`.

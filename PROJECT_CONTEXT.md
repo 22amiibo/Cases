@@ -153,7 +153,7 @@ npm run build
   Playwright journey. The browser test first failed on the absent route and then
   passed after implementation.
 
-### Task 8: Exhibits and calculation tasks — paused in progress
+### Task 8: Exhibits and calculation tasks — implementation verified, review pending
 
 - Wrote the exhibit and calculation component tests first and observed the
   expected missing-module failures.
@@ -166,9 +166,15 @@ npm run build
 - Wired the reusable exhibit renderer into exhibit drill sessions.
 - Task-specific verification is green: 5 component tests pass; lint and
   typecheck pass.
-- Paused at the user's request before completing the visual smoke check. A local
-  dev server was started successfully and then stopped cleanly; no server is
-  currently running.
+- Added a browser regression test proving chart SVGs fit within their visible
+  phone-width container. It failed at 640px against a 282px container before
+  the responsive fix and passed afterward.
+- Completed desktop and 320px visual checks. All chart categories, legends,
+  authored units, and the visible table alternative render without page-level
+  horizontal overflow.
+- Fresh Task 8 verification: 34 unit/component tests pass; lint and typecheck
+  exit successfully. A Superpowers task review remains before Task 8 is marked
+  complete.
 
 ## Decisions and Notes
 
@@ -184,14 +190,7 @@ npm run build
 
 ## Next Action
 
-Resume Task 8 at the visual smoke check:
-
-1. Start the app with `npm run dev -- --hostname 127.0.0.1` (this environment
-   requires elevated permission to bind port 3000).
-2. Inspect `/drills/exhibit` at desktop and mobile widths; confirm chart/table
-   layout, units, and no horizontal page overflow.
-3. Run `npm test`, `npm run lint`, and `npm run typecheck`.
-4. If green, replace the temporary WIP checkpoint with normal forward history
-   by making the planned commit `feat: render case exhibits and grade calculations`
-   for any remaining Task 8 changes. Do not rewrite existing commits.
-5. Continue with Task 9, the interactive full-case workspace.
+1. Complete the Superpowers task review for Task 8 and address any Important or
+   Critical findings through the review loop.
+2. Mark Task 8 complete in this file and the SDD ledger.
+3. Continue with Task 9, the interactive full-case workspace.

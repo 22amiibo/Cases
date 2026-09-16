@@ -12,3 +12,19 @@ test("completes a quantitative drill with immediate feedback", async ({ page }) 
   await expect(page.getByText("100 / 100")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next question" })).toBeVisible();
 });
+
+test("keeps exhibit charts readable within a phone-width card", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/drills/exhibit");
+
+  const chart = page.getByRole("img", { name: /Cost growth by category chart/ });
+  const svg = chart.getByRole("application");
+
+  await expect(chart).toBeVisible();
+  await expect(svg).toBeVisible();
+
+  const [chartBox, svgBox] = await Promise.all([chart.boundingBox(), svg.boundingBox()]);
+  expect(chartBox).not.toBeNull();
+  expect(svgBox).not.toBeNull();
+  expect(svgBox!.width).toBeLessThanOrEqual(chartBox!.width);
+});

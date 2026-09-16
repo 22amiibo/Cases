@@ -7,6 +7,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -33,40 +34,42 @@ export function ChartExhibit({ definition }: { definition: ExhibitDefinition }) 
         role="img"
         aria-label={`${definition.title} chart in ${definition.unit}`}
       >
-        {isLine ? (
-          <LineChart width={640} height={320} data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#d9ddd6" />
-            <XAxis dataKey="category" />
-            <YAxis label={{ value: definition.unit, angle: -90, position: "insideLeft" }} />
-            <Tooltip />
-            <Legend />
-            {definition.series.map((series, index) => (
-              <Line
-                key={series.name}
-                type="monotone"
-                dataKey={series.name}
-                stroke={colors[index % colors.length]}
-                strokeWidth={3}
-              />
-            ))}
-          </LineChart>
-        ) : (
-          <BarChart width={640} height={320} data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#d9ddd6" />
-            <XAxis dataKey="category" />
-            <YAxis label={{ value: definition.unit, angle: -90, position: "insideLeft" }} />
-            <Tooltip />
-            <Legend />
-            {definition.series.map((series, index) => (
-              <Bar
-                key={series.name}
-                dataKey={series.name}
-                fill={colors[index % colors.length]}
-                stackId={definition.type === "stacked_bar" ? "stack" : undefined}
-              />
-            ))}
-          </BarChart>
-        )}
+        <ResponsiveContainer width="100%" height={320} minWidth={0}>
+          {isLine ? (
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#d9ddd6" />
+              <XAxis dataKey="category" />
+              <YAxis label={{ value: definition.unit, angle: -90, position: "insideLeft" }} />
+              <Tooltip />
+              <Legend />
+              {definition.series.map((series, index) => (
+                <Line
+                  key={series.name}
+                  type="monotone"
+                  dataKey={series.name}
+                  stroke={colors[index % colors.length]}
+                  strokeWidth={3}
+                />
+              ))}
+            </LineChart>
+          ) : (
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#d9ddd6" />
+              <XAxis dataKey="category" />
+              <YAxis label={{ value: definition.unit, angle: -90, position: "insideLeft" }} />
+              <Tooltip />
+              <Legend />
+              {definition.series.map((series, index) => (
+                <Bar
+                  key={series.name}
+                  dataKey={series.name}
+                  fill={colors[index % colors.length]}
+                  stackId={definition.type === "stacked_bar" ? "stack" : undefined}
+                />
+              ))}
+            </BarChart>
+          )}
+        </ResponsiveContainer>
       </div>
 
       <table

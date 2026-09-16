@@ -131,6 +131,17 @@ npm run build
 - Verified the engine suite failed before implementation, then passed after
   implementation (5 tests); typecheck also passed.
 
+### Task 6: Structured framework builder and scorer — complete
+
+- Added weighted concept coverage, required-concept diagnostics, overlap and
+  duplicate penalties, and priority scoring.
+- Added a searchable canonical concept bank UI with four top-level branches,
+  three levels, priority selection, removal, and keyboard-operable move buttons.
+- Fixed the shared test harness to explicitly clean up rendered components when
+  Vitest globals are disabled.
+- Verified the scoring/component suites failed before implementation, then
+  passed after implementation. Full suite: 23 tests; lint and typecheck pass.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -145,6 +156,6 @@ npm run build
 
 ## Next Action
 
-Implement Task 6 from the plan: build and test deterministic framework scoring
-and the accessible structured framework builder, then commit as
-`feat: add structured framework practice and scoring`.
+Implement Task 7 from the plan: build the five deterministic drill evaluators,
+author 50 validated exercises, add immediate-feedback drill routes, and commit
+as `feat: add five deterministic case-interview drill modes`.

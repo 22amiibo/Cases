@@ -1,0 +1,149 @@
+.builder {
+  display: grid;
+  gap: 24px;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.composer label,
+.childComposer label {
+  display: grid;
+  gap: 7px;
+  color: #58655d;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.composer input,
+.composer select,
+.childComposer select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #b8c0b8;
+  border-radius: 9px;
+  padding: 0 12px;
+  color: #18211c;
+  background: #fffef9;
+  font: inherit;
+  text-transform: none;
+}
+
+.builder button {
+  min-height: 40px;
+  border: 1px solid #829087;
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #26332b;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.builder button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.tree,
+.children {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.branch {
+  border: 1px solid #ccd2ca;
+  border-radius: 14px;
+  padding: 18px;
+  background: rgba(255, 254, 249, 0.72);
+}
+
+.branchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.branch h3 {
+  margin-top: 4px;
+  font-size: 1.05rem;
+}
+
+.depth {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.actions button {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 0.76rem;
+}
+
+.actions .priority {
+  color: #fffdf6;
+  border-color: #294c3b;
+  background: #294c3b;
+}
+
+.childComposer {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.children {
+  margin-top: 12px;
+  padding-left: 18px;
+  border-left: 2px solid #e0b590;
+}
+
+.empty {
+  border: 1px dashed #99a49d;
+  border-radius: 14px;
+  padding: 32px;
+  color: #68736c;
+  text-align: center;
+}
+
+.builder .submit {
+  justify-self: start;
+  color: #fffdf6;
+  border-color: #18211c;
+  background: #18211c;
+}
+
+@media (max-width: 680px) {
+  .composer,
+  .childComposer {
+    grid-template-columns: 1fr;
+  }
+
+  .branchHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}

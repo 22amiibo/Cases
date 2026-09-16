@@ -41,3 +41,6 @@ pnpm-debug.log*
 
 # Vercel
 .vercel/
+
+# isolated development worktrees
+.worktrees/

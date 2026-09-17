@@ -50,6 +50,7 @@ describe("DrillSession persistence", () => {
   });
 
   it("keeps one attempt ID and offers retry when persistence fails", async () => {
+    window.sessionStorage.clear();
     const definition = drillBanks.prioritization[0] as Extract<
       DrillDefinition,
       { skillId: "prioritization" }
@@ -63,7 +64,7 @@ describe("DrillSession persistence", () => {
       getSkillHistory: vi.fn().mockResolvedValue([]),
     };
     const user = userEvent.setup();
-    render(
+    const firstRender = render(
       <DrillSession
         definitions={[definition]}
         repository={repository}
@@ -84,6 +85,19 @@ describe("DrillSession persistence", () => {
     );
     expect(repository.saveDrillAttempt).toHaveBeenCalledTimes(1);
 
+    firstRender.unmount();
+    render(
+      <DrillSession
+        definitions={[definition]}
+        repository={repository}
+        userId="user-1"
+        createAttemptId={() => "different-id-after-refresh"}
+        now={() => new Date("2026-01-02T00:00:00.000Z")}
+      />,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /practice result was not saved/i,
+    );
     await user.click(screen.getByRole("button", { name: /try saving again/i }));
 
     await waitFor(() =>

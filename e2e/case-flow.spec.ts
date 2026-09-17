@@ -111,13 +111,10 @@ test("guest can complete AlpineFit and review the case replay", async ({
   ).toBeVisible();
   await expect(page.getByText("Guest session · 9 events saved")).toBeVisible();
 
-  await page.evaluate(() => {
-    const browserWindow = window as typeof window & {
-      restorePracticeStorage?: () => void;
-    };
-    browserWindow.restorePracticeStorage?.();
-  });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Retry saving completed case" })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Your case review" }),
   ).toBeVisible();

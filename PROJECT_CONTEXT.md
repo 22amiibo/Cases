@@ -334,6 +334,23 @@ npm run build
   build, and `git diff --check` pass; all 7 Playwright journeys pass.
 - Final plan commit: `4ffa54f content: complete six-case MVP library`.
 
+### Task 15: Learn section — complete
+
+- Added `/learn` with five concise core-skill lessons and five recurring case
+  pattern lessons: segmentation, mix shift, hidden denominator, bottleneck, and
+  `math answer != business answer`.
+- Every lesson ends with a direct matching drill link, and the home page now
+  exposes the Learn section as a primary path.
+- Added content validation that requires the exact V1 lesson set and verifies
+  every referenced skill and `/drills/{skillId}` route against the existing
+  drill registry.
+- RED checkpoint: `47be279 test: define learn content contract`; the focused
+  suite failed because `lessons.json` did not exist.
+- GREEN plan commit: `23497de feat: add concise learning modules tied to drills`.
+- Final scoped review found no Critical or Important Task 15 issue.
+- Final verification: 25 test files / 99 tests pass; lint, typecheck,
+  production build, and diff check pass; all 7 Playwright journeys pass.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -348,7 +365,8 @@ npm run build
 
 ## Next Action
 
-Task 14 is complete and verified. The next implementation work is Task 15:
-read this file, `task-15-brief.md`, and the SDD ledger; verify branch/status and
-remote refs; then add the learning-module content and route using strict TDD.
-Do not redo Task 14. Task 15 has not started.
+Task 15 is complete and verified. The next implementation work is Task 16:
+read this file, `task-16-brief.md`, and the SDD ledger; verify branch/status and
+remote refs; then begin the accessibility, responsive-layout, explicit failure
+state, README, and full release-verification work using strict TDD. Do not redo
+Task 15. Task 16 has not started.

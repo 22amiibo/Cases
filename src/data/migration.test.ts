@@ -8,7 +8,9 @@ const migrationPath = path.resolve(
 );
 
 function migrationSql() {
-  return readFileSync(migrationPath, "utf8").toLowerCase();
+  return readFileSync(migrationPath, "utf8")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 describe("initial Supabase migration", () => {
@@ -48,6 +50,6 @@ describe("initial Supabase migration", () => {
     expect(sql).toContain(
       "'structure', 'prioritization', 'quantitative', 'exhibit', 'synthesis'",
     );
-    expect(sql).toContain("score_value >= 0 and score_value <= 100");
+    expect(sql).toContain("score_value < 0 or score_value > 100");
   });
 });

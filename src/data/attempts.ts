@@ -17,12 +17,14 @@ const progressSkillIds = new Set<SkillId>([
 ]);
 
 export function createDrillAttempt(
+  attemptId: string,
   userId: string,
   definition: DrillDefinition,
   result: DrillResult,
   completedAt: string,
 ): DrillAttempt {
   return {
+    attemptId,
     userId,
     drillId: definition.id,
     skillId: result.skillId,
@@ -34,12 +36,14 @@ export function createDrillAttempt(
 }
 
 export function createCaseAttempt({
+  attemptId,
   userId,
   caseId,
   review,
   events,
   completedAt,
 }: {
+  attemptId: string;
   userId: string;
   caseId: string;
   review: LearnerCaseReview;
@@ -55,6 +59,7 @@ export function createCaseAttempt({
   }
 
   return {
+    attemptId,
     userId,
     caseId,
     skillScores,

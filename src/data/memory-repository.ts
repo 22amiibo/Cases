@@ -10,20 +10,25 @@ import type {
 const STORAGE_KEY = "casework:practice-history";
 
 const DrillAttemptSchema = z.object({
+  attemptId: z.string().min(1),
   userId: z.string().min(1),
   drillId: z.string().min(1),
   skillId: SkillIdSchema,
-  score: z.number().finite(),
+  score: z.number().finite().min(0).max(100),
   feedbackCodes: z.array(z.string()),
   conceptIdsPracticed: z.array(z.string()),
   completedAt: z.iso.datetime(),
 });
 
 const CaseAttemptSchema = z.object({
+  attemptId: z.string().min(1),
   userId: z.string().min(1),
   caseId: z.string().min(1),
   completedAt: z.iso.datetime(),
-  skillScores: z.partialRecord(SkillIdSchema, z.number().finite()),
+  skillScores: z.partialRecord(
+    SkillIdSchema,
+    z.number().finite().min(0).max(100),
+  ),
   feedbackCodes: z.array(z.string()),
   events: z.array(CaseEventSchema),
 });
@@ -84,12 +89,24 @@ export class MemoryPracticeRepository implements PracticeRepository {
   }
 
   async saveDrillAttempt(attempt: DrillAttempt): Promise<void> {
-    this.history.drillAttempts.push(DrillAttemptSchema.parse(attempt));
+    if (
+      !this.history.drillAttempts.some(
+        (saved) => saved.attemptId === attempt.attemptId,
+      )
+    ) {
+      this.history.drillAttempts.push(DrillAttemptSchema.parse(attempt));
+    }
     this.persist();
   }
 
   async saveCaseAttempt(attempt: CaseAttempt): Promise<void> {
-    this.history.caseAttempts.push(CaseAttemptSchema.parse(attempt));
+    if (
+      !this.history.caseAttempts.some(
+        (saved) => saved.attemptId === attempt.attemptId,
+      )
+    ) {
+      this.history.caseAttempts.push(CaseAttemptSchema.parse(attempt));
+    }
     this.persist();
   }
 

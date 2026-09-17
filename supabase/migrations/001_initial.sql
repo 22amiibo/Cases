@@ -1,5 +1,35 @@
 create extension if not exists pgcrypto;
 
+create or replace function public.is_valid_skill_scores(scores jsonb)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select
+    jsonb_typeof(scores) = 'object'
+    and not exists (
+      select 1
+      from (
+        select
+          key as skill_key,
+          jsonb_typeof(value) as value_type,
+          case
+            when jsonb_typeof(value) = 'number'
+              then (value #>> '{}')::numeric
+            else null
+          end as score_value
+        from jsonb_each(scores)
+      ) as entries
+      where
+        skill_key not in (
+          'structure', 'prioritization', 'quantitative', 'exhibit', 'synthesis'
+        )
+        or value_type <> 'number'
+        or score_value < 0 or score_value > 100
+    );
+$$;
+
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
@@ -24,20 +54,25 @@ create table public.case_attempts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   case_id text not null,
-  skill_scores jsonb not null,
+  skill_scores jsonb not null check (
+    public.is_valid_skill_scores(skill_scores)
+  ),
   feedback_codes text[] not null default '{}',
   completed_at timestamptz not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (id, user_id)
 );
 
 create table public.case_events (
   id bigint generated always as identity primary key,
-  case_attempt_id uuid not null references public.case_attempts(id) on delete cascade,
+  case_attempt_id uuid not null,
   user_id uuid not null references public.profiles(id) on delete cascade,
   sequence integer not null check (sequence >= 0),
   event jsonb not null,
   created_at timestamptz not null default now(),
-  unique (case_attempt_id, sequence)
+  unique (case_attempt_id, sequence),
+  foreign key (case_attempt_id, user_id)
+    references public.case_attempts(id, user_id) on delete cascade
 );
 
 create index drill_attempts_user_skill_completed_idx
@@ -94,6 +129,7 @@ create trigger create_profile_after_signup
   for each row execute function public.create_profile_for_new_user();
 
 create or replace function public.save_case_attempt(
+  p_attempt_id uuid,
   p_user_id uuid,
   p_case_id text,
   p_skill_scores jsonb,
@@ -117,19 +153,23 @@ begin
   end if;
 
   insert into public.case_attempts (
+    id,
     user_id,
     case_id,
     skill_scores,
     feedback_codes,
     completed_at
   ) values (
+    p_attempt_id,
     p_user_id,
     p_case_id,
     p_skill_scores,
     p_feedback_codes,
     p_completed_at
   )
-  returning id into saved_attempt_id;
+  on conflict (id) do nothing;
+
+  saved_attempt_id := p_attempt_id;
 
   insert into public.case_events (case_attempt_id, user_id, sequence, event)
   select
@@ -138,15 +178,16 @@ begin
     event_position - 1,
     event_payload
   from jsonb_array_elements(p_events) with ordinality
-    as serialized_events(event_payload, event_position);
+    as serialized_events(event_payload, event_position)
+  on conflict (case_attempt_id, sequence) do nothing;
 
   return saved_attempt_id;
 end;
 $$;
 
 revoke all on function public.save_case_attempt(
-  uuid, text, jsonb, text[], jsonb, timestamptz
+  uuid, uuid, text, jsonb, text[], jsonb, timestamptz
 ) from public;
 grant execute on function public.save_case_attempt(
-  uuid, text, jsonb, text[], jsonb, timestamptz
+  uuid, uuid, text, jsonb, text[], jsonb, timestamptz
 ) to authenticated;

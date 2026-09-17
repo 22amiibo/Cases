@@ -86,7 +86,38 @@ test("guest can complete AlpineFit and review the case replay", async ({
     .check();
   await page.getByLabel("Risk to manage").selectOption("retention-cost");
   await page.getByLabel("First next step").selectOption("six-club-pilot");
+
+  await page.evaluate(() => {
+    const browserWindow = window as typeof window & {
+      restorePracticeStorage?: () => void;
+    };
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "casework:practice-history") {
+        throw new DOMException("Storage unavailable");
+      }
+      return originalSetItem.call(this, key, value);
+    };
+    browserWindow.restorePracticeStorage = () => {
+      Storage.prototype.setItem = originalSetItem;
+    };
+  });
   await page.getByRole("button", { name: "Submit recommendation" }).click();
+  await expect(
+    page.getByText("We could not save your recommendation. Try again."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Make your recommendation" }),
+  ).toBeVisible();
+  await expect(page.getByText("Guest session · 9 events saved")).toBeVisible();
+
+  await page.evaluate(() => {
+    const browserWindow = window as typeof window & {
+      restorePracticeStorage?: () => void;
+    };
+    browserWindow.restorePracticeStorage?.();
+  });
+  await page.getByRole("button", { name: "Try again" }).click();
   await expect(
     page.getByRole("heading", { name: "Your case review" }),
   ).toBeVisible();

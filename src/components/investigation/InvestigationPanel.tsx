@@ -104,13 +104,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const startedAt = useRef<number | null>(null);
   const initialEvents = useRef(workspace.events);
   const latestRequest = useRef(0);
+  const caseAttemptId = useRef<string | null>(null);
   const [view, setView] = useState<LearnerSessionView | null>(null);
   const [synthesisEvidenceIds, setSynthesisEvidenceIds] = useState<string[]>([]);
   const [nextStepNodeId, setNextStepNodeId] = useState("");
 
   const { clarificationComplete, clarificationDraftIds, events } = workspace;
 
-  async function loadView(nextEvents: CaseEvent[]) {
+  async function loadView(nextEvents: CaseEvent[], commitView = true) {
     const requestId = ++latestRequest.current;
     const response = await fetch(`/api/cases/${caseDefinition.id}/session`, {
       method: "POST",
@@ -119,7 +120,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     });
     if (!response.ok) throw new Error("Unable to load case session");
     const nextView = (await response.json()) as LearnerSessionView;
-    if (requestId === latestRequest.current) setView(nextView);
+    if (commitView && requestId === latestRequest.current) setView(nextView);
     return nextView;
   }
 
@@ -344,20 +345,25 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   ...recommendation,
                   atMs: timestamp(),
                 };
-                const completedView = await record(recommendationEvent);
+                const nextEvents = [...events, recommendationEvent];
+                const completedView = await loadView(nextEvents, false);
                 if (!completedView.review) {
                   throw new Error("Completed case review was not returned");
                 }
                 const practiceSession = await getBrowserPracticeSession();
+                caseAttemptId.current ??= crypto.randomUUID();
                 await practiceSession.repository.saveCaseAttempt(
                   createCaseAttempt({
+                    attemptId: caseAttemptId.current,
                     userId: practiceSession.userId,
                     caseId: caseDefinition.id,
                     review: completedView.review,
-                    events: [...events, recommendationEvent],
+                    events: nextEvents,
                     completedAt: new Date().toISOString(),
                   }),
                 );
+                setWorkspace((current) => ({ ...current, events: nextEvents }));
+                setView(completedView);
                 router.push(`/cases/${caseDefinition.id}/review`);
               }}
             />

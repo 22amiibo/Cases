@@ -9,11 +9,13 @@ export type SkillAttempt = {
 };
 
 export type DrillAttempt = SkillAttempt & {
+  attemptId: string;
   drillId: string;
   conceptIdsPracticed: string[];
 };
 
 export type CaseAttempt = {
+  attemptId: string;
   userId: string;
   caseId: string;
   completedAt: string;

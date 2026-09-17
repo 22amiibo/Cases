@@ -130,4 +130,32 @@ describe("SupabasePracticeRepository", () => {
       "database unavailable",
     );
   });
+
+  it("skips malformed persisted scores without losing valid history", async () => {
+    const database = client({
+      selectDrillAttempts: vi.fn().mockResolvedValue([
+        {
+          user_id: "user-1",
+          skill_id: "invented-skill",
+          score: 120,
+          feedback_codes: [],
+          completed_at: "2026-01-04T00:00:00.000Z",
+        },
+        {
+          user_id: "user-1",
+          skill_id: "quantitative",
+          score: 80,
+          feedback_codes: ["correct_calculation"],
+          completed_at: "2026-01-03T00:00:00.000Z",
+        },
+      ]),
+      selectCaseAttempts: vi.fn().mockResolvedValue([]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    const history = await repository.getSkillHistory("user-1");
+
+    expect(history).toHaveLength(1);
+    expect(history[0].skillId).toBe("quantitative");
+  });
 });

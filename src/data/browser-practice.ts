@@ -38,8 +38,9 @@ export async function getBrowserPracticeSession() {
     guestRepository: getGuestPracticeRepository(),
     getAuthenticatedUser: async () => {
       if (!supabase) return null;
-      const { data, error } = await supabase.auth.getUser();
-      return error ? null : data.user;
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return data.session?.user ?? null;
     },
     createSignedInRepository: () => {
       if (!supabase) {

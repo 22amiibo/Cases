@@ -23,11 +23,13 @@ type CaseAttemptRow = {
 };
 
 export type DrillAttemptInsert = DrillAttemptRow & {
+  id: string;
   drill_id: string;
   concept_ids_practiced: string[];
 };
 
 export type CaseAttemptInsert = CaseAttemptRow & {
+  id: string;
   case_id: string;
   events: CaseAttempt["events"];
 };
@@ -43,12 +45,15 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   constructor(private readonly client: SupabaseClient) {}
 
   async insertDrillAttempt(row: DrillAttemptInsert) {
-    const { error } = await this.client.from("drill_attempts").insert(row);
+    const { error } = await this.client
+      .from("drill_attempts")
+      .upsert(row, { onConflict: "id", ignoreDuplicates: true });
     if (error) throw error;
   }
 
   async insertCaseAttempt(row: CaseAttemptInsert) {
     const { error } = await this.client.rpc("save_case_attempt", {
+      p_attempt_id: row.id,
       p_user_id: row.user_id,
       p_case_id: row.case_id,
       p_skill_scores: row.skill_scores,
@@ -83,6 +88,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
 
   async saveDrillAttempt(attempt: DrillAttempt): Promise<void> {
     await this.database.insertDrillAttempt({
+      id: attempt.attemptId,
       user_id: attempt.userId,
       drill_id: attempt.drillId,
       skill_id: attempt.skillId,
@@ -95,6 +101,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
 
   async saveCaseAttempt(attempt: CaseAttempt): Promise<void> {
     await this.database.insertCaseAttempt({
+      id: attempt.attemptId,
       user_id: attempt.userId,
       case_id: attempt.caseId,
       skill_scores: attempt.skillScores,
@@ -111,21 +118,31 @@ export class SupabasePracticeRepository implements PracticeRepository {
     ]);
 
     return [
-      ...drillRows.map((row) => ({
-        userId: row.user_id,
-        skillId: SkillIdSchema.parse(row.skill_id),
-        score: row.score,
-        feedbackCodes: row.feedback_codes,
-        completedAt: row.completed_at,
-      })),
+      ...drillRows.flatMap((row) => {
+        const skillId = SkillIdSchema.safeParse(row.skill_id);
+        return skillId.success && Number.isFinite(row.score) && row.score >= 0 && row.score <= 100
+          ? [{
+              userId: row.user_id,
+              skillId: skillId.data,
+              score: row.score,
+              feedbackCodes: row.feedback_codes,
+              completedAt: row.completed_at,
+            }]
+          : [];
+      }),
       ...caseRows.flatMap((row) =>
-        Object.entries(row.skill_scores).map(([skillId, score]) => ({
-          userId: row.user_id,
-          skillId: SkillIdSchema.parse(skillId),
-          score,
-          feedbackCodes: row.feedback_codes,
-          completedAt: row.completed_at,
-        })),
+        Object.entries(row.skill_scores).flatMap(([rawSkillId, score]) => {
+          const skillId = SkillIdSchema.safeParse(rawSkillId);
+          return skillId.success && Number.isFinite(score) && score >= 0 && score <= 100
+            ? [{
+                userId: row.user_id,
+                skillId: skillId.data,
+                score,
+                feedbackCodes: row.feedback_codes,
+                completedAt: row.completed_at,
+              }]
+            : [];
+        }),
       ),
     ].sort(
       (left, right) =>

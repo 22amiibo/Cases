@@ -41,10 +41,15 @@ function browserAuthClient(): PracticeAuthClient | null {
 }
 
 export function AuthPanel({
-  client = browserAuthClient(),
+  client,
+  clientFactory = browserAuthClient,
 }: {
   client?: PracticeAuthClient | null;
+  clientFactory?: () => PracticeAuthClient | null;
 }) {
+  const [resolvedClient] = useState(() =>
+    client === undefined ? clientFactory() : client,
+  );
   const [email, setEmail] = useState("");
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
@@ -53,21 +58,21 @@ export function AuthPanel({
 
   useEffect(() => {
     let active = true;
-    if (client) {
-      void client.getUser().then(({ user: currentUser }) => {
+    if (resolvedClient) {
+      void resolvedClient.getUser().then(({ user: currentUser }) => {
         if (active) setUser(currentUser);
       });
     }
     return () => {
       active = false;
     };
-  }, [client]);
+  }, [resolvedClient]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!client || !email) return;
+    if (!resolvedClient || !email) return;
     setStatus("sending");
-    const { error } = await client.signInWithOtp({
+    const { error } = await resolvedClient.signInWithOtp({
       email,
       emailRedirectTo: window.location.origin,
     });
@@ -84,15 +89,15 @@ export function AuthPanel({
             <button
               type="button"
               onClick={async () => {
-                if (!client) return;
-                const { error } = await client.signOut();
+                if (!resolvedClient) return;
+                const { error } = await resolvedClient.signOut();
                 if (!error) setUser(null);
               }}
             >
               Sign out
             </button>
           </>
-        ) : client ? (
+        ) : resolvedClient ? (
           <>
             <h2>Keep your practice history</h2>
             <form onSubmit={submit}>

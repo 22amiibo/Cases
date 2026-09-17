@@ -20,6 +20,13 @@ type DrillSessionProps = {
   repository?: PracticeRepository;
   userId?: string;
   now?: () => Date;
+  createAttemptId?: () => string;
+};
+
+type PendingDrillSave = {
+  attemptId: string;
+  completedAt: string;
+  result: DrillResult;
 };
 
 function formatFeedback(code: string) {
@@ -31,31 +38,56 @@ export function DrillSession({
   repository,
   userId,
   now = () => new Date(),
+  createAttemptId = () => crypto.randomUUID(),
 }: DrillSessionProps) {
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<DrillResult | null>(null);
+  const [pendingSave, setPendingSave] = useState<PendingDrillSave | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">(
+    "idle",
+  );
   const definition = definitions[index];
 
   async function complete(submission: Parameters<typeof evaluateDrill>[1]) {
-    const nextResult = evaluateDrill(definition, submission);
-    const practiceSession =
-      repository && userId
-        ? { repository, userId }
-        : await getBrowserPracticeSession();
-    await practiceSession.repository.saveDrillAttempt(
-      createDrillAttempt(
-        practiceSession.userId,
-        definition,
-        nextResult,
-        now().toISOString(),
-      ),
-    );
-    setResult(nextResult);
+    if (saveStatus !== "idle") return;
+    const nextSave = {
+      attemptId: createAttemptId(),
+      completedAt: now().toISOString(),
+      result: evaluateDrill(definition, submission),
+    };
+    setPendingSave(nextSave);
+    await persist(nextSave);
+  }
+
+  async function persist(save: PendingDrillSave) {
+    setSaveStatus("saving");
+    try {
+      const practiceSession =
+        repository && userId
+          ? { repository, userId }
+          : await getBrowserPracticeSession();
+      await practiceSession.repository.saveDrillAttempt(
+        createDrillAttempt(
+          save.attemptId,
+          practiceSession.userId,
+          definition,
+          save.result,
+          save.completedAt,
+        ),
+      );
+      setResult(save.result);
+      setPendingSave(null);
+      setSaveStatus("idle");
+    } catch {
+      setSaveStatus("error");
+    }
   }
 
   function next() {
     setIndex((current) => (current + 1) % definitions.length);
     setResult(null);
+    setPendingSave(null);
+    setSaveStatus("idle");
   }
 
   return (
@@ -72,7 +104,20 @@ export function DrillSession({
       </div>
 
       <div className={styles.workspace}>
-        {!result && <DrillInput definition={definition} onComplete={complete} />}
+        {!result && saveStatus === "idle" && (
+          <DrillInput definition={definition} onComplete={complete} />
+        )}
+        {!result && saveStatus === "saving" && (
+          <p role="status">Saving your practice result…</p>
+        )}
+        {!result && saveStatus === "error" && pendingSave && (
+          <div>
+            <p role="alert">Your practice result was not saved.</p>
+            <button type="button" onClick={() => void persist(pendingSave)}>
+              Try saving again
+            </button>
+          </div>
+        )}
         {result && (
           <div className={styles.result} aria-live="polite">
             <p>Deterministic feedback</p>

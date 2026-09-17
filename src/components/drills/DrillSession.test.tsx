@@ -79,9 +79,9 @@ describe("DrillSession persistence", () => {
     );
     await user.click(screen.getByRole("button", { name: /check answer/i }));
 
-    expect(
-      await screen.findByRole("alert", { name: /practice result was not saved/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /practice result was not saved/i,
+    );
     expect(repository.saveDrillAttempt).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole("button", { name: /try saving again/i }));

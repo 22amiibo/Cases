@@ -231,7 +231,7 @@
     "decisions": [
       {
         "id": "accelerate-repricing",
-        "label": "Use upcoming renewals to add input-cost indexing and targeted interim surcharges, prioritizing exposed contracts while negotiating with strategic customers.",
+        "label": "Use upcoming renewals to add input-cost indexing, prioritizing exposed contracts while negotiating with strategic customers.",
         "supportingEvidenceIds": ["input-inflation", "annual-repricing", "repricing-lag", "indexed-performance", "renewal-window"],
         "weight": 1
       },
@@ -249,7 +249,7 @@
       }
     ],
     "risks": [
-      { "id": "customer-pushback", "label": "Strategic customers may resist indexed pricing or interim surcharges." },
+      { "id": "customer-pushback", "label": "Strategic customers may resist indexed pricing at renewal." },
       { "id": "input-reversal", "label": "Input costs may fall after new pricing terms are agreed." },
       { "id": "renewal-delay", "label": "Negotiations may extend beyond planned renewal dates." }
     ],

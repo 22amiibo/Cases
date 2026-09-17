@@ -13,6 +13,98 @@ const caseModules = import.meta.glob("./*.json", {
   import: "default",
 });
 
+const manualSolveFixtures = [
+  {
+    caseId: "alpinefit-profitability",
+    rootCauseNodeId: "turnover",
+    preferredDecisionId: "stabilize-staffing",
+    decisiveEvidenceIds: [
+      "labor-growth",
+      "overtime-spike",
+      "turnover-link",
+      "incremental-labor",
+    ],
+  },
+  {
+    caseId: "northstar-profitability",
+    rootCauseNodeId: "repricing_lag",
+    preferredDecisionId: "accelerate-repricing",
+    decisiveEvidenceIds: [
+      "input-inflation",
+      "annual-repricing",
+      "repricing-lag",
+      "indexed-performance",
+      "renewal-window",
+    ],
+  },
+  {
+    caseId: "fleetfix-market-entry",
+    rootCauseNodeId: "expected-adoption",
+    preferredDecisionId: "stage-entry",
+    decisiveEvidenceIds: [
+      "serviceable-vehicles",
+      "year-two-penetration",
+      "annual-contribution",
+      "launch-fixed-cost",
+      "break-even-fleet",
+    ],
+  },
+  {
+    caseId: "paypilot-growth",
+    rootCauseNodeId: "compare-options",
+    preferredDecisionId: "choose-cross-sell",
+    decisiveEvidenceIds: [
+      "cross-sell-contribution",
+      "cross-sell-net-profit",
+      "expansion-net-profit",
+    ],
+  },
+  {
+    caseId: "goldenloaf-operations",
+    rootCauseNodeId: "oven-changeovers",
+    preferredDecisionId: "sequence-and-flex",
+    decisiveEvidenceIds: [
+      "process-capacity",
+      "changeover-capacity-loss",
+      "sequencing-pilot",
+      "peak-gap",
+      "flex-hours",
+    ],
+  },
+  {
+    caseId: "morningjet-pricing-breakeven",
+    rootCauseNodeId: "commercial-feasibility",
+    preferredDecisionId: "launch-at-midpoint",
+    decisiveEvidenceIds: [
+      "contribution-mid",
+      "breakeven-demand",
+      "demand-buffer",
+      "launch-profit",
+    ],
+  },
+] as const;
+
+const preferredRecommendationBundleFixtures = [
+  {
+    caseId: "northstar-profitability",
+    decisionId: "accelerate-repricing",
+    riskId: "customer-pushback",
+    nextStepId: "renewal-pilot",
+    riskRequiredTerms: [/indexed pricing at renewal/i],
+    nextStepRequiredTerms: [],
+    unsupportedTerms: [/interim surcharge/i],
+  },
+  {
+    caseId: "fleetfix-market-entry",
+    decisionId: "stage-entry",
+    riskId: "single-hub-coverage",
+    nextStepId: "pre-sell-gap",
+    riskRequiredTerms: [/fixed cost/i, /vehicle commitments/i],
+    nextStepRequiredTerms: [/4,000-vehicle threshold/i, /two-hub launch/i],
+    unsupportedTerms: [/one hub/i, /second hub/i],
+  },
+] as const;
+
 describe("case content", () => {
   it("publishes every authored case through the runtime registry", () => {
     expect(caseDefinitions).toHaveLength(6);
@@ -40,6 +132,18 @@ describe("case content", () => {
     expect(definitions).toHaveLength(6);
     expect(definitions.filter(({ definition }) => definition.calculations.length > 0))
       .toHaveLength(4);
+    expect(
+      definitions.reduce<Record<string, number>>((counts, { definition }) => {
+        counts[definition.category] = (counts[definition.category] ?? 0) + 1;
+        return counts;
+      }, {}),
+    ).toEqual({
+      profitability: 2,
+      market_entry: 1,
+      growth: 1,
+      operations: 1,
+      pricing: 1,
+    });
 
     for (const { path, definition } of definitions) {
       expect(definition.exhibits.length, `${path} exhibits`).toBeGreaterThanOrEqual(2);
@@ -145,5 +249,90 @@ describe("case content", () => {
         expect(session.currentStage, `${path} path ${pathIndex}`).toBe("complete");
       });
     });
+  });
+
+  it("preserves the unambiguous conclusion from each manual solve-through", () => {
+    for (const fixture of manualSolveFixtures) {
+      const definition = getCaseDefinition(fixture.caseId);
+      expect(definition, fixture.caseId).toBeDefined();
+      if (!definition) continue;
+
+      expect(
+        definition.investigationNodes
+          .filter((node) => node.rootCause)
+          .map((node) => node.id),
+        `${fixture.caseId} root cause`,
+      ).toEqual([fixture.rootCauseNodeId]);
+
+      const preferredDecision = [...definition.recommendation.decisions].sort(
+        (left, right) => right.weight - left.weight,
+      )[0];
+      expect(preferredDecision.id, `${fixture.caseId} preferred decision`).toBe(
+        fixture.preferredDecisionId,
+      );
+      expect(
+        preferredDecision.supportingEvidenceIds,
+        `${fixture.caseId} decisive evidence`,
+      ).toEqual(expect.arrayContaining([...fixture.decisiveEvidenceIds]));
+
+      for (const path of definition.efficientPaths) {
+        const pathNodeIds = new Set(path.nodeIds);
+        const discoverableEvidence = new Set(
+          definition.investigationNodes
+            .filter((node) => pathNodeIds.has(node.id))
+            .flatMap((node) => node.factIds),
+        );
+        definition.calculations
+          .filter((calculation) =>
+            calculation.prerequisiteNodeIds.every((nodeId) =>
+              pathNodeIds.has(nodeId),
+            ),
+          )
+          .forEach((calculation) =>
+            discoverableEvidence.add(calculation.evidenceFactId),
+          );
+
+        expect(
+          fixture.decisiveEvidenceIds.every((factId) =>
+            discoverableEvidence.has(factId),
+          ),
+          `${fixture.caseId} path ${path.id} decisive evidence`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("keeps learner-facing preferred recommendation bundles within supported actions", () => {
+    for (const fixture of preferredRecommendationBundleFixtures) {
+      const definition = getCaseDefinition(fixture.caseId);
+      expect(definition, fixture.caseId).toBeDefined();
+      if (!definition) continue;
+
+      const decision = definition.recommendation.decisions.find(
+        ({ id }) => id === fixture.decisionId,
+      );
+      const risk = definition.recommendation.risks.find(
+        ({ id }) => id === fixture.riskId,
+      );
+      const nextStep = definition.recommendation.nextSteps.find(
+        ({ id }) => id === fixture.nextStepId,
+      );
+      expect(decision, `${fixture.caseId} decision`).toBeDefined();
+      expect(risk, `${fixture.caseId} risk`).toBeDefined();
+      expect(nextStep, `${fixture.caseId} next step`).toBeDefined();
+      if (!decision || !risk || !nextStep) continue;
+
+      fixture.riskRequiredTerms.forEach((term) => {
+        expect(risk.label, `${fixture.caseId} risk`).toMatch(term);
+      });
+      fixture.nextStepRequiredTerms?.forEach((term) => {
+        expect(nextStep.label, `${fixture.caseId} next step`).toMatch(term);
+      });
+
+      const bundleText = [decision.label, risk.label, nextStep.label].join(" ");
+      fixture.unsupportedTerms.forEach((term) => {
+        expect(bundleText, `${fixture.caseId} unsupported action`).not.toMatch(term);
+      });
+    }
   });
 });

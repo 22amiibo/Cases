@@ -257,7 +257,7 @@
     "decisions": [
       {
         "id": "stage-entry",
-        "label": "Do not launch both hubs immediately; secure at least 400 additional vehicle commitments, then stage the Atlanta entry with one hub before expanding.",
+        "label": "Defer the two-hub launch until at least 4,000 vehicle commitments are credibly contracted.",
         "supportingEvidenceIds": ["serviceable-vehicles", "year-two-penetration", "annual-contribution", "launch-fixed-cost", "break-even-fleet", "customer-priority"],
         "weight": 1
       },
@@ -276,11 +276,11 @@
     ],
     "risks": [
       { "id": "commitment-conversion", "label": "Letters of intent may convert to contracts more slowly than expected." },
-      { "id": "single-hub-coverage", "label": "Starting with one hub may reduce coverage and weaken the reachable-market estimate." },
+      { "id": "single-hub-coverage", "label": "Committing fixed cost before enough vehicle commitments are secured could leave the two-hub launch underutilized." },
       { "id": "technician-supply", "label": "A tight technician labor market could raise variable costs." }
     ],
     "nextSteps": [
-      { "id": "pre-sell-gap", "label": "Pre-sell at least 400 additional vehicles and validate contract conversion before committing to the second hub." },
+      { "id": "pre-sell-gap", "label": "Validate or secure the 4,000-vehicle threshold before approving the two-hub launch." },
       { "id": "lease-both-hubs", "label": "Sign long-term leases for both hubs before validating customer commitments." },
       { "id": "consumer-pilot", "label": "Test a consumer repair offering outside FleetFix's target segment." }
     ]

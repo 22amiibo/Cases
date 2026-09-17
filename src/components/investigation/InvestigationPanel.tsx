@@ -393,25 +393,23 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 />
               ))}
 
-              {availableCalculations.length > 0 && (
-                <SynthesisStep
-                  facts={facts}
-                  evidenceIds={synthesisEvidenceIds}
-                  nextStepNodeId={nextStepNodeId}
-                  actions={availableActions}
-                  onToggleEvidence={(factId) =>
-                    setSynthesisEvidenceIds((current) =>
-                      current.includes(factId)
-                        ? current.filter((id) => id !== factId)
-                        : current.length < 3
-                          ? [...current, factId]
-                          : current,
-                    )
-                  }
-                  onNextStepChange={setNextStepNodeId}
-                  onSubmit={submitSynthesis}
-                />
-              )}
+              <SynthesisStep
+                facts={facts}
+                evidenceIds={synthesisEvidenceIds}
+                nextStepNodeId={nextStepNodeId}
+                actions={availableActions}
+                onToggleEvidence={(factId) =>
+                  setSynthesisEvidenceIds((current) =>
+                    current.includes(factId)
+                      ? current.filter((id) => id !== factId)
+                      : current.length < 3
+                        ? [...current, factId]
+                        : current,
+                  )
+                }
+                onNextStepChange={setNextStepNodeId}
+                onSubmit={submitSynthesis}
+              />
             </>
           )}
 

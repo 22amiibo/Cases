@@ -304,7 +304,7 @@ npm run build
   port 3000. After stopping that stale process, a fresh standard run passed all
   five journeys without changing test concurrency.
 
-### Task 14: Remaining five V1 cases — in progress
+### Task 14: Remaining five V1 cases — complete
 
 - Added the RED library-depth test, which initially failed with only AlpineFit.
 - Authored all five planned definitions: NorthStar profitability, FleetFix
@@ -317,13 +317,23 @@ npm run build
   evidence, available synthesis choices, and successful completion.
 - Added a validated runtime case registry and generalized the case library,
   case route, session API, and review route to resolve all six definitions.
-- Focused verification at this checkpoint: 4 content tests pass and typecheck
-  passes. Full unit/browser/build verification and independent review have not
-  run yet.
-- Manual content inspection has begun. The case prompts, node chains,
-  calculations, efficient paths, and recommendation evidence were summarized
-  and checked for obvious contradictions; ambiguity fixtures and route-level
-  browser coverage still need to be finalized.
+- Added manual conclusion fixtures for all six cases and explicit regression
+  coverage for the required category mix and supported recommendation bundles.
+- Added a second-case browser smoke journey for NorthStar and full browser
+  completion coverage for both no-calculation cases, NorthStar and GoldenLoaf.
+- Independent review found that no-calculation cases could not reach synthesis,
+  NorthStar mentioned unsupported interim surcharges, FleetFix assumed unsupported
+  one-hub economics, and the category mix was not directly asserted. Two fix
+  rounds resolved every actionable Critical/Important finding; scoped re-review
+  was clean.
+- Review also questioned learner-visible completed replay diagnostics. The plan
+  explicitly requires post-completion critical-found/missed states, score bars,
+  feedback, and an example efficient path, so those planned review features were
+  retained while pre-completion projections continue to hide causal/scoring data.
+- Final verification: 24 test files / 97 tests pass; lint, typecheck, production
+  build, and `git diff --check` pass; all 7 Playwright journeys pass.
+- Final plan commit: `content: complete six-case MVP library` (commit ID recorded
+  immediately after creation).
 
 ## Decisions and Notes
 
@@ -339,12 +349,7 @@ npm run build
 
 ## Next Action
 
-Task 14 is paused after the six definitions, runtime registry, generalized
-routes, and clean solve-through test became green. Resume by reading this file,
-the Task 14 brief, and the SDD ledger; verify branch/status; inspect the Task 14
-checkpoint diff; finish the manual solve-through/ambiguity fixture pass; add a
-focused browser check that a non-AlpineFit case opens and receives deterministic
-session data; then run full verification and independent review. Fix all
-Critical/Important findings before using the exact final commit message
-`content: complete six-case MVP library`. Do not start Task 15 before Task 14 is
-fully reviewed, documented, committed, and pushed.
+Task 14 is complete and verified. The next implementation work is Task 15:
+read this file, `task-15-brief.md`, and the SDD ledger; verify branch/status and
+remote refs; then add the learning-module content and route using strict TDD.
+Do not redo Task 14. Task 15 has not started.

@@ -2,12 +2,16 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { drillBanks } from "@/content/drills";
+import type { DrillDefinition } from "@/core/schema";
 import type { PracticeRepository } from "@/data/repository";
 import { DrillSession } from "./DrillSession";
 
 describe("DrillSession persistence", () => {
   it("saves the completed drill through the active practice repository", async () => {
-    const definition = drillBanks.prioritization[0];
+    const definition = drillBanks.prioritization[0] as Extract<
+      DrillDefinition,
+      { skillId: "prioritization" }
+    >;
     const repository: PracticeRepository = {
       saveDrillAttempt: vi.fn().mockResolvedValue(undefined),
       saveCaseAttempt: vi.fn().mockResolvedValue(undefined),

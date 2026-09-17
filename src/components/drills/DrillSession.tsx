@@ -10,23 +10,47 @@ import {
 } from "@/core/drill-engine";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
+import { createDrillAttempt } from "@/data/attempts";
+import { getBrowserPracticeSession } from "@/data/browser-practice";
+import type { PracticeRepository } from "@/data/repository";
 import styles from "./DrillSession.module.css";
 
 type DrillSessionProps = {
   definitions: DrillDefinition[];
+  repository?: PracticeRepository;
+  userId?: string;
+  now?: () => Date;
 };
 
 function formatFeedback(code: string) {
   return code.replaceAll("_", " ");
 }
 
-export function DrillSession({ definitions }: DrillSessionProps) {
+export function DrillSession({
+  definitions,
+  repository,
+  userId,
+  now = () => new Date(),
+}: DrillSessionProps) {
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<DrillResult | null>(null);
   const definition = definitions[index];
 
-  function complete(submission: Parameters<typeof evaluateDrill>[1]) {
-    setResult(evaluateDrill(definition, submission));
+  async function complete(submission: Parameters<typeof evaluateDrill>[1]) {
+    const nextResult = evaluateDrill(definition, submission);
+    const practiceSession =
+      repository && userId
+        ? { repository, userId }
+        : await getBrowserPracticeSession();
+    await practiceSession.repository.saveDrillAttempt(
+      createDrillAttempt(
+        practiceSession.userId,
+        definition,
+        nextResult,
+        now().toISOString(),
+      ),
+    );
+    setResult(nextResult);
   }
 
   function next() {

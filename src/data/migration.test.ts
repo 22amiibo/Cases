@@ -6,9 +6,19 @@ const migrationPath = path.resolve(
   process.cwd(),
   "supabase/migrations/001_initial.sql",
 );
+const v2MigrationPath = path.resolve(
+  process.cwd(),
+  "supabase/migrations/002_v2_learning_evidence.sql",
+);
 
 function migrationSql() {
   return readFileSync(migrationPath, "utf8")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function v2MigrationSql() {
+  return readFileSync(v2MigrationPath, "utf8")
     .toLowerCase()
     .replace(/\s+/g, " ");
 }
@@ -51,5 +61,44 @@ describe("initial Supabase migration", () => {
       "'structure', 'prioritization', 'quantitative', 'exhibit', 'synthesis'",
     );
     expect(sql).toContain("score_value < 0 or score_value > 100");
+  });
+});
+
+describe("V2 learning evidence migration", () => {
+  it("is additive and stores versioned evidence on both attempt tables", () => {
+    const sql = v2MigrationSql();
+    expect(sql).not.toMatch(/drop table|truncate|delete from/);
+    for (const table of ["drill_attempts", "case_attempts"]) {
+      expect(sql).toContain(`alter table public.${table}`);
+    }
+    for (const column of [
+      "content_version",
+      "event_schema_version",
+      "scoring_version",
+      "scaffolding_level",
+      "learning_evidence",
+      "diagnostics",
+    ]) {
+      expect(sql).toContain(`add column if not exists ${column}`);
+    }
+  });
+
+  it("adds clarification and requires complete metadata only for V2 rows", () => {
+    const sql = v2MigrationSql();
+    expect(sql).toContain("'clarification', 'structure', 'prioritization'");
+    expect(sql).toContain("scoring_version = 'v2'");
+    expect(sql).toContain("content_version > 0");
+    expect(sql).toContain("event_schema_version > 0");
+    expect(sql).toContain("jsonb_typeof(learning_evidence) = 'object'");
+  });
+
+  it("keeps retry-safe writes and exposes user-scoped ordered event reads", () => {
+    const sql = v2MigrationSql();
+    expect(sql).toContain("create or replace function public.save_case_attempt_v2");
+    expect(sql).toContain("on conflict (id) do nothing");
+    expect(sql).toContain("on conflict (case_attempt_id, sequence) do nothing");
+    expect(sql).toContain("create or replace function public.get_case_events");
+    expect(sql).toContain("user_id = auth.uid()");
+    expect(sql).toContain("order by sequence asc");
   });
 });

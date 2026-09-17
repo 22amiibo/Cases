@@ -16,6 +16,7 @@ describe("DrillSession persistence", () => {
       saveDrillAttempt: vi.fn().mockResolvedValue(undefined),
       saveCaseAttempt: vi.fn().mockResolvedValue(undefined),
       getSkillHistory: vi.fn().mockResolvedValue([]),
+      getCaseEvents: vi.fn().mockResolvedValue([]),
     };
     const user = userEvent.setup();
     render(
@@ -62,6 +63,7 @@ describe("DrillSession persistence", () => {
         .mockResolvedValueOnce(undefined),
       saveCaseAttempt: vi.fn().mockResolvedValue(undefined),
       getSkillHistory: vi.fn().mockResolvedValue([]),
+      getCaseEvents: vi.fn().mockResolvedValue([]),
     };
     const user = userEvent.setup();
     const firstRender = render(

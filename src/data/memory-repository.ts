@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { CaseEventSchema, SkillIdSchema } from "@/core/schema";
+import {
+  CaseEventSchema,
+  DiagnosticOutcomeSchema,
+  LearningEvidenceRecordSchema,
+  ScaffoldingLevelSchema,
+  SkillIdSchema,
+} from "@/core/schema";
 import type {
   CaseAttempt,
   DrillAttempt,
@@ -8,6 +14,56 @@ import type {
 } from "./repository";
 
 const STORAGE_KEY = "casework:practice-history";
+
+const metadataFields = {
+  scoringVersion: z.enum(["v1", "v2"]).default("v1"),
+  contentVersion: z.number().int().positive().nullable().default(null),
+  eventSchemaVersion: z.number().int().positive().nullable().default(null),
+  scaffoldingLevel: ScaffoldingLevelSchema.nullable().default(null),
+  learningEvidence: LearningEvidenceRecordSchema.nullable().default(null),
+  diagnostics: z.array(DiagnosticOutcomeSchema).default([]),
+};
+
+function validateMetadata(
+  value: {
+    scoringVersion: "v1" | "v2";
+    contentVersion: number | null;
+    eventSchemaVersion: number | null;
+    scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
+    learningEvidence: unknown;
+  },
+  context: z.RefinementCtx,
+) {
+  if (value.scoringVersion === "v1") {
+    if (
+      value.contentVersion !== null ||
+      value.eventSchemaVersion !== null ||
+      value.scaffoldingLevel !== null ||
+      value.learningEvidence !== null
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Legacy attempts cannot contain V2 metadata",
+        path: ["scoringVersion"],
+      });
+    }
+    return;
+  }
+  for (const field of [
+    "contentVersion",
+    "eventSchemaVersion",
+    "scaffoldingLevel",
+    "learningEvidence",
+  ] as const) {
+    if (value[field] === null) {
+      context.addIssue({
+        code: "custom",
+        message: `${field} is required for V2 attempts`,
+        path: [field],
+      });
+    }
+  }
+}
 
 const DrillAttemptSchema = z.object({
   attemptId: z.string().min(1),
@@ -18,7 +74,8 @@ const DrillAttemptSchema = z.object({
   feedbackCodes: z.array(z.string()),
   conceptIdsPracticed: z.array(z.string()),
   completedAt: z.iso.datetime(),
-});
+  ...metadataFields,
+}).superRefine(validateMetadata);
 
 const CaseAttemptSchema = z.object({
   attemptId: z.string().min(1),
@@ -31,7 +88,8 @@ const CaseAttemptSchema = z.object({
   ),
   feedbackCodes: z.array(z.string()),
   events: z.array(CaseEventSchema),
-});
+  ...metadataFields,
+}).superRefine(validateMetadata);
 
 const StoredHistorySchema = z.object({
   drillAttempts: z.array(DrillAttemptSchema),
@@ -76,6 +134,12 @@ function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
     score,
     feedbackCodes: attempt.feedbackCodes,
     completedAt: attempt.completedAt,
+    scoringVersion: attempt.scoringVersion ?? "v1",
+    contentVersion: attempt.contentVersion ?? null,
+    eventSchemaVersion: attempt.eventSchemaVersion ?? null,
+    scaffoldingLevel: attempt.scaffoldingLevel ?? null,
+    learningEvidence: attempt.learningEvidence ?? null,
+    diagnostics: attempt.diagnostics ?? [],
   }));
 }
 
@@ -124,6 +188,12 @@ export class MemoryPracticeRepository implements PracticeRepository {
           score: attempt.score,
           feedbackCodes: attempt.feedbackCodes,
           completedAt: attempt.completedAt,
+          scoringVersion: attempt.scoringVersion,
+          contentVersion: attempt.contentVersion,
+          eventSchemaVersion: attempt.eventSchemaVersion,
+          scaffoldingLevel: attempt.scaffoldingLevel,
+          learningEvidence: attempt.learningEvidence,
+          diagnostics: attempt.diagnostics,
         })),
       ...this.history.caseAttempts
         .filter((attempt) => attempt.userId === userId)
@@ -133,6 +203,14 @@ export class MemoryPracticeRepository implements PracticeRepository {
         new Date(right.completedAt).getTime() -
         new Date(left.completedAt).getTime(),
     );
+  }
+
+  async getCaseEvents(userId: string, attemptId: string) {
+    const attempt = this.history.caseAttempts.find(
+      (candidate) =>
+        candidate.userId === userId && candidate.attemptId === attemptId,
+    );
+    return attempt ? [...attempt.events] : [];
   }
 
   private persist() {

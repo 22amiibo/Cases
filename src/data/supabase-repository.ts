@@ -1,5 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { SkillIdSchema } from "@/core/schema";
+import {
+  CaseEventSchema,
+  DiagnosticOutcomeSchema,
+  LearningEvidenceRecordSchema,
+  ScaffoldingLevelSchema,
+  SkillIdSchema,
+} from "@/core/schema";
 import type {
   CaseAttempt,
   DrillAttempt,
@@ -14,6 +20,12 @@ type DrillAttemptRow = {
   score: number;
   feedback_codes: string[];
   completed_at: string;
+  scoring_version?: string | null;
+  content_version?: number | null;
+  event_schema_version?: number | null;
+  scaffolding_level?: string | null;
+  learning_evidence?: unknown;
+  diagnostics?: unknown;
 };
 
 type CaseAttemptRow = {
@@ -22,7 +34,15 @@ type CaseAttemptRow = {
   skill_scores: Record<string, number>;
   feedback_codes: string[];
   completed_at: string;
+  scoring_version?: string | null;
+  content_version?: number | null;
+  event_schema_version?: number | null;
+  scaffolding_level?: string | null;
+  learning_evidence?: unknown;
+  diagnostics?: unknown;
 };
+
+type CaseEventRow = { sequence: number; event: unknown };
 
 export type DrillAttemptInsert = DrillAttemptRow & {
   id: string;
@@ -41,6 +61,7 @@ export interface PracticeDatabaseClient {
   insertCaseAttempt(row: CaseAttemptInsert): Promise<void>;
   selectDrillAttempts(userId: string): Promise<DrillAttemptRow[]>;
   selectCaseAttempts(userId: string): Promise<CaseAttemptRow[]>;
+  selectCaseEvents(userId: string, attemptId: string): Promise<CaseEventRow[]>;
 }
 
 export class SupabaseDatabaseClient implements PracticeDatabaseClient {
@@ -54,7 +75,7 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   }
 
   async insertCaseAttempt(row: CaseAttemptInsert) {
-    const { error } = await this.client.rpc("save_case_attempt", {
+    const { error } = await this.client.rpc("save_case_attempt_v2", {
       p_attempt_id: row.id,
       p_user_id: row.user_id,
       p_case_id: row.case_id,
@@ -62,6 +83,12 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
       p_feedback_codes: row.feedback_codes,
       p_events: row.events,
       p_completed_at: row.completed_at,
+      p_content_version: row.content_version,
+      p_event_schema_version: row.event_schema_version,
+      p_scoring_version: row.scoring_version,
+      p_scaffolding_level: row.scaffolding_level,
+      p_learning_evidence: row.learning_evidence,
+      p_diagnostics: row.diagnostics,
     });
     if (error) throw error;
   }
@@ -69,7 +96,7 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   async selectDrillAttempts(userId: string) {
     const { data, error } = await this.client
       .from("drill_attempts")
-      .select("id, user_id, skill_id, score, feedback_codes, completed_at")
+      .select("id, user_id, skill_id, score, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics")
       .eq("user_id", userId);
     if (error) throw error;
     return (data ?? []) as DrillAttemptRow[];
@@ -78,11 +105,63 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   async selectCaseAttempts(userId: string) {
     const { data, error } = await this.client
       .from("case_attempts")
-      .select("id, user_id, skill_scores, feedback_codes, completed_at")
+      .select("id, user_id, skill_scores, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics")
       .eq("user_id", userId);
     if (error) throw error;
     return (data ?? []) as CaseAttemptRow[];
   }
+
+  async selectCaseEvents(userId: string, attemptId: string) {
+    const { data, error } = await this.client
+      .from("case_events")
+      .select("sequence, event")
+      .eq("user_id", userId)
+      .eq("case_attempt_id", attemptId)
+      .order("sequence", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as CaseEventRow[];
+  }
+}
+
+function metadataFromRow(row: DrillAttemptRow | CaseAttemptRow) {
+  const scoringVersion = row.scoring_version ?? "v1";
+  if (scoringVersion === "v1") {
+    return {
+      scoringVersion: "v1" as const,
+      contentVersion: null,
+      eventSchemaVersion: null,
+      scaffoldingLevel: null,
+      learningEvidence: null,
+      diagnostics: [],
+    };
+  }
+  if (scoringVersion !== "v2") return null;
+  const scaffolding = ScaffoldingLevelSchema.safeParse(row.scaffolding_level);
+  const evidence = LearningEvidenceRecordSchema.safeParse(row.learning_evidence);
+  const diagnostics = DiagnosticOutcomeSchema.array().safeParse(row.diagnostics ?? []);
+  if (
+    !Number.isInteger(row.content_version) ||
+    Number(row.content_version) < 1 ||
+    !Number.isInteger(row.event_schema_version) ||
+    Number(row.event_schema_version) < 1 ||
+    !scaffolding.success ||
+    !evidence.success ||
+    evidence.data.scoringVersion !== "v2" ||
+    evidence.data.contentVersion !== row.content_version ||
+    evidence.data.eventSchemaVersion !== row.event_schema_version ||
+    evidence.data.scaffoldingLevel !== scaffolding.data ||
+    !diagnostics.success
+  ) {
+    return null;
+  }
+  return {
+    scoringVersion: "v2" as const,
+    contentVersion: row.content_version as number,
+    eventSchemaVersion: row.event_schema_version as number,
+    scaffoldingLevel: scaffolding.data,
+    learningEvidence: evidence.data,
+    diagnostics: diagnostics.data,
+  };
 }
 
 export class SupabasePracticeRepository implements PracticeRepository {
@@ -98,6 +177,12 @@ export class SupabasePracticeRepository implements PracticeRepository {
       feedback_codes: attempt.feedbackCodes,
       concept_ids_practiced: attempt.conceptIdsPracticed,
       completed_at: attempt.completedAt,
+      scoring_version: attempt.scoringVersion ?? "v1",
+      content_version: attempt.contentVersion ?? null,
+      event_schema_version: attempt.eventSchemaVersion ?? null,
+      scaffolding_level: attempt.scaffoldingLevel ?? null,
+      learning_evidence: attempt.learningEvidence ?? null,
+      diagnostics: attempt.diagnostics ?? [],
     });
   }
 
@@ -110,6 +195,12 @@ export class SupabasePracticeRepository implements PracticeRepository {
       feedback_codes: attempt.feedbackCodes,
       events: attempt.events,
       completed_at: attempt.completedAt,
+      scoring_version: attempt.scoringVersion ?? "v1",
+      content_version: attempt.contentVersion ?? null,
+      event_schema_version: attempt.eventSchemaVersion ?? null,
+      scaffolding_level: attempt.scaffoldingLevel ?? null,
+      learning_evidence: attempt.learningEvidence ?? null,
+      diagnostics: attempt.diagnostics ?? [],
     });
   }
 
@@ -122,7 +213,8 @@ export class SupabasePracticeRepository implements PracticeRepository {
     return [
       ...drillRows.flatMap((row) => {
         const skillId = SkillIdSchema.safeParse(row.skill_id);
-        return skillId.success && Number.isFinite(row.score) && row.score >= 0 && row.score <= 100
+        const metadata = metadataFromRow(row);
+        return skillId.success && metadata && Number.isFinite(row.score) && row.score >= 0 && row.score <= 100
           ? [{
               attemptId: row.id,
               attemptType: "drill" as const,
@@ -131,13 +223,15 @@ export class SupabasePracticeRepository implements PracticeRepository {
               score: row.score,
               feedbackCodes: row.feedback_codes,
               completedAt: row.completed_at,
+              ...metadata,
             }]
           : [];
       }),
       ...caseRows.flatMap((row) =>
         Object.entries(row.skill_scores).flatMap(([rawSkillId, score]) => {
           const skillId = SkillIdSchema.safeParse(rawSkillId);
-          return skillId.success && Number.isFinite(score) && score >= 0 && score <= 100
+          const metadata = metadataFromRow(row);
+          return skillId.success && metadata && Number.isFinite(score) && score >= 0 && score <= 100
             ? [{
                 attemptId: row.id,
                 attemptType: "case" as const,
@@ -146,6 +240,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
                 score,
                 feedbackCodes: row.feedback_codes,
                 completedAt: row.completed_at,
+                ...metadata,
               }]
             : [];
         }),
@@ -155,6 +250,16 @@ export class SupabasePracticeRepository implements PracticeRepository {
         new Date(right.completedAt).getTime() -
         new Date(left.completedAt).getTime(),
     );
+  }
+
+  async getCaseEvents(userId: string, attemptId: string) {
+    const rows = await this.database.selectCaseEvents(userId, attemptId);
+    return [...rows]
+      .sort((left, right) => left.sequence - right.sequence)
+      .flatMap(({ event }) => {
+        const parsed = CaseEventSchema.safeParse(event);
+        return parsed.success ? [parsed.data] : [];
+      });
   }
 }
 

@@ -38,6 +38,7 @@ function client(overrides: Partial<PracticeDatabaseClient> = {}) {
     insertCaseAttempt: vi.fn().mockResolvedValue(undefined),
     selectDrillAttempts: vi.fn().mockResolvedValue([]),
     selectCaseAttempts: vi.fn().mockResolvedValue([]),
+    selectCaseEvents: vi.fn().mockResolvedValue([]),
     ...overrides,
   } satisfies PracticeDatabaseClient;
 }
@@ -59,6 +60,12 @@ describe("SupabasePracticeRepository", () => {
       feedback_codes: ["check_answer_and_unit"],
       concept_ids_practiced: ["revenue"],
       completed_at: "2026-01-02T00:00:00.000Z",
+      scoring_version: "v1",
+      content_version: null,
+      event_schema_version: null,
+      scaffolding_level: null,
+      learning_evidence: null,
+      diagnostics: [],
     });
     expect(database.insertCaseAttempt).toHaveBeenCalledWith({
       id: "00000000-0000-4000-8000-000000000002",
@@ -68,6 +75,12 @@ describe("SupabasePracticeRepository", () => {
       feedback_codes: ["strong_cross_exhibit_synthesis"],
       events: caseAttempt.events,
       completed_at: "2026-01-03T00:00:00.000Z",
+      scoring_version: "v1",
+      content_version: null,
+      event_schema_version: null,
+      scaffolding_level: null,
+      learning_evidence: null,
+      diagnostics: [],
     });
   });
 
@@ -104,6 +117,12 @@ describe("SupabasePracticeRepository", () => {
         score: 90,
         feedbackCodes: ["strong_cross_exhibit_synthesis"],
         completedAt: "2026-01-03T00:00:00.000Z",
+        scoringVersion: "v1",
+        contentVersion: null,
+        eventSchemaVersion: null,
+        scaffoldingLevel: null,
+        learningEvidence: null,
+        diagnostics: [],
       },
       {
         attemptId: "00000000-0000-4000-8000-000000000002",
@@ -113,6 +132,12 @@ describe("SupabasePracticeRepository", () => {
         score: 60,
         feedbackCodes: ["strong_cross_exhibit_synthesis"],
         completedAt: "2026-01-03T00:00:00.000Z",
+        scoringVersion: "v1",
+        contentVersion: null,
+        eventSchemaVersion: null,
+        scaffoldingLevel: null,
+        learningEvidence: null,
+        diagnostics: [],
       },
       {
         attemptId: "00000000-0000-4000-8000-000000000001",
@@ -122,6 +147,12 @@ describe("SupabasePracticeRepository", () => {
         score: 80,
         feedbackCodes: ["check_answer_and_unit"],
         completedAt: "2026-01-02T00:00:00.000Z",
+        scoringVersion: "v1",
+        contentVersion: null,
+        eventSchemaVersion: null,
+        scaffoldingLevel: null,
+        learningEvidence: null,
+        diagnostics: [],
       },
     ]);
   });
@@ -136,6 +167,101 @@ describe("SupabasePracticeRepository", () => {
 
     await expect(repository.saveDrillAttempt(drillAttempt)).rejects.toThrow(
       "database unavailable",
+    );
+  });
+
+  it("round-trips valid V2 row metadata and rejects unknown scoring versions", async () => {
+    const evidence = {
+      interactionId: "clarification-v2-1",
+      skillId: "clarification" as const,
+      scoringVersion: "v2" as const,
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner" as const,
+      responses: [{
+        responseId: "clarification-r1",
+        interactionId: "clarification-v2-1",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "clarification",
+        text: "Clarify the target metric.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [],
+      diagnostics: [],
+    };
+    const database = client({
+      selectDrillAttempts: vi.fn().mockResolvedValue([
+        {
+          id: "valid-v2",
+          user_id: "user-1",
+          skill_id: "clarification",
+          score: 0,
+          feedback_codes: [],
+          completed_at: "2026-01-04T00:00:00.000Z",
+          scoring_version: "v2",
+          content_version: 2,
+          event_schema_version: 2,
+          scaffolding_level: "beginner",
+          learning_evidence: evidence,
+          diagnostics: [],
+        },
+        {
+          id: "unknown-version",
+          user_id: "user-1",
+          skill_id: "structure",
+          score: 100,
+          feedback_codes: [],
+          completed_at: "2026-01-05T00:00:00.000Z",
+          scoring_version: "v3",
+        },
+      ]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    const history = await repository.getSkillHistory("user-1");
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      attemptId: "valid-v2",
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: evidence,
+    });
+  });
+
+  it("reads valid case events in database sequence order", async () => {
+    const database = client({
+      selectCaseEvents: vi.fn().mockResolvedValue([
+        {
+          sequence: 1,
+          event: { type: "node_investigated", nodeId: "costs", atMs: 2 },
+        },
+        {
+          sequence: 0,
+          event: {
+            type: "clarification_selected",
+            clarificationId: "clarify-goal",
+            atMs: 1,
+          },
+        },
+        { sequence: 2, event: { type: "invented", atMs: 3 } },
+      ]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await expect(repository.getCaseEvents("user-1", caseAttempt.attemptId)).resolves.toEqual([
+      {
+        type: "clarification_selected",
+        clarificationId: "clarify-goal",
+        atMs: 1,
+      },
+      { type: "node_investigated", nodeId: "costs", atMs: 2 },
+    ]);
+    expect(database.selectCaseEvents).toHaveBeenCalledWith(
+      "user-1",
+      caseAttempt.attemptId,
     );
   });
 

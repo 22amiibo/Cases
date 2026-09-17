@@ -101,6 +101,28 @@ npm run build
   around them; future V2 definitions are new entries, never in-place edits.
 - Next action: add the additive V2 persistence migration and repository contract.
 
+### Casework V2 Task 3: Versioned learning evidence persistence — complete
+
+- Added the additive `002_v2_learning_evidence.sql` migration with nullable
+  legacy-safe metadata, strict complete-V2 constraints, clarification support,
+  JSONB evidence/diagnostics, an idempotent V2 save RPC, and an RLS/user-scoped
+  ordered event reader. The original V1 save RPC remains available for rollback.
+- Memory and Supabase repositories now share V1/V2 metadata behavior, reject
+  unknown or internally mixed versions, preserve retry idempotency, and expose
+  ordered case-event reads scoped to the owning learner.
+- Existing rows with absent metadata normalize to V1 and never gain fabricated
+  V2 evidence.
+- Red proof: old Supabase mapping assertions failed when the normalized V1
+  metadata was first introduced; V2 round-trip, unknown-version, event-order,
+  owner-scope, and migration-safety regressions are now green.
+- Verification: 124 unit/component tests, typecheck, lint, and diff checks pass.
+- Local SQL application is unavailable because this worktree has no PostgreSQL,
+  Supabase CLI, or container runtime. The linked/live project was not modified;
+  production application still requires owner approval and backup confirmation.
+- Rollback: switch writes to the retained V1 RPC; nullable V2 columns and rows
+  can remain without changing legacy reads.
+- Next action: separate Legacy V1 history from V2 diagnostic progress.
+
 ### Repository preparation — complete
 
 - Initialized the dedicated repository in the Desktop `Case` folder.

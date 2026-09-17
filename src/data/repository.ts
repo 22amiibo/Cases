@@ -1,6 +1,22 @@
-import type { CaseEvent, SkillId } from "@/core/schema";
+import type {
+  CaseEvent,
+  DiagnosticOutcome,
+  LearningEvidenceRecord,
+  ScaffoldingLevelSchema,
+  SkillId,
+} from "@/core/schema";
+import type { z } from "zod";
 
-export type SkillAttempt = {
+export type AttemptLearningMetadata = {
+  scoringVersion?: "v1" | "v2";
+  contentVersion?: number | null;
+  eventSchemaVersion?: number | null;
+  scaffoldingLevel?: z.infer<typeof ScaffoldingLevelSchema> | null;
+  learningEvidence?: LearningEvidenceRecord | null;
+  diagnostics?: DiagnosticOutcome[];
+};
+
+export type SkillAttempt = AttemptLearningMetadata & {
   attemptId: string;
   attemptType: "drill" | "case";
   userId: string;
@@ -16,7 +32,7 @@ export type DrillAttempt = Omit<SkillAttempt, "attemptType"> & {
   conceptIdsPracticed: string[];
 };
 
-export type CaseAttempt = {
+export type CaseAttempt = AttemptLearningMetadata & {
   attemptId: string;
   userId: string;
   caseId: string;
@@ -30,4 +46,5 @@ export interface PracticeRepository {
   saveDrillAttempt(attempt: DrillAttempt): Promise<void>;
   saveCaseAttempt(attempt: CaseAttempt): Promise<void>;
   getSkillHistory(userId: string): Promise<SkillAttempt[]>;
+  getCaseEvents(userId: string, attemptId: string): Promise<CaseEvent[]>;
 }

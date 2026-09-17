@@ -66,16 +66,22 @@ function restorePendingCaseAttempt(caseId: string): CaseAttempt | null {
   return pending;
 }
 
-function restoreWorkspace(
-  stored: string | null,
-): StoredCaseWorkspace {
-  const emptyWorkspace = {
+function createEmptyWorkspace(): StoredCaseWorkspace {
+  return {
     events: [],
     clarificationComplete: false,
     clarificationDraftIds: [] as string[],
   };
+}
 
-  if (!stored) return emptyWorkspace;
+type RestoredWorkspace =
+  | { status: "ready"; workspace: StoredCaseWorkspace }
+  | { status: "expired" };
+
+function restoreWorkspace(stored: string | null): RestoredWorkspace {
+  const emptyWorkspace = createEmptyWorkspace();
+
+  if (!stored) return { status: "ready", workspace: emptyWorkspace };
 
   try {
     const serialized = JSON.parse(stored) as {
@@ -83,22 +89,37 @@ function restoreWorkspace(
       clarificationComplete?: unknown;
       clarificationDraftIds?: unknown[];
     };
-    if (!Array.isArray(serialized.events)) return emptyWorkspace;
+    if (!Array.isArray(serialized.events)) return { status: "expired" };
+    const parsedEvents = serialized.events.map((rawEvent) =>
+      CaseEventSchema.safeParse(rawEvent),
+    );
+    if (parsedEvents.some((event) => !event.success)) {
+      return { status: "expired" };
+    }
+    if (
+      serialized.clarificationDraftIds !== undefined &&
+      (!Array.isArray(serialized.clarificationDraftIds) ||
+        serialized.clarificationDraftIds.some((id) => typeof id !== "string"))
+    ) {
+      return { status: "expired" };
+    }
 
     return {
-      events: serialized.events.flatMap((rawEvent) => {
-        const event = CaseEventSchema.safeParse(rawEvent);
-        return event.success ? [event.data] : [];
-      }),
-      clarificationComplete: serialized.clarificationComplete === true,
-      clarificationDraftIds: Array.isArray(serialized.clarificationDraftIds)
-        ? serialized.clarificationDraftIds.filter(
-            (id): id is string => typeof id === "string",
-          )
-        : [],
+      status: "ready",
+      workspace: {
+        events: parsedEvents.flatMap((event) =>
+          event.success ? [event.data] : [],
+        ),
+        clarificationComplete: serialized.clarificationComplete === true,
+        clarificationDraftIds: Array.isArray(serialized.clarificationDraftIds)
+          ? serialized.clarificationDraftIds.filter(
+              (id): id is string => typeof id === "string",
+            )
+          : [],
+      },
     };
   } catch {
-    return emptyWorkspace;
+    return { status: "expired" };
   }
 }
 
@@ -121,8 +142,16 @@ export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) 
 function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
   const router = useRouter();
   const storageKey = caseStorageKey(caseDefinition.id);
-  const [workspace, setWorkspace] = useState(() =>
+  const [restoredWorkspace] = useState(() =>
     restoreWorkspace(window.sessionStorage.getItem(storageKey)),
+  );
+  const [sessionExpired, setSessionExpired] = useState(
+    restoredWorkspace.status === "expired",
+  );
+  const [workspace, setWorkspace] = useState(() =>
+    restoredWorkspace.status === "ready"
+      ? restoredWorkspace.workspace
+      : createEmptyWorkspace(),
   );
   const elapsedOffset = useRef(
     Math.max(0, ...workspace.events.map((event) => event.atMs)),
@@ -140,6 +169,9 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     "idle" | "saving" | "error"
   >("idle");
   const [view, setView] = useState<LearnerSessionView | null>(null);
+  const [viewStatus, setViewStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [synthesisEvidenceIds, setSynthesisEvidenceIds] = useState<string[]>([]);
   const [nextStepNodeId, setNextStepNodeId] = useState("");
 
@@ -147,18 +179,29 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
   async function loadView(nextEvents: CaseEvent[], commitView = true) {
     const requestId = ++latestRequest.current;
-    const response = await fetch(`/api/cases/${caseDefinition.id}/session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ events: nextEvents }),
-    });
-    if (!response.ok) throw new Error("Unable to load case session");
-    const nextView = (await response.json()) as LearnerSessionView;
-    if (commitView && requestId === latestRequest.current) setView(nextView);
-    return nextView;
+    try {
+      const response = await fetch(`/api/cases/${caseDefinition.id}/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ events: nextEvents }),
+      });
+      if (!response.ok) throw new Error("Unable to load case session");
+      const nextView = (await response.json()) as LearnerSessionView;
+      if (commitView && requestId === latestRequest.current) {
+        setView(nextView);
+        setViewStatus("ready");
+      }
+      return nextView;
+    } catch (error) {
+      if (commitView && requestId === latestRequest.current) {
+        setViewStatus("error");
+      }
+      throw error;
+    }
   }
 
   useEffect(() => {
+    if (sessionExpired) return;
     let active = true;
     const requestId = ++latestRequest.current;
     void fetch(`/api/cases/${caseDefinition.id}/session`, {
@@ -171,14 +214,23 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         return response.json() as Promise<LearnerSessionView>;
       })
       .then((nextView) => {
-        if (active && requestId === latestRequest.current) setView(nextView);
+        if (active && requestId === latestRequest.current) {
+          setView(nextView);
+          setViewStatus("ready");
+        }
+      })
+      .catch(() => {
+        if (active && requestId === latestRequest.current) {
+          setViewStatus("error");
+        }
       });
     return () => {
       active = false;
     };
-  }, [caseDefinition.id]);
+  }, [caseDefinition.id, sessionExpired]);
 
   useEffect(() => {
+    if (sessionExpired) return;
     window.sessionStorage.setItem(
       storageKey,
       JSON.stringify({
@@ -187,7 +239,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         clarificationDraftIds,
       }),
     );
-  }, [clarificationComplete, clarificationDraftIds, events, storageKey]);
+  }, [clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey]);
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
@@ -213,22 +265,22 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   }
 
   function submitFramework(submission: FrameworkSubmission) {
-    record({
+    void record({
       type: "framework_submitted",
       conceptIds: collectConceptIds(submission.branches),
       priorityConceptId: submission.priorityConceptId,
       atMs: timestamp(),
-    });
+    }).catch(() => undefined);
   }
 
   function submitSynthesis() {
     if (!nextStepNodeId || synthesisEvidenceIds.length === 0) return;
-    record({
+    void record({
       type: "synthesis_submitted",
       evidenceIds: synthesisEvidenceIds,
       nextStepNodeId,
       atMs: timestamp(),
-    });
+    }).catch(() => undefined);
   }
 
   const availableCalculations = view?.calculations ?? [];
@@ -259,6 +311,42 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     }
   }
 
+  function startFreshCase() {
+    window.sessionStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
+    const emptyWorkspace = createEmptyWorkspace();
+    initialEvents.current = emptyWorkspace.events;
+    setWorkspace(emptyWorkspace);
+    setView(null);
+    setViewStatus("loading");
+    setSessionExpired(false);
+  }
+
+  if (sessionExpired) {
+    return (
+      <WorkspaceFailure
+        title="This case session expired"
+        message="The saved case state is incomplete or invalid, so Casework stopped before loading a partial session. Start fresh to continue safely."
+        actionLabel="Start a fresh case"
+        onAction={startFreshCase}
+      />
+    );
+  }
+
+  if (viewStatus === "error") {
+    return (
+      <WorkspaceFailure
+        title="Case workspace could not be loaded"
+        message="The case session service is unavailable. Your saved browser session has not been discarded."
+        actionLabel="Try loading again"
+        onAction={() => {
+          setViewStatus("loading");
+          void loadView(events).catch(() => undefined);
+        }}
+      />
+    );
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -278,6 +366,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
       <div className={styles.workspace}>
         <section className={styles.controls} aria-label="Case controls">
+          {viewStatus === "loading" && (
+            <StepCard eyebrow="Loading" title="Loading case workspace">
+              <p role="status">Checking your saved session and available actions…</p>
+            </StepCard>
+          )}
           {pendingCaseAttempt && (
             <StepCard eyebrow="Save pending" title="Finish saving your case">
               <p>
@@ -356,13 +449,13 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                     <button
                       type="button"
                       key={action.id}
-                      onClick={() =>
-                        record({
+                      onClick={() => {
+                        void record({
                           type: "node_investigated",
                           nodeId: action.id,
                           atMs: timestamp(),
-                        })
-                      }
+                        }).catch(() => undefined);
+                      }}
                     >
                       {action.label}
                     </button>
@@ -475,6 +568,34 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           <Scratchpad storageKey={`${storageKey}:scratchpad`} />
         </div>
       </div>
+    </main>
+  );
+}
+
+function WorkspaceFailure({
+  title,
+  message,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  message: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <main className={styles.failurePage}>
+      <section className={styles.failureCard} role="alert">
+        <span>Casework stopped safely</span>
+        <h1>{title}</h1>
+        <p>{message}</p>
+        <div>
+          <button type="button" onClick={onAction}>
+            {actionLabel}
+          </button>
+          <Link href="/cases">Browse available cases</Link>
+        </div>
+      </section>
     </main>
   );
 }

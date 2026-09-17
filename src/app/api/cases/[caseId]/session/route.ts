@@ -25,7 +25,12 @@ export async function POST(
     return NextResponse.json({ error: "Case not found" }, { status: 404 });
   }
 
-  const body = (await request.json()) as { events?: unknown[] };
+  let body: { events?: unknown[] };
+  try {
+    body = (await request.json()) as { events?: unknown[] };
+  } catch {
+    return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
+  }
   if (!Array.isArray(body.events)) {
     return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
   }

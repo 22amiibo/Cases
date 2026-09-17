@@ -34,3 +34,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+:focus-visible {
+  outline: 3px solid #c45f2e;
+  outline-offset: 3px;
+}

@@ -1,0 +1,310 @@
+{
+  "id": "paypilot-growth",
+  "version": 1,
+  "title": "PayPilot's next growth bet",
+  "category": "growth",
+  "difficulty": "intermediate",
+  "prompt": "PayPilot provides payment software to 12,000 small and midsize merchants in the United States. Growth has slowed, and management can fund only one major initiative next year: cross-sell a new cash-flow forecasting module to current merchants or launch the core payments product in a neighboring country. Management wants to choose the option with the stronger first-year incremental profit and a credible path to durable growth.",
+  "objective": "Compare cross-selling the forecasting module with geographic expansion and recommend the stronger growth initiative based on first-year incremental profit, strategic fit, and execution risk.",
+  "clarificationOptions": [
+    {
+      "id": "decision-metric",
+      "label": "What metric should drive the decision?",
+      "response": "Prioritize first-year incremental profit, then consider whether the economics and risks can support durable growth.",
+      "highValue": true
+    },
+    {
+      "id": "funding-constraint",
+      "label": "Can PayPilot pursue both options?",
+      "response": "No. Product and commercial capacity allow one major initiative next year.",
+      "highValue": true
+    },
+    {
+      "id": "customer-scope",
+      "label": "Which customers are in scope for cross-sell?",
+      "response": "The module is relevant to established merchants with sufficient transaction history, not every current customer.",
+      "highValue": true
+    },
+    {
+      "id": "brand-refresh",
+      "label": "Is management considering a brand refresh?",
+      "response": "Brand design is not part of this decision and has no known effect on the two initiatives.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    { "id": "eligible-merchants", "text": "8,000 of PayPilot's 12,000 current merchants have enough transaction history to use the forecasting module." },
+    { "id": "cross-sell-conversion", "text": "Research and a paid pilot indicate that 25% of eligible merchants would buy the module at the planned offer." },
+    { "id": "module-unit-economics", "text": "Each module subscriber would generate $1,200 of annual revenue and $300 of annual variable service cost, or $900 of annual contribution profit." },
+    { "id": "cross-sell-contribution", "text": "Cross-selling the module would generate $1.8 million of annual contribution profit before launch cost." },
+    { "id": "cross-sell-launch-cost", "text": "Completing the module and enabling sales would require $600,000 of first-year fixed investment." },
+    { "id": "cross-sell-net-profit", "text": "The cross-sell initiative would produce approximately $1.2 million of first-year incremental profit after launch investment." },
+    { "id": "pilot-retention", "text": "Module customers in the pilot retained at a rate four percentage points above comparable payments-only merchants." },
+    { "id": "reachable-market", "text": "The neighboring country has 30,000 target merchants, but channel and eligibility constraints make 6,000 realistically reachable in year one." },
+    { "id": "expansion-wins", "text": "At expected sales productivity, PayPilot could win 1,500 merchants in the new geography during year one." },
+    { "id": "expansion-unit-economics", "text": "Each new-country merchant would generate $1,200 of annual revenue and $500 of variable service and support cost, or $700 of contribution profit." },
+    { "id": "expansion-entry-cost", "text": "Localization, compliance, and market-entry staffing would require $1.4 million of first-year fixed investment." },
+    { "id": "expansion-net-profit", "text": "Geographic expansion would lose approximately $350,000 in year one before any later scale benefits." },
+    { "id": "competitive-intensity", "text": "Two established local competitors serve about 60% of the reachable merchants, increasing acquisition uncertainty." },
+    { "id": "regulatory-branding", "text": "Local regulators permit PayPilot's existing product name and visual identity without modification." }
+  ],
+  "investigationNodes": [
+    {
+      "id": "current-customers",
+      "conceptId": "customers",
+      "label": "Assess the current customer base",
+      "interviewerResponse": "PayPilot has 12,000 merchants, including 8,000 with enough transaction history to use the module. The installed-base exhibit is now available.",
+      "factIds": ["eligible-merchants"],
+      "exhibitIds": ["cross-sell-funnel"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "cross-sell-demand",
+      "conceptId": "volume",
+      "label": "Estimate module adoption",
+      "interviewerResponse": "A paid pilot and follow-up research support a 25% conversion rate among eligible merchants.",
+      "factIds": ["cross-sell-conversion"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["current-customers"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "cross-sell-economics",
+      "conceptId": "variable_cost",
+      "label": "Evaluate cross-sell economics",
+      "interviewerResponse": "The module contributes $900 annually per subscriber and requires $600,000 of first-year launch investment. You can now calculate total annual contribution profit.",
+      "factIds": ["module-unit-economics", "cross-sell-launch-cost", "cross-sell-net-profit"],
+      "exhibitIds": ["initiative-economics"],
+      "prerequisiteNodeIds": ["cross-sell-demand"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "retention-effect",
+      "conceptId": "customers",
+      "label": "Check broader customer impact",
+      "interviewerResponse": "Pilot module users retained four percentage points better than comparable payments-only merchants, suggesting a benefit beyond direct profit.",
+      "factIds": ["pilot-retention"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["cross-sell-demand"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "new-market-size",
+      "conceptId": "market_size",
+      "label": "Size the reachable new market",
+      "interviewerResponse": "Although 30,000 merchants fit the broad segment, only 6,000 are realistically reachable in year one. The market funnel is now available.",
+      "factIds": ["reachable-market"],
+      "exhibitIds": ["expansion-funnel"],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "new-market-share",
+      "conceptId": "volume",
+      "label": "Estimate first-year merchant wins",
+      "interviewerResponse": "Based on sales capacity and expected conversion, PayPilot could win about 1,500 merchants in year one.",
+      "factIds": ["expansion-wins"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["new-market-size"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "expansion-economics",
+      "conceptId": "fixed_cost",
+      "label": "Evaluate expansion economics",
+      "interviewerResponse": "New-country merchants contribute $700 each, while entry requires $1.4 million of fixed investment. The initiative would lose about $350,000 in year one.",
+      "factIds": ["expansion-unit-economics", "expansion-entry-cost", "expansion-net-profit"],
+      "exhibitIds": ["initiative-economics"],
+      "prerequisiteNodeIds": ["new-market-share"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "local-competition",
+      "conceptId": "competitors",
+      "label": "Assess local competition",
+      "interviewerResponse": "Two established competitors already serve roughly 60% of reachable merchants, making the win forecast less certain.",
+      "factIds": ["competitive-intensity"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["new-market-size"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "local-brand-rules",
+      "conceptId": "risk",
+      "label": "Check local branding requirements",
+      "interviewerResponse": "Regulators allow the existing name and visual identity, so rebranding is unnecessary and immaterial to the decision.",
+      "factIds": ["regulatory-branding"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["new-market-size"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "compare-options",
+      "conceptId": "growth",
+      "label": "Compare first-year profit and risk",
+      "interviewerResponse": "Cross-sell offers about $1.2 million of first-year incremental profit, while geographic expansion loses about $350,000 and carries greater acquisition uncertainty.",
+      "factIds": ["cross-sell-net-profit", "expansion-net-profit"],
+      "exhibitIds": ["initiative-economics"],
+      "prerequisiteNodeIds": ["cross-sell-economics", "expansion-economics"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "cross-sell-funnel",
+      "title": "Forecasting-module cross-sell funnel",
+      "type": "waterfall",
+      "unit": "merchants",
+      "sourceFactIds": ["eligible-merchants", "cross-sell-conversion"],
+      "columns": ["Stage", "Merchants"],
+      "rows": [
+        ["Current merchants", 12000],
+        ["Eligible merchants", 8000],
+        ["Expected module subscribers", 2000]
+      ],
+      "categories": ["Current merchants", "Eligible merchants", "Expected module subscribers"],
+      "series": [
+        { "name": "Merchants", "data": [12000, 8000, 2000] }
+      ],
+      "insights": [
+        { "id": "qualified-installed-base", "label": "A large qualified installed base creates a meaningful cross-sell opportunity.", "strength": 1 },
+        { "id": "universal-adoption", "label": "Every current merchant is expected to purchase the module.", "strength": 0 }
+      ]
+    },
+    {
+      "id": "expansion-funnel",
+      "title": "Neighboring-country first-year acquisition funnel",
+      "type": "waterfall",
+      "unit": "merchants",
+      "sourceFactIds": ["reachable-market", "expansion-wins", "competitive-intensity"],
+      "columns": ["Stage", "Merchants"],
+      "rows": [
+        ["Target segment", 30000],
+        ["Reachable in year one", 6000],
+        ["Expected merchant wins", 1500]
+      ],
+      "categories": ["Target segment", "Reachable in year one", "Expected merchant wins"],
+      "series": [
+        { "name": "Merchants", "data": [30000, 6000, 1500] }
+      ],
+      "insights": [
+        { "id": "reachable-not-total", "label": "The realistically reachable market is much smaller than the headline segment.", "strength": 1 },
+        { "id": "full-market-access", "label": "PayPilot can compete for all 30,000 target merchants during year one.", "strength": 0 }
+      ]
+    },
+    {
+      "id": "initiative-economics",
+      "title": "First-year incremental economics by initiative",
+      "type": "grouped_bar",
+      "unit": "$m",
+      "sourceFactIds": ["cross-sell-contribution", "cross-sell-launch-cost", "cross-sell-net-profit", "expansion-unit-economics", "expansion-entry-cost", "expansion-net-profit"],
+      "columns": ["Initiative", "Contribution profit", "Fixed investment", "Incremental profit"],
+      "rows": [
+        ["Forecasting cross-sell", 1.8, 0.6, 1.2],
+        ["Geographic expansion", 1.05, 1.4, -0.35]
+      ],
+      "categories": ["Forecasting cross-sell", "Geographic expansion"],
+      "series": [
+        { "name": "Contribution profit", "data": [1.8, 1.05] },
+        { "name": "Fixed investment", "data": [0.6, 1.4] },
+        { "name": "Incremental profit", "data": [1.2, -0.35] }
+      ],
+      "insights": [
+        { "id": "cross-sell-profit-lead", "label": "Cross-sell produces $1.55 million more first-year incremental profit than expansion.", "strength": 1 },
+        { "id": "expansion-profit-lead", "label": "Geographic expansion has the stronger first-year profit profile.", "strength": 0 }
+      ]
+    }
+  ],
+  "calculations": [
+    {
+      "id": "cross-sell-contribution-profit",
+      "prompt": "PayPilot has 8,000 eligible merchants, expects 25% module adoption, and earns $900 of annual contribution profit per subscriber. What annual contribution profit would the cross-sell generate before launch investment?",
+      "unit": "$",
+      "formula": { "operation": "multiply", "inputs": [8000, 0.25, 900] },
+      "expectedAnswer": 1800000,
+      "tolerance": 10000,
+      "prerequisiteNodeIds": ["cross-sell-economics"],
+      "evidenceFactId": "cross-sell-contribution"
+    }
+  ],
+  "frameworkRubric": {
+    "concepts": [
+      { "conceptId": "customers", "weight": 1.5, "required": true },
+      { "conceptId": "market_size", "weight": 1.5, "required": true },
+      { "conceptId": "volume", "weight": 1, "required": true },
+      { "conceptId": "price", "weight": 0.5, "required": false },
+      { "conceptId": "variable_cost", "weight": 1, "required": true },
+      { "conceptId": "fixed_cost", "weight": 1, "required": true },
+      { "conceptId": "competitors", "weight": 0.75, "required": false },
+      { "conceptId": "risk", "weight": 1, "required": false }
+    ],
+    "overlapGroups": [["customers", "market_size"], ["variable_cost", "fixed_cost"]],
+    "priorityConceptIds": ["customers", "market_size", "volume"]
+  },
+  "recommendation": {
+    "minimumEvidence": 2,
+    "decisions": [
+      {
+        "id": "choose-cross-sell",
+        "label": "Prioritize the forecasting-module cross-sell and defer geographic expansion until its entry economics improve.",
+        "supportingEvidenceIds": ["cross-sell-contribution", "cross-sell-net-profit", "expansion-net-profit", "pilot-retention"],
+        "weight": 1
+      },
+      {
+        "id": "choose-expansion",
+        "label": "Enter the neighboring country immediately and defer the module.",
+        "supportingEvidenceIds": ["reachable-market", "expansion-wins"],
+        "weight": 0.3
+      },
+      {
+        "id": "pursue-both",
+        "label": "Launch both initiatives at full scale next year.",
+        "supportingEvidenceIds": ["eligible-merchants", "reachable-market"],
+        "weight": 0.1
+      }
+    ],
+    "risks": [
+      { "id": "adoption-shortfall", "label": "Module adoption may fall below the pilot-supported 25% forecast." },
+      { "id": "product-delivery", "label": "Product delays could reduce the module's first-year selling window." },
+      { "id": "expansion-delay", "label": "Deferring expansion could allow local competitors to strengthen their positions." }
+    ],
+    "nextSteps": [
+      { "id": "staged-cross-sell", "label": "Launch to a measured merchant cohort, track adoption and contribution profit, then scale the offer." },
+      { "id": "sign-country-lease", "label": "Commit immediately to a full new-country office and staffing plan." },
+      { "id": "rebrand-platform", "label": "Redesign PayPilot's brand before testing either initiative." }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "cross-sell-first",
+      "label": "Quantify cross-sell, then benchmark expansion",
+      "nodeIds": ["current-customers", "cross-sell-demand", "cross-sell-economics", "new-market-size", "new-market-share", "expansion-economics", "compare-options"]
+    },
+    {
+      "id": "expansion-first",
+      "label": "Test expansion feasibility, then compare the installed base",
+      "nodeIds": ["new-market-size", "new-market-share", "expansion-economics", "current-customers", "cross-sell-demand", "cross-sell-economics", "compare-options"]
+    }
+  ]
+}

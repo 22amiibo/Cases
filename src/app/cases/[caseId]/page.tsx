@@ -1,13 +1,10 @@
 import { notFound } from "next/navigation";
-import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
+import { caseDefinitions, getCaseDefinition } from "@/content/cases";
 import { InvestigationPanel } from "@/components/investigation/InvestigationPanel";
 import { toLearnerCaseDefinition } from "@/core/learner-case";
-import { CaseDefinitionSchema } from "@/core/schema";
-
-const alpineFit = CaseDefinitionSchema.parse(alpineFitContent);
 
 export function generateStaticParams() {
-  return [{ caseId: alpineFit.id }];
+  return caseDefinitions.map(({ id: caseId }) => ({ caseId }));
 }
 
 export default async function CasePage({
@@ -16,9 +13,10 @@ export default async function CasePage({
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
-  if (caseId !== alpineFit.id) notFound();
+  const caseDefinition = getCaseDefinition(caseId);
+  if (!caseDefinition) notFound();
 
   return (
-    <InvestigationPanel caseDefinition={toLearnerCaseDefinition(alpineFit)} />
+    <InvestigationPanel caseDefinition={toLearnerCaseDefinition(caseDefinition)} />
   );
 }

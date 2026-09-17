@@ -1,0 +1,274 @@
+{
+  "id": "northstar-profitability",
+  "version": 1,
+  "title": "NorthStar's margin squeeze",
+  "category": "profitability",
+  "difficulty": "intermediate",
+  "prompt": "NorthStar Components supplies engineered parts to industrial-equipment manufacturers under multi-year contracts. Revenue grew 3% last year, but gross margin fell from 29% to 21%. Management wants to understand the decline and decide how to restore margin without putting strategic customer relationships at risk.",
+  "objective": "Identify the primary cause of NorthStar's gross-margin decline and recommend a practical response that balances margin recovery with customer retention.",
+  "clarificationOptions": [
+    {
+      "id": "target-metric",
+      "label": "Which performance measure should we explain?",
+      "response": "Focus on the eight-point decline in gross margin over the last fiscal year.",
+      "highValue": true
+    },
+    {
+      "id": "business-scope",
+      "label": "Which products and customers are in scope?",
+      "response": "The full components portfolio and all contracted customers are in scope, though contract terms differ by cohort.",
+      "highValue": true
+    },
+    {
+      "id": "timing",
+      "label": "When did the pressure emerge?",
+      "response": "The decline began in the second quarter, shortly after key commodity and freight costs accelerated.",
+      "highValue": true
+    },
+    {
+      "id": "factory-footprint",
+      "label": "Did NorthStar open or close any factories?",
+      "response": "The factory footprint was unchanged and is not management's immediate concern.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    { "id": "revenue-growth", "text": "Revenue grew 3% year over year." },
+    { "id": "volume-growth", "text": "Shipment volume grew 4%, supported by stable demand from major customers." },
+    { "id": "realized-price", "text": "Realized price per unit declined about 1% because most contracts did not reprice during the year." },
+    { "id": "gross-margin-decline", "text": "Gross margin fell from 29% to 21%." },
+    { "id": "input-inflation", "text": "Raw-material, energy, and inbound-freight cost per unit rose 14%." },
+    { "id": "materials-driver", "text": "Steel and specialty-resin purchases account for most of the increase in unit input cost." },
+    { "id": "labor-stable", "text": "Direct labor cost per unit rose 2%, below the rate of revenue growth." },
+    { "id": "annual-repricing", "text": "Seventy percent of revenue is governed by contracts that permit price resets only at annual renewal." },
+    { "id": "repricing-lag", "text": "The annual-reset contracts absorbed higher input costs for an average of eight months before repricing." },
+    { "id": "indexed-performance", "text": "Contracts with quarterly input-cost indexing retained a 27% gross margin, versus 18% for annual-reset contracts." },
+    { "id": "customer-concentration", "text": "NorthStar's five largest customers represent 46% of revenue, making abrupt blanket repricing risky." },
+    { "id": "renewal-window", "text": "Contracts representing 38% of revenue renew within the next six months." }
+  ],
+  "investigationNodes": [
+    {
+      "id": "revenue",
+      "conceptId": "revenue",
+      "label": "Understand revenue performance",
+      "interviewerResponse": "Revenue grew 3%, so the problem is margin compression rather than a sales decline.",
+      "factIds": ["revenue-growth", "gross-margin-decline"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "volume",
+      "conceptId": "volume",
+      "label": "Check shipment volume",
+      "interviewerResponse": "Shipment volume grew 4%. Demand remained stable and does not explain the margin decline.",
+      "factIds": ["volume-growth"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["revenue"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "price",
+      "conceptId": "price",
+      "label": "Inspect realized pricing",
+      "interviewerResponse": "Realized price per unit slipped 1% because much of the contract base did not reprice during the year.",
+      "factIds": ["realized-price"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["revenue"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "costs",
+      "conceptId": "variable_cost",
+      "label": "Break down unit costs",
+      "interviewerResponse": "Input costs rose sharply while direct labor remained comparatively stable. The cost bridge is now available.",
+      "factIds": ["input-inflation", "labor-stable"],
+      "exhibitIds": ["unit-cost-bridge"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "labor",
+      "conceptId": "labor",
+      "label": "Inspect direct labor",
+      "interviewerResponse": "Direct labor cost per unit rose only 2%, so labor is not the source of the eight-point margin decline.",
+      "factIds": ["labor-stable"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["costs"],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "materials",
+      "conceptId": "materials",
+      "label": "Inspect material and freight inputs",
+      "interviewerResponse": "Steel and specialty resin drove most of a 14% increase in input cost per unit.",
+      "factIds": ["materials-driver"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["costs"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "contract_terms",
+      "conceptId": "customers",
+      "label": "Review customer contract terms",
+      "interviewerResponse": "Seventy percent of revenue can reprice only at annual renewal, while the remaining contracts use more frequent mechanisms.",
+      "factIds": ["annual-repricing", "customer-concentration"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["price"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "customer_risk",
+      "conceptId": "risk",
+      "label": "Assess customer concentration",
+      "interviewerResponse": "The five largest customers contribute 46% of revenue, so NorthStar should avoid an abrupt one-size-fits-all response.",
+      "factIds": ["customer-concentration"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["contract_terms"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "repricing_lag",
+      "conceptId": "price",
+      "label": "Compare repricing mechanisms",
+      "interviewerResponse": "Annual-reset contracts carried inflated costs for an average of eight months and earned substantially lower margins. The contract-cohort exhibit is now available.",
+      "factIds": ["repricing-lag", "indexed-performance", "renewal-window"],
+      "exhibitIds": ["contract-cohort-margin"],
+      "prerequisiteNodeIds": ["materials", "contract_terms"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    },
+    {
+      "id": "renewal_pipeline",
+      "conceptId": "customers",
+      "label": "Map upcoming renewals",
+      "interviewerResponse": "Contracts covering 38% of revenue renew in the next six months, creating a near-term window for targeted changes.",
+      "factIds": ["renewal-window"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["repricing_lag"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "unit-cost-bridge",
+      "title": "Unit production cost by category",
+      "type": "grouped_bar",
+      "unit": "$ per unit",
+      "sourceFactIds": ["input-inflation", "materials-driver", "labor-stable"],
+      "columns": ["Cost category", "Prior year", "Current year"],
+      "rows": [
+        ["Steel and resin", 42, 50],
+        ["Energy and inbound freight", 12, 14],
+        ["Direct labor", 25, 25.5],
+        ["Other variable cost", 9, 9.3]
+      ],
+      "categories": ["Steel and resin", "Energy and inbound freight", "Direct labor", "Other variable cost"],
+      "series": [
+        { "name": "Prior year", "data": [42, 12, 25, 9] },
+        { "name": "Current year", "data": [50, 14, 25.5, 9.3] }
+      ],
+      "insights": [
+        { "id": "materials-concentration", "label": "Steel, resin, energy, and freight account for most of the unit-cost increase.", "strength": 1 },
+        { "id": "labor-primary", "label": "Direct labor accounts for most of the unit-cost increase.", "strength": 0.1 }
+      ]
+    },
+    {
+      "id": "contract-cohort-margin",
+      "title": "Contract economics by repricing mechanism",
+      "type": "table",
+      "unit": "% / months",
+      "sourceFactIds": ["annual-repricing", "repricing-lag", "indexed-performance", "renewal-window"],
+      "columns": ["Contract cohort", "Share of revenue", "Average repricing lag", "Current gross margin"],
+      "rows": [
+        ["Annual reset", 70, 8, 18],
+        ["Quarterly input-cost index", 30, 2, 27]
+      ],
+      "categories": [],
+      "series": [],
+      "insights": [
+        { "id": "lag-margin-link", "label": "Longer repricing lag coincides with materially lower gross margin.", "strength": 1 },
+        { "id": "indexed-underperformance", "label": "Indexed contracts have the weaker margin outcome.", "strength": 0 }
+      ]
+    }
+  ],
+  "calculations": [],
+  "frameworkRubric": {
+    "concepts": [
+      { "conceptId": "revenue", "weight": 1, "required": true },
+      { "conceptId": "price", "weight": 2, "required": true },
+      { "conceptId": "volume", "weight": 0.5, "required": false },
+      { "conceptId": "variable_cost", "weight": 1.5, "required": true },
+      { "conceptId": "materials", "weight": 2, "required": true },
+      { "conceptId": "labor", "weight": 0.5, "required": false },
+      { "conceptId": "customers", "weight": 1, "required": false },
+      { "conceptId": "risk", "weight": 0.5, "required": false }
+    ],
+    "overlapGroups": [["price", "volume"], ["materials", "labor"]],
+    "priorityConceptIds": ["materials", "price"]
+  },
+  "recommendation": {
+    "minimumEvidence": 2,
+    "decisions": [
+      {
+        "id": "accelerate-repricing",
+        "label": "Use upcoming renewals to add input-cost indexing and targeted interim surcharges, prioritizing exposed contracts while negotiating with strategic customers.",
+        "supportingEvidenceIds": ["input-inflation", "annual-repricing", "repricing-lag", "indexed-performance", "renewal-window"],
+        "weight": 1
+      },
+      {
+        "id": "blanket-increase",
+        "label": "Apply an immediate uniform price increase to every customer regardless of contract terms.",
+        "supportingEvidenceIds": ["input-inflation"],
+        "weight": 0.4
+      },
+      {
+        "id": "cut-labor",
+        "label": "Reduce direct-labor staffing across all plants.",
+        "supportingEvidenceIds": ["labor-stable"],
+        "weight": 0.1
+      }
+    ],
+    "risks": [
+      { "id": "customer-pushback", "label": "Strategic customers may resist indexed pricing or interim surcharges." },
+      { "id": "input-reversal", "label": "Input costs may fall after new pricing terms are agreed." },
+      { "id": "renewal-delay", "label": "Negotiations may extend beyond planned renewal dates." }
+    ],
+    "nextSteps": [
+      { "id": "renewal-pilot", "label": "Pilot indexed terms with the next group of renewing contracts and track retention and margin recovery." },
+      { "id": "all-customer-notice", "label": "Send the same immediate increase notice to every customer." },
+      { "id": "workforce-review", "label": "Begin a network-wide workforce reduction review." }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "cost-first",
+      "label": "Trace input inflation before testing commercial recovery",
+      "nodeIds": ["costs", "materials", "revenue", "price", "contract_terms", "repricing_lag"]
+    },
+    {
+      "id": "pricing-first",
+      "label": "Trace pricing mechanics before confirming the cost shock",
+      "nodeIds": ["revenue", "price", "contract_terms", "costs", "materials", "repricing_lag"]
+    }
+  ]
+}

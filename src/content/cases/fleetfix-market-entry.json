@@ -1,0 +1,300 @@
+{
+  "id": "fleetfix-market-entry",
+  "version": 1,
+  "title": "FleetFix's Atlanta expansion",
+  "category": "market_entry",
+  "difficulty": "intermediate",
+  "prompt": "FleetFix provides mobile preventive maintenance for commercial vehicle fleets in three Southeastern cities. Management is considering an Atlanta launch and wants to know whether the reachable market can support an economically viable entry within the first two years.",
+  "objective": "Determine whether FleetFix should enter Atlanta by assessing reachable demand, unit economics, and break-even feasibility, then recommend a practical path forward.",
+  "clarificationOptions": [
+    {
+      "id": "decision-horizon",
+      "label": "What time horizon should the entry meet?",
+      "response": "Management expects the Atlanta operation to cover its recurring fixed costs by the end of year two.",
+      "highValue": true
+    },
+    {
+      "id": "target-customer",
+      "label": "Which customers are in scope?",
+      "response": "Focus on local and regional commercial fleets with 20 to 200 vehicles, FleetFix's proven customer segment.",
+      "highValue": true
+    },
+    {
+      "id": "success-metric",
+      "label": "How should we judge financial viability?",
+      "response": "Compare expected contracted vehicles with the number required to cover annual launch fixed costs.",
+      "highValue": true
+    },
+    {
+      "id": "brand-refresh",
+      "label": "Will FleetFix change its brand for Atlanta?",
+      "response": "No rebrand is planned, and branding is not expected to affect the entry decision.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    { "id": "metro-fleet-base", "text": "The Atlanta metro contains approximately 180,000 commercial fleet vehicles." },
+    { "id": "target-segment", "text": "Fleets with 20 to 200 vehicles account for 72,000 vehicles in the metro area." },
+    { "id": "serviceable-vehicles", "text": "Forty-five thousand target-segment vehicles operate within a 30-minute drive of the two proposed service hubs." },
+    { "id": "year-two-penetration", "text": "Based on signed letters of intent and comparable launches, FleetFix expects to contract 8% of the serviceable vehicles by the end of year two, or 3,600 vehicles." },
+    { "id": "customer-priority", "text": "Target customers rank reduced vehicle downtime and predictable scheduling above having the lowest service price." },
+    { "id": "competitor-gap", "text": "National repair chains serve the market, but only two scaled competitors offer scheduled mobile service to mid-sized fleets." },
+    { "id": "service-frequency", "text": "A contracted vehicle is expected to receive three preventive-maintenance visits per year." },
+    { "id": "service-price", "text": "FleetFix expects an average price of $155 per maintenance visit, in line with its comparable markets." },
+    { "id": "service-variable-cost", "text": "Technician time, parts, fuel, and payment costs total $95 per visit." },
+    { "id": "annual-contribution", "text": "Each contracted vehicle contributes $180 per year before launch fixed costs." },
+    { "id": "launch-fixed-cost", "text": "The two-hub Atlanta operation would require $720,000 in recurring annual fixed costs." },
+    { "id": "break-even-fleet", "text": "FleetFix needs 4,000 contracted vehicles to cover $720,000 of annual fixed costs at $180 contribution per vehicle." },
+    { "id": "regulatory-standard", "text": "Atlanta applies the same ordinary mobile-service permits and waste-handling rules FleetFix already follows in its current cities." }
+  ],
+  "investigationNodes": [
+    {
+      "id": "market-size",
+      "conceptId": "market_size",
+      "label": "Size the commercial fleet market",
+      "interviewerResponse": "Atlanta has roughly 180,000 commercial fleet vehicles, but the total market overstates FleetFix's practical opportunity.",
+      "factIds": ["metro-fleet-base"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "target-customers",
+      "conceptId": "customers",
+      "label": "Narrow to FleetFix's target customers",
+      "interviewerResponse": "Fleets with 20 to 200 vehicles represent 72,000 vehicles. The market funnel is now available.",
+      "factIds": ["target-segment"],
+      "exhibitIds": ["reachable-market-funnel"],
+      "prerequisiteNodeIds": ["market-size"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "hub-coverage",
+      "conceptId": "capacity",
+      "label": "Check geographic service coverage",
+      "interviewerResponse": "The proposed hubs can reach 45,000 target-segment vehicles within 30 minutes.",
+      "factIds": ["serviceable-vehicles"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["target-customers"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "expected-adoption",
+      "conceptId": "volume",
+      "label": "Estimate year-two adoption",
+      "interviewerResponse": "FleetFix expects to contract 8% of the reachable fleet, equal to 3,600 vehicles by the end of year two.",
+      "factIds": ["year-two-penetration"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["hub-coverage"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    },
+    {
+      "id": "customer-needs",
+      "conceptId": "customers",
+      "label": "Understand target customer needs",
+      "interviewerResponse": "Fleet managers value reduced downtime and reliable scheduling more than the lowest sticker price.",
+      "factIds": ["customer-priority"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["target-customers"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "competition",
+      "conceptId": "competitors",
+      "label": "Assess the competitive landscape",
+      "interviewerResponse": "Repair chains are established, but only two scaled rivals provide scheduled mobile service to FleetFix's target segment.",
+      "factIds": ["competitor-gap"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "unit-economics",
+      "conceptId": "revenue",
+      "label": "Understand the service model",
+      "interviewerResponse": "Each contracted vehicle is expected to receive three maintenance visits per year. You can now inspect price and service cost.",
+      "factIds": ["service-frequency"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "pricing",
+      "conceptId": "price",
+      "label": "Check expected service pricing",
+      "interviewerResponse": "FleetFix expects to charge $155 per visit, consistent with comparable markets.",
+      "factIds": ["service-price"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["unit-economics"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "variable-costs",
+      "conceptId": "variable_cost",
+      "label": "Break down variable service costs",
+      "interviewerResponse": "Variable cost is $95 per visit, leaving $60 contribution per visit and $180 per vehicle annually. The unit-economics exhibit is now available.",
+      "factIds": ["service-variable-cost", "annual-contribution"],
+      "exhibitIds": ["unit-economics"],
+      "prerequisiteNodeIds": ["unit-economics"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "fixed-costs",
+      "conceptId": "fixed_cost",
+      "label": "Estimate recurring launch fixed costs",
+      "interviewerResponse": "The two-hub operation would carry $720,000 of recurring annual fixed costs. You now have what you need to calculate break-even volume.",
+      "factIds": ["launch-fixed-cost"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["unit-economics"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "permit-review",
+      "conceptId": "risk",
+      "label": "Review local permits and waste rules",
+      "interviewerResponse": "Atlanta's requirements are standard and already covered by FleetFix's operating playbook.",
+      "factIds": ["regulatory-standard"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "reachable-market-funnel",
+      "title": "Atlanta reachable-market funnel",
+      "type": "waterfall",
+      "unit": "vehicles",
+      "sourceFactIds": ["metro-fleet-base", "target-segment", "serviceable-vehicles", "year-two-penetration"],
+      "columns": ["Market layer", "Vehicles"],
+      "rows": [
+        ["All commercial fleet vehicles", 180000],
+        ["Vehicles in target fleet size", 72000],
+        ["Vehicles within hub coverage", 45000],
+        ["Expected year-two contracts", 3600]
+      ],
+      "categories": ["All commercial", "Target segment", "Hub coverage", "Year-two contracts"],
+      "series": [
+        { "name": "Vehicles", "data": [180000, 72000, 45000, 3600] }
+      ],
+      "insights": [
+        { "id": "reachable-not-total", "label": "Only 45,000 vehicles are both in the target segment and reachable from the proposed hubs.", "strength": 1 },
+        { "id": "tam-equals-demand", "label": "All 180,000 commercial vehicles are realistic year-two customers.", "strength": 0 }
+      ]
+    },
+    {
+      "id": "unit-economics",
+      "title": "Annual economics per contracted vehicle",
+      "type": "table",
+      "unit": "$ per vehicle per year",
+      "sourceFactIds": ["service-frequency", "service-price", "service-variable-cost", "annual-contribution", "launch-fixed-cost"],
+      "columns": ["Metric", "Per visit", "Annual per vehicle"],
+      "rows": [
+        ["Revenue", 155, 465],
+        ["Variable cost", 95, 285],
+        ["Contribution", 60, 180],
+        ["Recurring launch fixed cost", "n/a", 720000]
+      ],
+      "categories": [],
+      "series": [],
+      "insights": [
+        { "id": "positive-contribution", "label": "Each contracted vehicle contributes $180 annually toward fixed costs.", "strength": 1 },
+        { "id": "price-is-contribution", "label": "The full $155 visit price is available to cover fixed costs.", "strength": 0.1 }
+      ]
+    }
+  ],
+  "calculations": [
+    {
+      "id": "break-even-vehicles",
+      "prompt": "FleetFix expects $720,000 of recurring annual fixed costs and $180 of annual contribution per contracted vehicle. How many contracted vehicles are required to break even?",
+      "unit": "vehicles",
+      "formula": { "operation": "divide", "inputs": [720000, 180] },
+      "expectedAnswer": 4000,
+      "tolerance": 0,
+      "prerequisiteNodeIds": ["variable-costs", "fixed-costs"],
+      "evidenceFactId": "break-even-fleet"
+    }
+  ],
+  "frameworkRubric": {
+    "concepts": [
+      { "conceptId": "market_size", "weight": 2, "required": true },
+      { "conceptId": "customers", "weight": 1.5, "required": true },
+      { "conceptId": "competitors", "weight": 1, "required": false },
+      { "conceptId": "capacity", "weight": 1.5, "required": true },
+      { "conceptId": "volume", "weight": 1.5, "required": true },
+      { "conceptId": "price", "weight": 1, "required": true },
+      { "conceptId": "variable_cost", "weight": 1, "required": true },
+      { "conceptId": "fixed_cost", "weight": 1, "required": true },
+      { "conceptId": "risk", "weight": 0.5, "required": false }
+    ],
+    "overlapGroups": [["market_size", "customers"], ["price", "volume"]],
+    "priorityConceptIds": ["market_size", "volume", "variable_cost"]
+  },
+  "recommendation": {
+    "minimumEvidence": 3,
+    "decisions": [
+      {
+        "id": "stage-entry",
+        "label": "Do not launch both hubs immediately; secure at least 400 additional vehicle commitments, then stage the Atlanta entry with one hub before expanding.",
+        "supportingEvidenceIds": ["serviceable-vehicles", "year-two-penetration", "annual-contribution", "launch-fixed-cost", "break-even-fleet", "customer-priority"],
+        "weight": 1
+      },
+      {
+        "id": "launch-full-network",
+        "label": "Launch both hubs immediately because Atlanta's total commercial fleet market is large.",
+        "supportingEvidenceIds": ["metro-fleet-base", "competitor-gap"],
+        "weight": 0.3
+      },
+      {
+        "id": "reject-market",
+        "label": "Reject Atlanta permanently because established repair chains already operate there.",
+        "supportingEvidenceIds": ["competitor-gap"],
+        "weight": 0.1
+      }
+    ],
+    "risks": [
+      { "id": "commitment-conversion", "label": "Letters of intent may convert to contracts more slowly than expected." },
+      { "id": "single-hub-coverage", "label": "Starting with one hub may reduce coverage and weaken the reachable-market estimate." },
+      { "id": "technician-supply", "label": "A tight technician labor market could raise variable costs." }
+    ],
+    "nextSteps": [
+      { "id": "pre-sell-gap", "label": "Pre-sell at least 400 additional vehicles and validate contract conversion before committing to the second hub." },
+      { "id": "lease-both-hubs", "label": "Sign long-term leases for both hubs before validating customer commitments." },
+      { "id": "consumer-pilot", "label": "Test a consumer repair offering outside FleetFix's target segment." }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "market-first",
+      "label": "Narrow the reachable market, then test break-even economics",
+      "nodeIds": ["market-size", "target-customers", "hub-coverage", "expected-adoption", "unit-economics", "pricing", "variable-costs", "fixed-costs"]
+    },
+    {
+      "id": "economics-first",
+      "label": "Build unit economics, then compare break-even with reachable demand",
+      "nodeIds": ["unit-economics", "pricing", "variable-costs", "fixed-costs", "market-size", "target-customers", "hub-coverage", "expected-adoption"]
+    }
+  ]
+}

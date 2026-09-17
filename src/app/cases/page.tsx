@@ -1,9 +1,6 @@
 import Link from "next/link";
-import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
-import { CaseDefinitionSchema } from "@/core/schema";
+import { caseDefinitions } from "@/content/cases";
 import styles from "./page.module.css";
-
-const cases = [CaseDefinitionSchema.parse(alpineFitContent)];
 
 export default function CasesPage() {
   return (
@@ -23,7 +20,7 @@ export default function CasesPage() {
       </section>
 
       <section className={styles.list} aria-label="Available cases">
-        {cases.map((caseDefinition) => (
+        {caseDefinitions.map((caseDefinition) => (
           <article className={styles.caseCard} key={caseDefinition.id}>
             <div>
               <span>

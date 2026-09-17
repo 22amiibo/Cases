@@ -304,6 +304,27 @@ npm run build
   port 3000. After stopping that stale process, a fresh standard run passed all
   five journeys without changing test concurrency.
 
+### Task 14: Remaining five V1 cases — in progress
+
+- Added the RED library-depth test, which initially failed with only AlpineFit.
+- Authored all five planned definitions: NorthStar profitability, FleetFix
+  market entry, PayPilot growth, GoldenLoaf operations, and MorningJet pricing.
+- The six-case mix now contains exactly four cases with calculations; every case
+  has at least two exhibits, a low-value decoy, a relevant noncritical branch,
+  and at least two efficient paths.
+- Added deterministic clean-session solve-through coverage for every authored
+  efficient path. It verifies prerequisite order, discoverable recommendation
+  evidence, available synthesis choices, and successful completion.
+- Added a validated runtime case registry and generalized the case library,
+  case route, session API, and review route to resolve all six definitions.
+- Focused verification at this checkpoint: 4 content tests pass and typecheck
+  passes. Full unit/browser/build verification and independent review have not
+  run yet.
+- Manual content inspection has begun. The case prompts, node chains,
+  calculations, efficient paths, and recommendation evidence were summarized
+  and checked for obvious contradictions; ambiguity fixtures and route-level
+  browser coverage still need to be finalized.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -318,8 +339,12 @@ npm run build
 
 ## Next Action
 
-Task 13 is complete and reviewed. Resume with Task 14 by reading this file, the
-Task 14 brief, and the SDD ledger; verify branch/status and remote refs; then
-write the failing content-count/category validation test before authoring the
-remaining five V1 cases. Preserve exactly six total cases and the existing
-deterministic schema/engine contracts.
+Task 14 is paused after the six definitions, runtime registry, generalized
+routes, and clean solve-through test became green. Resume by reading this file,
+the Task 14 brief, and the SDD ledger; verify branch/status; inspect the Task 14
+checkpoint diff; finish the manual solve-through/ambiguity fixture pass; add a
+focused browser check that a non-AlpineFit case opens and receives deterministic
+session data; then run full verification and independent review. Fix all
+Critical/Important findings before using the exact final commit message
+`content: complete six-case MVP library`. Do not start Task 15 before Task 14 is
+fully reviewed, documented, committed, and pushed.

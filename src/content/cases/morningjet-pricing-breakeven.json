@@ -1,0 +1,248 @@
+{
+  "id": "morningjet-pricing-breakeven",
+  "version": 1,
+  "title": "MorningJet's new-route fare",
+  "category": "pricing",
+  "difficulty": "intermediate",
+  "prompt": "MorningJet is considering a new daily round-trip route between Chicago and Nashville. Management must choose an introductory average fare and determine whether the route can cover its costs in its first full year.",
+  "objective": "Recommend an average fare for the Chicago-Nashville route and determine whether expected demand makes the route commercially feasible.",
+  "clarificationOptions": [
+    {
+      "id": "decision-scope",
+      "label": "What decision does management need to make?",
+      "response": "Choose the average one-way fare and decide whether to launch the route for a full year.",
+      "highValue": true
+    },
+    {
+      "id": "success-metric",
+      "label": "How will management define commercial success?",
+      "response": "The route should cover its route-specific fixed and variable costs in year one while retaining a reasonable demand buffer above break-even.",
+      "highValue": true
+    },
+    {
+      "id": "capacity-scope",
+      "label": "Is aircraft capacity fixed for the first year?",
+      "response": "Yes. The planned schedule provides 65,000 one-way seats for the year.",
+      "highValue": true
+    },
+    {
+      "id": "loyalty-program",
+      "label": "Will the loyalty program change for this route?",
+      "response": "No material loyalty-program changes are planned for the launch.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    { "id": "fare-mid", "text": "At a $180 average one-way fare, forecast year-one demand is 52,000 passengers." },
+    { "id": "fare-low", "text": "At a $150 average one-way fare, forecast year-one demand is 62,000 passengers." },
+    { "id": "fare-high", "text": "At a $220 average one-way fare, forecast year-one demand is 38,000 passengers." },
+    { "id": "variable-cost-passenger", "text": "Variable cost is $70 per passenger across the considered fare options." },
+    { "id": "contribution-mid", "text": "A $180 fare produces a $110 contribution margin per passenger." },
+    { "id": "annual-fixed-cost", "text": "The route requires $4.4 million of annual route-specific fixed cost." },
+    { "id": "breakeven-demand", "text": "At a $180 fare, the route breaks even at 40,000 annual passengers." },
+    { "id": "seat-capacity", "text": "The planned daily schedule provides 65,000 one-way seats annually." },
+    { "id": "demand-buffer", "text": "Forecast demand at $180 is 12,000 passengers, or 30%, above break-even demand." },
+    { "id": "competitive-range", "text": "Comparable nonstop fares on similar regional routes average $175 to $195." },
+    { "id": "service-preference", "text": "A small survey found that some business travelers prefer complimentary lounge access." },
+    { "id": "launch-profit", "text": "At the $180 fare and forecast demand, the route is expected to generate $1.32 million before shared corporate overhead." }
+  ],
+  "investigationNodes": [
+    {
+      "id": "unit-economics",
+      "conceptId": "variable_cost",
+      "label": "Understand route unit economics",
+      "interviewerResponse": "Variable cost is $70 per passenger and annual route-specific fixed cost is $4.4 million. The unit-economics exhibit is now available.",
+      "factIds": ["variable-cost-passenger", "annual-fixed-cost"],
+      "exhibitIds": ["unit-economics-exhibit"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "contribution-margin",
+      "conceptId": "price",
+      "label": "Calculate contribution margin at the midpoint fare",
+      "interviewerResponse": "At $180, each passenger contributes $110 after the $70 variable cost.",
+      "factIds": ["contribution-mid"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["unit-economics"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "demand-curve",
+      "conceptId": "volume",
+      "label": "Review demand at alternative fares",
+      "interviewerResponse": "Demand declines as the fare rises. The forecast-demand exhibit compares the three tested price points.",
+      "factIds": ["fare-low", "fare-mid", "fare-high"],
+      "exhibitIds": ["fare-demand-exhibit"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "competitive-pricing",
+      "conceptId": "competitors",
+      "label": "Benchmark comparable nonstop fares",
+      "interviewerResponse": "Comparable regional nonstop fares average $175 to $195, so $180 sits within the market range.",
+      "factIds": ["competitive-range"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "route-capacity",
+      "conceptId": "capacity",
+      "label": "Check available seat capacity",
+      "interviewerResponse": "The proposed schedule supplies 65,000 seats, enough to serve forecast demand at each tested fare.",
+      "factIds": ["seat-capacity"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "lounge-preference",
+      "conceptId": "customers",
+      "label": "Explore lounge preferences",
+      "interviewerResponse": "A small survey shows some interest in lounge access, but it does not materially change the route's demand forecast or economics.",
+      "factIds": ["service-preference"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    },
+    {
+      "id": "commercial-feasibility",
+      "conceptId": "risk",
+      "label": "Test commercial feasibility at the midpoint fare",
+      "interviewerResponse": "At $180, forecast demand is 12,000 passengers above break-even and produces an estimated $1.32 million route contribution. The route appears commercially feasible with a meaningful demand buffer.",
+      "factIds": ["demand-buffer", "launch-profit"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["contribution-margin", "demand-curve", "route-capacity"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "unit-economics-exhibit",
+      "title": "Route economics at alternative fares",
+      "type": "table",
+      "unit": "$ per passenger / $m annually",
+      "sourceFactIds": ["fare-low", "fare-mid", "fare-high", "variable-cost-passenger", "annual-fixed-cost", "launch-profit"],
+      "columns": ["Average fare", "Variable cost per passenger", "Contribution per passenger", "Forecast passengers", "Route contribution after fixed cost ($m)"],
+      "rows": [
+        [150, 70, 80, 62000, 0.56],
+        [180, 70, 110, 52000, 1.32],
+        [220, 70, 150, 38000, 1.3]
+      ],
+      "categories": [],
+      "series": [],
+      "insights": [
+        { "id": "midpoint-best-contribution", "label": "The $180 fare generates the highest expected route contribution among the tested fares.", "strength": 1 },
+        { "id": "lowest-fare-best", "label": "The lowest fare creates the highest route contribution because it attracts the most passengers.", "strength": 0.1 }
+      ]
+    },
+    {
+      "id": "fare-demand-exhibit",
+      "title": "Forecast annual demand by average fare",
+      "type": "line",
+      "unit": "passengers",
+      "sourceFactIds": ["fare-low", "fare-mid", "fare-high", "seat-capacity"],
+      "columns": ["Average fare", "Forecast passengers"],
+      "rows": [
+        [150, 62000],
+        [180, 52000],
+        [220, 38000]
+      ],
+      "categories": ["$150", "$180", "$220"],
+      "series": [
+        { "name": "Forecast passengers", "data": [62000, 52000, 38000] },
+        { "name": "Annual seat capacity", "data": [65000, 65000, 65000] }
+      ],
+      "insights": [
+        { "id": "price-demand-tradeoff", "label": "Forecast demand falls as the average fare increases.", "strength": 1 },
+        { "id": "capacity-binding", "label": "Seat capacity prevents MorningJet from serving forecast demand at $180.", "strength": 0 }
+      ]
+    }
+  ],
+  "calculations": [
+    {
+      "id": "midpoint-breakeven-demand",
+      "prompt": "At a $180 fare, contribution margin is $110 per passenger and annual route-specific fixed cost is $4.4 million. How many annual passengers are required to break even?",
+      "unit": "passengers",
+      "formula": { "operation": "divide", "inputs": [4400000, 110] },
+      "expectedAnswer": 40000,
+      "tolerance": 100,
+      "prerequisiteNodeIds": ["contribution-margin"],
+      "evidenceFactId": "breakeven-demand"
+    }
+  ],
+  "frameworkRubric": {
+    "concepts": [
+      { "conceptId": "price", "weight": 2, "required": true },
+      { "conceptId": "volume", "weight": 2, "required": true },
+      { "conceptId": "variable_cost", "weight": 1.5, "required": true },
+      { "conceptId": "fixed_cost", "weight": 1.5, "required": true },
+      { "conceptId": "capacity", "weight": 1, "required": false },
+      { "conceptId": "competitors", "weight": 0.5, "required": false },
+      { "conceptId": "risk", "weight": 1, "required": false }
+    ],
+    "overlapGroups": [["price", "volume"], ["fixed_cost", "variable_cost"]],
+    "priorityConceptIds": ["price", "volume", "variable_cost"]
+  },
+  "recommendation": {
+    "minimumEvidence": 2,
+    "decisions": [
+      {
+        "id": "launch-at-midpoint",
+        "label": "Launch at a $180 average fare, monitor booking pace, and preserve the option to adjust within the competitive range.",
+        "supportingEvidenceIds": ["contribution-mid", "breakeven-demand", "demand-buffer", "launch-profit"],
+        "weight": 1
+      },
+      {
+        "id": "launch-at-low-fare",
+        "label": "Launch at $150 to maximize passenger volume.",
+        "supportingEvidenceIds": ["fare-low"],
+        "weight": 0.4
+      },
+      {
+        "id": "launch-at-high-fare",
+        "label": "Launch at $220 to maximize contribution per passenger.",
+        "supportingEvidenceIds": ["fare-high"],
+        "weight": 0.4
+      }
+    ],
+    "risks": [
+      { "id": "demand-shortfall", "label": "Actual demand could fall below the forecast and narrow the break-even buffer." },
+      { "id": "competitive-response", "label": "Competitors may lower fares after MorningJet enters the route." },
+      { "id": "cost-inflation", "label": "Fuel or airport costs could raise variable cost above $70 per passenger." }
+    ],
+    "nextSteps": [
+      { "id": "booking-pilot", "label": "Open a limited booking window at $180 and compare early bookings with the demand forecast." },
+      { "id": "buy-more-aircraft", "label": "Purchase another aircraft before testing demand." },
+      { "id": "add-lounge", "label": "Build a dedicated lounge before launching the route." }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "economics-first",
+      "label": "Establish contribution margin, then test demand and feasibility",
+      "nodeIds": ["unit-economics", "contribution-margin", "demand-curve", "route-capacity", "commercial-feasibility"]
+    },
+    {
+      "id": "demand-first",
+      "label": "Establish demand and capacity, then confirm unit economics",
+      "nodeIds": ["demand-curve", "route-capacity", "unit-economics", "contribution-margin", "commercial-feasibility"]
+    }
+  ]
+}

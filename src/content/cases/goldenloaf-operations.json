@@ -1,0 +1,380 @@
+{
+  "id": "goldenloaf-operations",
+  "version": 1,
+  "title": "GoldenLoaf's delayed orders",
+  "category": "operations",
+  "difficulty": "intermediate",
+  "prompt": "GoldenLoaf supplies fresh bread and pastries to grocery stores across the Midwest. Customer demand remains healthy, but on-time order fulfillment has fallen from 94% to 78% over the past six months. Management wants to restore service without committing to a major facility expansion.",
+  "objective": "Identify the operational bottleneck behind GoldenLoaf's late orders and recommend a practical way to restore capacity and service levels.",
+  "clarificationOptions": [
+    {
+      "id": "service-metric",
+      "label": "Which service outcome should we improve?",
+      "response": "Focus on restoring on-time order fulfillment from 78% toward its prior 94% level.",
+      "highValue": true
+    },
+    {
+      "id": "network-scope",
+      "label": "Which facilities and customers are in scope?",
+      "response": "The issue is concentrated in GoldenLoaf's main bakery, which serves all of the affected grocery customers.",
+      "highValue": true
+    },
+    {
+      "id": "investment-constraint",
+      "label": "What investment constraints should we respect?",
+      "response": "Management will consider modest operating changes or targeted equipment, but wants to avoid a major facility expansion.",
+      "highValue": true
+    },
+    {
+      "id": "competitor-promotions",
+      "label": "Have competitors increased promotions?",
+      "response": "Competitor promotions have not materially affected GoldenLoaf's order volume or fulfillment performance.",
+      "highValue": false
+    }
+  ],
+  "facts": [
+    {
+      "id": "service-decline",
+      "text": "On-time order fulfillment fell from 94% to 78% over six months, while cancellations remained low."
+    },
+    {
+      "id": "demand-level",
+      "text": "Average demand is 840 trays per day and reaches about 900 trays from Tuesday through Thursday."
+    },
+    {
+      "id": "process-capacity",
+      "text": "Daily effective capacity is 1,200 trays in mixing, 1,100 in proofing, 760 in baking, and 1,050 in packaging."
+    },
+    {
+      "id": "oven-utilization",
+      "text": "The ovens run at 98% utilization during scheduled hours; every other production stage remains at or below 76%."
+    },
+    {
+      "id": "queue-before-oven",
+      "text": "Work-in-process accumulates before the ovens, while packaging is frequently idle waiting for baked product."
+    },
+    {
+      "id": "premium-mix-growth",
+      "text": "Small-batch premium products increased from 18% to 34% of tray volume and remain profitable and strategically important."
+    },
+    {
+      "id": "changeover-growth",
+      "text": "Oven changeovers increased from 14 to 24 per week as the product mix shifted toward smaller batches."
+    },
+    {
+      "id": "changeover-capacity-loss",
+      "text": "Cleaning and temperature resets now consume about eight oven hours per week, reducing effective baking capacity to 760 trays per day."
+    },
+    {
+      "id": "sequencing-pilot",
+      "text": "A two-week pilot grouping products by bake temperature reduced changeovers by 38% and raised effective oven capacity to 880 trays per day without affecting quality."
+    },
+    {
+      "id": "peak-gap",
+      "text": "The sequencing pilot covers average demand but leaves a roughly 20-tray gap on peak weekdays."
+    },
+    {
+      "id": "flex-hours",
+      "text": "Four flexible oven hours on peak weekdays would add approximately 45 trays of capacity per day using existing equipment."
+    },
+    {
+      "id": "staffing-stable",
+      "text": "Production staffing is 97% filled, absenteeism is unchanged, and labor coverage is adequate at each stage."
+    },
+    {
+      "id": "ingredients-available",
+      "text": "Ingredient availability exceeds the production plan, and supplier fill rates remain above 98%."
+    }
+  ],
+  "investigationNodes": [
+    {
+      "id": "fulfillment-pattern",
+      "conceptId": "customers",
+      "label": "Inspect the fulfillment decline",
+      "interviewerResponse": "On-time fulfillment has fallen sharply, but customers are generally waiting rather than canceling orders.",
+      "factIds": ["service-decline"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "demand-profile",
+      "conceptId": "volume",
+      "label": "Review daily demand",
+      "interviewerResponse": "Average demand is 840 trays per day, with a Tuesday-through-Thursday peak near 900 trays.",
+      "factIds": ["demand-level"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "process-capacity",
+      "conceptId": "capacity",
+      "label": "Compare capacity by production stage",
+      "interviewerResponse": "Baking has materially less effective capacity than mixing, proofing, or packaging. The process-capacity exhibit is now available.",
+      "factIds": ["process-capacity"],
+      "exhibitIds": ["stage-capacity"],
+      "prerequisiteNodeIds": [],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "oven-utilization",
+      "conceptId": "utilization",
+      "label": "Inspect oven utilization and queues",
+      "interviewerResponse": "The ovens are nearly fully utilized, with a queue before baking and idle time after it.",
+      "factIds": ["oven-utilization", "queue-before-oven"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["process-capacity"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "product-mix",
+      "conceptId": "mix",
+      "label": "Review the recent product-mix shift",
+      "interviewerResponse": "Small-batch premium products have nearly doubled their volume share. They are profitable, so simply removing them would sacrifice attractive business.",
+      "factIds": ["premium-mix-growth"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["demand-profile"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "oven-changeovers",
+      "conceptId": "capacity",
+      "label": "Analyze oven changeovers",
+      "interviewerResponse": "More small batches have driven oven changeovers from 14 to 24 per week, consuming eight hours and reducing effective baking capacity. The changeover exhibit is now available.",
+      "factIds": ["changeover-growth", "changeover-capacity-loss"],
+      "exhibitIds": ["oven-changeovers"],
+      "prerequisiteNodeIds": ["oven-utilization"],
+      "critical": true,
+      "rootCause": true,
+      "value": "high"
+    },
+    {
+      "id": "sequencing-pilot",
+      "conceptId": "capacity",
+      "label": "Review the production-sequencing pilot",
+      "interviewerResponse": "Grouping products by bake temperature cut changeovers by 38% and lifted effective oven capacity to 880 trays per day without harming quality.",
+      "factIds": ["sequencing-pilot", "peak-gap"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["oven-changeovers"],
+      "critical": true,
+      "rootCause": false,
+      "value": "high"
+    },
+    {
+      "id": "peak-coverage",
+      "conceptId": "utilization",
+      "label": "Evaluate peak-day coverage",
+      "interviewerResponse": "A small flexible-hours extension would close the remaining peak-day gap using the current ovens.",
+      "factIds": ["flex-hours"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": ["sequencing-pilot"],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "staffing",
+      "conceptId": "labor",
+      "label": "Check production staffing",
+      "interviewerResponse": "Staffing and attendance are stable, and labor coverage is adequate across the production line.",
+      "factIds": ["staffing-stable"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "medium"
+    },
+    {
+      "id": "ingredient-supply",
+      "conceptId": "materials",
+      "label": "Check ingredient availability",
+      "interviewerResponse": "Ingredients are readily available and supplier fill rates remain above 98%, so supply is not constraining output.",
+      "factIds": ["ingredients-available"],
+      "exhibitIds": [],
+      "prerequisiteNodeIds": [],
+      "critical": false,
+      "rootCause": false,
+      "value": "low"
+    }
+  ],
+  "exhibits": [
+    {
+      "id": "stage-capacity",
+      "title": "Effective daily capacity by production stage",
+      "type": "grouped_bar",
+      "unit": "trays per day",
+      "sourceFactIds": ["demand-level", "process-capacity", "oven-utilization", "queue-before-oven"],
+      "columns": ["Stage", "Effective capacity", "Utilization"],
+      "rows": [
+        ["Mixing", 1200, 70],
+        ["Proofing", 1100, 76],
+        ["Baking", 760, 98],
+        ["Packaging", 1050, 72]
+      ],
+      "categories": ["Mixing", "Proofing", "Baking", "Packaging"],
+      "series": [
+        {
+          "name": "Effective capacity",
+          "data": [1200, 1100, 760, 1050]
+        }
+      ],
+      "insights": [
+        {
+          "id": "baking-bottleneck",
+          "label": "Baking is the binding production constraint.",
+          "strength": 1
+        },
+        {
+          "id": "packaging-bottleneck",
+          "label": "Packaging is the binding production constraint.",
+          "strength": 0
+        }
+      ]
+    },
+    {
+      "id": "oven-changeovers",
+      "title": "Oven changeovers and effective capacity",
+      "type": "table",
+      "unit": "weekly changeovers / trays per day",
+      "sourceFactIds": ["premium-mix-growth", "changeover-growth", "changeover-capacity-loss", "sequencing-pilot"],
+      "columns": ["Operating pattern", "Changeovers per week", "Effective oven capacity"],
+      "rows": [
+        ["Six months ago", 14, 870],
+        ["Current schedule", 24, 760],
+        ["Sequencing pilot", 15, 880]
+      ],
+      "categories": [],
+      "series": [],
+      "insights": [
+        {
+          "id": "changeover-loss",
+          "label": "Frequent changeovers are suppressing effective oven capacity.",
+          "strength": 1
+        },
+        {
+          "id": "quality-tradeoff",
+          "label": "The sequencing pilot increased capacity by accepting lower quality.",
+          "strength": 0
+        }
+      ]
+    }
+  ],
+  "calculations": [],
+  "frameworkRubric": {
+    "concepts": [
+      {
+        "conceptId": "capacity",
+        "weight": 2,
+        "required": true
+      },
+      {
+        "conceptId": "utilization",
+        "weight": 1.5,
+        "required": true
+      },
+      {
+        "conceptId": "volume",
+        "weight": 1,
+        "required": true
+      },
+      {
+        "conceptId": "mix",
+        "weight": 1.5,
+        "required": false
+      },
+      {
+        "conceptId": "labor",
+        "weight": 0.5,
+        "required": false
+      },
+      {
+        "conceptId": "materials",
+        "weight": 0.5,
+        "required": false
+      },
+      {
+        "conceptId": "risk",
+        "weight": 0.5,
+        "required": false
+      }
+    ],
+    "overlapGroups": [
+      ["capacity", "utilization"]
+    ],
+    "priorityConceptIds": ["capacity", "utilization"]
+  },
+  "recommendation": {
+    "minimumEvidence": 2,
+    "decisions": [
+      {
+        "id": "sequence-and-flex",
+        "label": "Group production by bake temperature and add flexible oven hours on peak weekdays before considering new equipment.",
+        "supportingEvidenceIds": ["process-capacity", "changeover-capacity-loss", "sequencing-pilot", "peak-gap", "flex-hours"],
+        "weight": 1
+      },
+      {
+        "id": "remove-premium-products",
+        "label": "Discontinue all small-batch premium products immediately.",
+        "supportingEvidenceIds": ["premium-mix-growth"],
+        "weight": 0.3
+      },
+      {
+        "id": "expand-packaging",
+        "label": "Purchase a second packaging line to increase downstream capacity.",
+        "supportingEvidenceIds": ["queue-before-oven"],
+        "weight": 0.1
+      }
+    ],
+    "risks": [
+      {
+        "id": "freshness-window",
+        "label": "Longer production runs could make it harder to meet freshness windows for some products."
+      },
+      {
+        "id": "peak-volatility",
+        "label": "Demand spikes above the current peak could exceed the added flexible capacity."
+      },
+      {
+        "id": "employee-fatigue",
+        "label": "Flexible oven hours could strain the trained oven team if scheduling is not rotated."
+      }
+    ],
+    "nextSteps": [
+      {
+        "id": "four-week-rollout",
+        "label": "Run a four-week sequencing and flexible-hours rollout while tracking on-time fulfillment, oven capacity, and quality."
+      },
+      {
+        "id": "packaging-rfp",
+        "label": "Issue an immediate request for proposals for a second packaging line."
+      },
+      {
+        "id": "premium-exit",
+        "label": "Notify customers that premium products will be discontinued next month."
+      }
+    ]
+  },
+  "efficientPaths": [
+    {
+      "id": "capacity-first",
+      "label": "Find the bottleneck, then recover effective capacity",
+      "nodeIds": ["process-capacity", "oven-utilization", "oven-changeovers", "sequencing-pilot", "peak-coverage"]
+    },
+    {
+      "id": "demand-and-mix-first",
+      "label": "Size demand and mix before isolating the oven constraint",
+      "nodeIds": ["demand-profile", "product-mix", "process-capacity", "oven-utilization", "oven-changeovers", "sequencing-pilot", "peak-coverage"]
+    }
+  ]
+}

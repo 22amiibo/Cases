@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
+import { getCaseDefinition } from "@/content/cases";
 import {
   applyCaseEvent,
   createCaseSession,
@@ -13,16 +13,15 @@ import type {
   LearnerExhibitDefinition,
   LearnerSessionView,
 } from "@/core/learner-case";
-import { CaseDefinitionSchema, CaseEventSchema } from "@/core/schema";
-
-const alpineFit = CaseDefinitionSchema.parse(alpineFitContent);
+import { CaseEventSchema } from "@/core/schema";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> },
 ) {
   const { caseId } = await params;
-  if (caseId !== alpineFit.id) {
+  const caseDefinition = getCaseDefinition(caseId);
+  if (!caseDefinition) {
     return NextResponse.json({ error: "Case not found" }, { status: 404 });
   }
 
@@ -39,7 +38,7 @@ export async function POST(
   const session = parsedEvents.reduce(
     (current, parsed) =>
       parsed.success ? applyCaseEvent(current, parsed.data) : current,
-    createCaseSession(alpineFit),
+    createCaseSession(caseDefinition),
   );
   const investigatedNodeIds = new Set(
     session.events
@@ -58,13 +57,13 @@ export async function POST(
       ({ id, conceptId, label }) => ({ id, conceptId, label }),
     ),
     facts: getRevealedFacts(session),
-    exhibits: alpineFit.exhibits
+    exhibits: caseDefinition.exhibits
       .filter((exhibit) => session.revealedExhibitIds.includes(exhibit.id))
       .map(
         ({ id, title, type, unit, columns, rows, series, categories }) =>
           ({ id, title, type, unit, columns, rows, series, categories }) satisfies LearnerExhibitDefinition,
       ),
-    calculations: alpineFit.calculations
+    calculations: caseDefinition.calculations
       .filter((calculation) =>
         calculation.prerequisiteNodeIds.every((nodeId) =>
           investigatedNodeIds.has(nodeId),
@@ -74,23 +73,23 @@ export async function POST(
     completedCalculationIds: session.completedCalculationIds,
     interviewerResponse:
       lastInvestigation?.type === "node_investigated"
-        ? alpineFit.investigationNodes.find(
+        ? caseDefinition.investigationNodes.find(
             (node) => node.id === lastInvestigation.nodeId,
           )?.interviewerResponse ?? null
         : null,
     recommendation: recommendationVisible
       ? {
-          decisions: alpineFit.recommendation.decisions.map(({ id, label }) => ({
+          decisions: caseDefinition.recommendation.decisions.map(({ id, label }) => ({
             id,
             label,
           })),
-          risks: alpineFit.recommendation.risks,
-          nextSteps: alpineFit.recommendation.nextSteps,
+          risks: caseDefinition.recommendation.risks,
+          nextSteps: caseDefinition.recommendation.nextSteps,
         }
       : null,
     review:
       session.currentStage === "complete"
-        ? toLearnerCaseReview(alpineFit, session.events)
+        ? toLearnerCaseReview(caseDefinition, session.events)
         : null,
   };
 

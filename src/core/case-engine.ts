@@ -79,9 +79,42 @@ export function isCaseEventAllowed(
     case "clarification_selected":
       return (
         (currentStage === "clarify" || currentStage === "structure") &&
+        !caseDefinition.opening &&
         !session.events.some((candidate) => candidate.type === "framework_submitted") &&
         includesId(caseDefinition.clarificationOptions, event.clarificationId)
       );
+    case "case_opening_submitted": {
+      const opening = caseDefinition.opening;
+      const criterionIds = new Set(
+        opening?.responseCycle.criteria.map(({ id }) => id) ?? [],
+      );
+      const submittedCriterionIds = new Set(
+        event.rubricOutcomes.map(({ criterionId }) => criterionId),
+      );
+      const responseIds = new Set(event.responses.map(({ responseId }) => responseId));
+      return Boolean(
+        currentStage === "clarify" &&
+          caseDefinition.version >= 2 &&
+          opening &&
+          event.responses.every(
+            (response) =>
+              response.interactionId === opening.responseCycle.interactionId &&
+              response.responseKind === opening.responseCycle.responseKind,
+          ) &&
+          submittedCriterionIds.size === criterionIds.size &&
+          event.rubricOutcomes.length === criterionIds.size &&
+          event.rubricOutcomes.every(({ criterionId }) => criterionIds.has(criterionId)) &&
+          event.diagnostics.every(
+            ({ responseId }) => !responseId || responseIds.has(responseId),
+          ) &&
+          event.questions.every(({ questionId, interviewerResponse }) =>
+            caseDefinition.clarificationOptions.some(
+              (option) =>
+                option.id === questionId && option.response === interviewerResponse,
+            ),
+          )
+      );
+    }
     case "framework_submitted": {
       const submission = frameworkSubmissionFromEvent(event);
       const conceptIds = flattenFrameworkConceptIds(submission.branches);
@@ -202,6 +235,8 @@ function nextStage(currentStage: CaseStage, event: CaseEvent): CaseStage {
   switch (event.type) {
     case "clarification_selected":
       return currentStage === "clarify" ? "structure" : currentStage;
+    case "case_opening_submitted":
+      return "structure";
     case "framework_submitted":
       return "investigate";
     case "synthesis_submitted":

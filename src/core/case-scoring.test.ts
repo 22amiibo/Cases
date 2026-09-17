@@ -261,4 +261,45 @@ describe("scoreCase", () => {
       ]).exhibit,
     ).toBe(0.5);
   });
+
+  it("does not award full V2 clarification credit for any one high-value checkbox", () => {
+    const definition = CaseDefinitionSchema.parse({
+      ...alpineFitContent,
+      version: 2,
+      opening: {
+        responseCycle: {
+          interactionId: "opening",
+          responseKind: "objective_restatement",
+          prompt: "Restate the objective.",
+          scaffoldingLevel: "beginner",
+          guidance: [],
+          criteria: [{ id: "objective", label: "Restates objective" }],
+          comparison: { title: "Example", text: "Explain the decline." },
+          diagnosticRules: [],
+        },
+        recommendedQuestionCount: 3,
+        minimumHighValueQuestions: 2,
+      },
+    });
+    const selected = definition.clarificationOptions.find(({ highValue }) => highValue)!;
+    const event: CaseEvent = {
+      type: "case_opening_submitted",
+      eventSchemaVersion: 2,
+      responses: [{
+        responseId: "opening-1",
+        interactionId: "opening",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "objective_restatement",
+        text: "Explain the decline.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "objective", met: true }],
+      diagnostics: [],
+      questions: [{ questionId: selected.id, interviewerResponse: selected.response }],
+      authoredComparisonViewed: true,
+      atMs: 2,
+    };
+    expect(scoreCase(definition, [event]).clarification).toBe(0);
+  });
 });

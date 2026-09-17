@@ -31,6 +31,11 @@ const skillCopy: Record<
     title: "Synthesis",
     description: "Select the evidence that actually changes the decision.",
   },
+  clarification: {
+    index: "06",
+    title: "Case opening & clarification",
+    description: "Frame the decision and ask a focused set of high-information questions.",
+  },
 };
 
 export default function DrillsPage() {
@@ -40,7 +45,7 @@ export default function DrillsPage() {
         <Link href="/" className={styles.wordmark}>
           Casework
         </Link>
-        <span>Five skills · ten reps each</span>
+        <span>Six trainable skills · V1 library plus V2 pilot reps</span>
       </header>
 
       <section className={styles.intro}>
@@ -61,7 +66,11 @@ export default function DrillsPage() {
                 <h2>{skill.title}</h2>
                 <p>{skill.description}</p>
               </div>
-              <span className={styles.count}>{drillBanks[skillId].length} drills →</span>
+              <span className={styles.count}>
+                {skillId === "clarification"
+                  ? "1 V2 pilot rep →"
+                  : `${drillBanks[skillId].length} legacy drills →`}
+              </span>
             </Link>
           );
         })}

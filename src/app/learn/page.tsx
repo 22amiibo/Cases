@@ -1,5 +1,5 @@
 import Link from "next/link";
-import lessons from "@/content/lessons.json";
+import { lessonDefinitions as lessons } from "@/content/lessons/index";
 import styles from "./learn.module.css";
 
 type Lesson = (typeof lessons)[number];
@@ -13,7 +13,7 @@ const sections: Array<{
   {
     kind: "skill",
     eyebrow: "Core moves",
-    title: "Five moves to practice deliberately",
+    title: "Six moves to practice deliberately",
     description:
       "Use these short modules before a drill or whenever a full case exposes a weak spot.",
   },
@@ -40,7 +40,7 @@ export default function LearnPage() {
         <p>Learn, then practice</p>
         <h1>Compact lessons for better case judgment</h1>
         <span>
-          Ten practical ideas, each paired with a drill. Read one, use it
+          Eleven practical ideas, each paired with a drill. Read one, use it
           immediately, and return when you need a reset.
         </span>
       </section>

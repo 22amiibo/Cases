@@ -1,0 +1,66 @@
+{
+  "id": "alpinefit-opening-clarification",
+  "contentVersion": 2,
+  "eventSchemaVersion": 2,
+  "scoringVersion": "v2",
+  "scaffoldingLevel": "beginner",
+  "skillId": "clarification",
+  "conceptIdsPracticed": ["profit", "time", "constraint"],
+  "title": "Open the AlpineFit case",
+  "casePrompt": "AlpineFit, a regional fitness-club chain, grew membership but saw operating margin fall from 18% to 12% last year. The CEO wants to understand why and what to do next.",
+  "responseCycle": {
+    "interactionId": "alpinefit-opening-restatement",
+    "responseKind": "objective_restatement",
+    "prompt": "Restate the decision objective in your own words before asking questions.",
+    "scaffoldingLevel": "beginner",
+    "guidance": ["Name the metric, direction of change, and decision to support."],
+    "criteria": [
+      { "id": "objective", "label": "Restates the CEO's decision objective" },
+      { "id": "metric", "label": "Names operating margin and its decline" },
+      { "id": "action", "label": "Connects the diagnosis to what AlpineFit should do" }
+    ],
+    "comparison": {
+      "title": "One strong opening",
+      "text": "I want to identify what drove AlpineFit's six-point margin decline last year and determine the most practical actions to restore profitability without undermining membership growth."
+    },
+    "diagnosticRules": [
+      { "criterionId": "objective", "when": "not_met", "code": "objective_not_reframed", "severity": "blocking" },
+      { "criterionId": "metric", "when": "not_met", "code": "material_term_unresolved", "severity": "coaching" },
+      { "criterionId": "action", "when": "not_met", "code": "constraint_missed", "severity": "coaching" }
+    ]
+  },
+  "questionOptions": [
+    {
+      "id": "metric-definition",
+      "label": "How is operating margin defined, and is the decline chain-wide?",
+      "response": "Operating margin is operating profit divided by revenue, and the decline appears across the chain rather than in one isolated club.",
+      "highValue": true
+    },
+    {
+      "id": "time-period",
+      "label": "Did the decline occur gradually or at a particular point last year?",
+      "response": "Most of the decline developed over the last nine months and persisted through year-end.",
+      "highValue": true
+    },
+    {
+      "id": "decision-constraints",
+      "label": "Are there constraints on pricing, investment, or member experience?",
+      "response": "The CEO will consider operational investment but does not want a broad price increase or service cuts that could damage retention.",
+      "highValue": true
+    },
+    {
+      "id": "logo-color",
+      "label": "Has AlpineFit changed its logo or brand colors recently?",
+      "response": "No. Branding has not changed and is not believed to affect the margin decline.",
+      "highValue": false
+    },
+    {
+      "id": "every-club-manager",
+      "label": "Can we interview every club manager before forming a structure?",
+      "response": "That would take several weeks; the CEO expects an initial fact-based direction much sooner.",
+      "highValue": false
+    }
+  ],
+  "recommendedQuestionCount": 3,
+  "minimumHighValueQuestions": 2
+}

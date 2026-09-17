@@ -204,6 +204,29 @@ export const FactDefinitionSchema = z.object({
   text: z.string().min(1),
 });
 
+export const GeneratedResponseDefinitionSchema = z.object({
+  interactionId: IdentifierSchema,
+  responseKind: IdentifierSchema,
+  prompt: z.string().min(1),
+  scaffoldingLevel: ScaffoldingLevelSchema,
+  guidance: z.array(z.string().min(1)),
+  criteria: z
+    .array(z.object({ id: IdentifierSchema, label: z.string().min(1) }))
+    .min(1),
+  comparison: z.object({
+    title: z.string().min(1),
+    text: z.string().min(1).max(10_000),
+  }),
+  diagnosticRules: z.array(
+    z.object({
+      criterionId: IdentifierSchema,
+      when: z.enum(["met", "not_met"]),
+      code: z.enum(diagnosticCodes),
+      severity: z.enum(["strength", "coaching", "blocking"]),
+    }),
+  ),
+});
+
 export const InvestigationNodeSchema = z.object({
   id: IdentifierSchema,
   conceptId: IdentifierSchema,
@@ -243,30 +266,7 @@ export const ExhibitDefinitionSchema = z.object({
       }),
     )
     .min(1),
-  interpretation: z
-    .object({
-      interactionId: IdentifierSchema,
-      responseKind: IdentifierSchema,
-      prompt: z.string().min(1),
-      scaffoldingLevel: ScaffoldingLevelSchema,
-      guidance: z.array(z.string().min(1)),
-      criteria: z
-        .array(z.object({ id: IdentifierSchema, label: z.string().min(1) }))
-        .min(1),
-      comparison: z.object({
-        title: z.string().min(1),
-        text: z.string().min(1).max(10_000),
-      }),
-      diagnosticRules: z.array(
-        z.object({
-          criterionId: IdentifierSchema,
-          when: z.enum(["met", "not_met"]),
-          code: z.enum(diagnosticCodes),
-          severity: z.enum(["strength", "coaching", "blocking"]),
-        }),
-      ),
-    })
-    .optional(),
+  interpretation: GeneratedResponseDefinitionSchema.optional(),
 });
 
 export const CalculationDefinitionSchema = z.object({
@@ -316,6 +316,13 @@ const CaseDefinitionBaseSchema = z.object({
   prompt: z.string().min(1),
   objective: z.string().min(1),
   clarificationOptions: z.array(ClarificationOptionSchema).min(1),
+  opening: z
+    .object({
+      responseCycle: GeneratedResponseDefinitionSchema,
+      recommendedQuestionCount: z.number().int().positive(),
+      minimumHighValueQuestions: z.number().int().positive(),
+    })
+    .optional(),
   facts: z.array(FactDefinitionSchema).min(1),
   investigationNodes: z.array(InvestigationNodeSchema).min(1),
   exhibits: z.array(ExhibitDefinitionSchema).min(1),
@@ -402,6 +409,17 @@ export const CaseEventSchema = z.union([
   TimedEventSchema.extend({
     type: z.literal("clarification_selected"),
     clarificationId: IdentifierSchema,
+  }),
+  TimedEventSchema.extend({
+    type: z.literal("case_opening_submitted"),
+    eventSchemaVersion: z.literal(2),
+    responses: CommittedResponseChainSchema,
+    rubricOutcomes: z.array(RubricOutcomeSchema),
+    diagnostics: z.array(DiagnosticOutcomeSchema),
+    questions: z.array(
+      z.object({ questionId: IdentifierSchema, interviewerResponse: z.string().min(1) }),
+    ).min(1),
+    authoredComparisonViewed: z.literal(true),
   }),
   LegacyFrameworkSubmittedEventSchema,
   V2FrameworkSubmittedEventSchema,
@@ -508,3 +526,32 @@ export const DrillDefinitionSchema = z.discriminatedUnion("skillId", [
 ]);
 
 export type DrillDefinition = z.infer<typeof DrillDefinitionSchema>;
+
+export const V2ClarificationDrillDefinitionSchema = z.object({
+  id: IdentifierSchema,
+  contentVersion: z.literal(2),
+  eventSchemaVersion: z.literal(2),
+  scoringVersion: z.literal("v2"),
+  scaffoldingLevel: ScaffoldingLevelSchema,
+  skillId: z.literal("clarification"),
+  conceptIdsPracticed: z.array(IdentifierSchema).min(1),
+  title: z.string().min(1),
+  casePrompt: z.string().min(1),
+  responseCycle: GeneratedResponseDefinitionSchema,
+  questionOptions: z
+    .array(
+      z.object({
+        id: IdentifierSchema,
+        label: z.string().min(1),
+        response: z.string().min(1),
+        highValue: z.boolean(),
+      }),
+    )
+    .min(3),
+  recommendedQuestionCount: z.number().int().positive(),
+  minimumHighValueQuestions: z.number().int().positive(),
+});
+
+export type V2ClarificationDrillDefinition = z.infer<
+  typeof V2ClarificationDrillDefinitionSchema
+>;

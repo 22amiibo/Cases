@@ -98,6 +98,25 @@ function scoreClarification(definition: CaseDefinition, events: CaseEvent[]) {
       .filter((option) => option.highValue)
       .map((option) => option.id),
   );
+  if (definition.opening) {
+    const opening = events.find(
+      (event): event is Extract<CaseEvent, { type: "case_opening_submitted" }> =>
+        event.type === "case_opening_submitted",
+    );
+    if (!opening) return 0;
+    const selected = opening.questions.flatMap(({ questionId }) => {
+      const option = definition.clarificationOptions.find(
+        (candidate) => candidate.id === questionId,
+      );
+      return option ? [option] : [];
+    });
+    const highValueCount = selected.filter(({ highValue }) => highValue).length;
+    return highValueCount >= definition.opening.minimumHighValueQuestions &&
+      selected.length <= definition.opening.recommendedQuestionCount &&
+      selected.every(({ highValue }) => highValue)
+      ? 1
+      : 0;
+  }
   return events.some(
     (event) =>
       event.type === "clarification_selected" &&

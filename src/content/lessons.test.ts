@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import lessons from "./lessons.json";
 import { drillSkillIds, isDrillSkillId } from "./drills";
-import { getLessonDefinition } from "./lessons/index";
+import clarificationV2 from "./lessons/clarification-v2.json";
+import { getLessonDefinition, lessonDefinitions } from "./lessons/index";
 
 type Lesson = {
   id: string;
@@ -56,9 +57,7 @@ describe("lesson content", () => {
       expect(lesson.drillRoute).toBe(`/drills/${lesson.skillId}`);
     });
 
-    expect(new Set(typedLessons.map((lesson) => lesson.skillId))).toEqual(
-      new Set(drillSkillIds),
-    );
+    expect(new Set(lessonDefinitions.map((lesson) => lesson.skillId))).toEqual(new Set(drillSkillIds));
   });
 
   it("resolves V1 lessons by explicit historical version", () => {
@@ -69,5 +68,10 @@ describe("lesson content", () => {
         getLessonDefinition(lesson.id, 1),
       );
     }
+  });
+
+  it("publishes the clarification lesson as a separate V2 artifact", () => {
+    expect(getLessonDefinition(clarificationV2.id, 2)).toEqual(clarificationV2);
+    expect(getLessonDefinition(clarificationV2.id, 1)).toBeUndefined();
   });
 });

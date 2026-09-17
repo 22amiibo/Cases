@@ -73,10 +73,10 @@ npm run build
 
 ### Active V2 checkpoint — 2026-09-17
 
-- V2 Tasks 1–7 are complete through scoreable exhibit interpretation.
+- V2 Tasks 1–8 are complete through clarification as skill six.
 - Do not stage or commit `supabase/.temp/`; it predates the V2 work and contains
   local Supabase link metadata.
-- Continue with Task 8, the clarification skill and first V2 drill rep.
+- Continue with Task 9, adding exactly five more V2 reps for one per skill.
 - Continue only through Task 11, then stop at the mandatory owner playtest gate
   before authoring any remaining drills or upgrading another case.
 
@@ -217,6 +217,30 @@ npm run build
   in Task 11; no throwaway pilot content was added before that task.
 - Next action: add clarification as the sixth trainable skill through one real
   V2 generated-response rep, with relevance rules and diagnostic evidence.
+
+### Casework V2 Task 8: Case opening and clarification skill — complete
+
+- Added exactly one V2 clarification pilot rep and a separate V2 lesson without
+  modifying the 50 legacy drill artifacts or ten legacy lesson artifacts.
+- Learners generate and commit an objective restatement before rubric criteria,
+  authored comparison, or question choices appear; selected questions then
+  return their exact authored interviewer responses.
+- Deterministic question evaluation distinguishes high-information questions,
+  low-value choices, and overload. Prose remains self-assessed against explicit
+  criteria; no keyword or length rule pretends to grade its meaning.
+- Completed attempts persist full V2 metadata, linked responses, rubric outcomes,
+  and source-labeled self-assessment/system diagnostics. Refresh restores the
+  committed cycle and post-commit question choices.
+- Added the parallel V2 full-case opening contract: generated restatement,
+  verified authored question responses, rubric evidence, diagnostics, and
+  revisions. V2 clarification requires multiple focused questions; one legacy-
+  style high-value checkbox cannot earn full credit.
+- Verification: 156 unit/component tests, typecheck, lint, production build,
+  focused engine/scoring tests, and the clarification Playwright journey pass;
+  the browser journey covers answer secrecy, authored responses, keyboard focus,
+  axe, and 320px overflow.
+- Next action: author exactly one V2 rep for each remaining skill using the same
+  cycle, then verify the total is exactly six before proceeding.
 
 ### Repository preparation — complete
 

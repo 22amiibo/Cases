@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DrillDefinitionSchema } from "@/core/schema";
-import { getDrillDefinition } from ".";
+import {
+  DrillDefinitionSchema,
+  V2ClarificationDrillDefinitionSchema,
+} from "@/core/schema";
+import { clarificationV2Definition, getDrillDefinition } from ".";
 
 const drillModules = import.meta.glob("./*.json", {
   eager: true,
@@ -17,7 +20,7 @@ describe("drill content", () => {
       "synthesis",
     ];
 
-    expect(Object.keys(drillModules)).toHaveLength(expectedSkills.length);
+    expect(Object.keys(drillModules).filter((path) => !path.includes("-v2"))).toHaveLength(expectedSkills.length);
 
     expectedSkills.forEach((skillId) => {
       const entry = Object.entries(drillModules).find(([path]) =>
@@ -36,7 +39,9 @@ describe("drill content", () => {
   });
 
   it("resolves V1 drills by explicit historical version", () => {
-    for (const exercises of Object.values(drillModules)) {
+    for (const exercises of Object.entries(drillModules)
+      .filter(([path]) => !path.includes("-v2"))
+      .map(([, content]) => content)) {
       for (const exercise of exercises as unknown[]) {
         const definition = DrillDefinitionSchema.parse(exercise);
         expect(getDrillDefinition(definition.id, 1)).toBeDefined();
@@ -46,5 +51,15 @@ describe("drill content", () => {
         );
       }
     }
+  });
+
+  it("publishes exactly one initial V2 clarification rep", () => {
+    expect(V2ClarificationDrillDefinitionSchema.parse(clarificationV2Definition)).toEqual(
+      clarificationV2Definition,
+    );
+    expect(getDrillDefinition(clarificationV2Definition.id, 2)).toBe(
+      clarificationV2Definition,
+    );
+    expect(getDrillDefinition(clarificationV2Definition.id, 1)).toBeUndefined();
   });
 });

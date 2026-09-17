@@ -4,8 +4,12 @@ import {
   drillBanks,
   drillSkillIds,
   isDrillSkillId,
+  isLegacyDrillSkillId,
+  clarificationV2Definition,
 } from "@/content/drills";
 import { DrillSession } from "@/components/drills/DrillSession";
+import { ClarificationDrillSession } from "@/components/drills/ClarificationDrillSession";
+import { projectClarificationDrill } from "@/core/clarification-drill";
 import styles from "./session.module.css";
 
 export function generateStaticParams() {
@@ -26,7 +30,13 @@ export default async function DrillSkillPage({
         <Link href="/drills">← All drills</Link>
         <span>Casework / {skill}</span>
       </header>
-      <DrillSession definitions={drillBanks[skill]} />
+      {isLegacyDrillSkillId(skill) ? (
+        <DrillSession definitions={drillBanks[skill]} />
+      ) : (
+        <ClarificationDrillSession
+          definition={projectClarificationDrill(clarificationV2Definition)}
+        />
+      )}
     </main>
   );
 }

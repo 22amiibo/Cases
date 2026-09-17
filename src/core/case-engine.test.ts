@@ -52,6 +52,25 @@ const v2InterpretationEvent = {
   atMs: 4,
 };
 
+const v2OpeningDefinition = CaseDefinitionSchema.parse({
+  ...alpineFitContent,
+  version: 2,
+  opening: {
+    responseCycle: {
+      interactionId: "case-opening",
+      responseKind: "objective_restatement",
+      prompt: "Restate the objective.",
+      scaffoldingLevel: "beginner",
+      guidance: [],
+      criteria: [{ id: "objective", label: "Restates the objective" }],
+      comparison: { title: "Example", text: "Explain the margin decline." },
+      diagnosticRules: [],
+    },
+    recommendedQuestionCount: 3,
+    minimumHighValueQuestions: 2,
+  },
+});
+
 function sessionAtInvestigation() {
   const structured = applyCaseEvent(createCaseSession(alpineFit), {
     type: "clarification_selected",
@@ -322,6 +341,39 @@ describe("deterministic case engine", () => {
     const interpreted = applyCaseEvent(session, v2InterpretationEvent);
     expect(interpreted.events.at(-1)).toEqual(v2InterpretationEvent);
     expect(applyCaseEvent(interpreted, synthesis).currentStage).toBe("recommend");
+  });
+
+  it("preserves a V2 opening and verifies every authored interviewer response", () => {
+    const opening = {
+      type: "case_opening_submitted" as const,
+      eventSchemaVersion: 2 as const,
+      responses: [{
+        responseId: "opening-1",
+        interactionId: "case-opening",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "objective_restatement",
+        text: "Explain the margin decline.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "objective", met: true }],
+      diagnostics: [],
+      questions: v2OpeningDefinition.clarificationOptions.slice(0, 2).map(
+        ({ id, response }) => ({ questionId: id, interviewerResponse: response }),
+      ),
+      authoredComparisonViewed: true as const,
+      atMs: 2,
+    };
+    const session = createCaseSession(v2OpeningDefinition);
+    const structured = applyCaseEvent(session, opening);
+    expect(structured.currentStage).toBe("structure");
+    expect(structured.events[0]).toEqual(opening);
+    expect(
+      applyCaseEvent(session, {
+        ...opening,
+        questions: [{ questionId: opening.questions[0].questionId, interviewerResponse: "Forged" }],
+      }),
+    ).toBe(session);
   });
 
   it("validates authored recommendation choices and discovered evidence", () => {

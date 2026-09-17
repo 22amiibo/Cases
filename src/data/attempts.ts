@@ -4,8 +4,11 @@ import {
   SkillIdSchema,
   type CaseEvent,
   type DrillDefinition,
+  type DiagnosticOutcome,
+  type LearningEvidenceRecord,
   type SkillId,
 } from "@/core/schema";
+import type { LearningCycleState } from "@/core/learning-cycle";
 import type { CaseAttempt, DrillAttempt } from "./repository";
 
 const progressSkillIds = new Set<SkillId>([
@@ -32,6 +35,64 @@ export function createDrillAttempt(
     feedbackCodes: [result.feedbackCode],
     conceptIdsPracticed: result.conceptIdsPracticed,
     completedAt,
+  };
+}
+
+export function createV2ClarificationAttempt({
+  attemptId,
+  userId,
+  definition,
+  cycle,
+  systemDiagnostics,
+  completedAt,
+}: {
+  attemptId: string;
+  userId: string;
+  definition: {
+    id: string;
+    contentVersion: 2;
+    eventSchemaVersion: 2;
+    scoringVersion: "v2";
+    scaffoldingLevel: "beginner" | "intermediate" | "interview";
+    skillId: "clarification";
+    conceptIdsPracticed: string[];
+    responsePrompt: { interactionId: string };
+  };
+  cycle: LearningCycleState;
+  systemDiagnostics: DiagnosticOutcome[];
+  completedAt: string;
+}): DrillAttempt {
+  const latestResponse = cycle.responses.at(-1);
+  const latestAssessment = cycle.assessments.find(
+    ({ responseId }) => responseId === latestResponse?.responseId,
+  );
+  const diagnostics = [...cycle.diagnostics, ...systemDiagnostics];
+  const learningEvidence: LearningEvidenceRecord = {
+    interactionId: definition.responsePrompt.interactionId,
+    skillId: "clarification",
+    scoringVersion: "v2",
+    contentVersion: definition.contentVersion,
+    eventSchemaVersion: definition.eventSchemaVersion,
+    scaffoldingLevel: definition.scaffoldingLevel,
+    responses: cycle.responses,
+    rubricOutcomes: latestAssessment?.outcomes ?? [],
+    diagnostics,
+  };
+  return {
+    attemptId,
+    userId,
+    drillId: definition.id,
+    skillId: "clarification",
+    score: 0,
+    feedbackCodes: diagnostics.map(({ code }) => code),
+    conceptIdsPracticed: definition.conceptIdsPracticed,
+    completedAt,
+    scoringVersion: "v2",
+    contentVersion: definition.contentVersion,
+    eventSchemaVersion: definition.eventSchemaVersion,
+    scaffoldingLevel: definition.scaffoldingLevel,
+    learningEvidence,
+    diagnostics,
   };
 }
 

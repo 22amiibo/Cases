@@ -1,0 +1,15 @@
+{
+  "id": "case-opening-clarification",
+  "contentVersion": 2,
+  "kind": "skill",
+  "title": "Open with the decision, then reduce uncertainty",
+  "summary": "A strong opening restates the objective and asks only the questions that can materially change the structure or recommendation.",
+  "principles": [
+    "Restate the metric, change, time period, and decision before investigating.",
+    "Ask about definitions, scope, timing, and real decision constraints.",
+    "Avoid long question lists and details that cannot change the first structure."
+  ],
+  "example": "For a margin decline, confirm the metric and timing, then clarify constraints on pricing, investment, and customer experience.",
+  "skillId": "clarification",
+  "drillRoute": "/drills/clarification"
+}

@@ -5,19 +5,25 @@ import styles from "./page.module.css";
 
 const practicePaths = [
   {
-    eyebrow: "01 / Focus",
+    eyebrow: "01 / Learn",
+    title: "Learn the moves",
+    description: "Read one concise lesson, then apply it in a matching drill.",
+    href: "/learn",
+  },
+  {
+    eyebrow: "02 / Focus",
     title: "Practice a skill",
     description: "Sharpen one move at a time with short, scored drills.",
     href: "/drills",
   },
   {
-    eyebrow: "02 / Integrate",
+    eyebrow: "03 / Integrate",
     title: "Practice a case",
     description: "Work from an ambiguous prompt to a defensible recommendation.",
     href: "/cases",
   },
   {
-    eyebrow: "03 / Improve",
+    eyebrow: "04 / Improve",
     title: "View progress",
     description: "See patterns in your reasoning and choose the next useful rep.",
     href: "/progress",

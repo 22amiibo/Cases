@@ -1,0 +1,142 @@
+[
+  {
+    "id": "structuring",
+    "kind": "skill",
+    "title": "Build a decision tree, not a topic list",
+    "summary": "A useful structure breaks the decision into distinct drivers and makes the first investigation obvious.",
+    "principles": [
+      "Start with the decision and split it into a few independent drivers.",
+      "Make branches specific enough to test with evidence.",
+      "Name the branch you would investigate first and explain why."
+    ],
+    "example": "For falling profit, separate revenue from cost before splitting price, volume, fixed cost, and variable cost.",
+    "skillId": "structure",
+    "drillRoute": "/drills/structure"
+  },
+  {
+    "id": "prioritization",
+    "kind": "skill",
+    "title": "Ask the question that can change the answer",
+    "summary": "Prioritization is choosing the next question with the highest decision value, not collecting every available fact.",
+    "principles": [
+      "Begin with the largest plausible driver of the outcome.",
+      "Prefer questions that distinguish between competing explanations.",
+      "Stop exploring a branch when the evidence makes it immaterial."
+    ],
+    "example": "If margins fell sharply while sales stayed stable, test major cost categories before researching customer awareness.",
+    "skillId": "prioritization",
+    "drillRoute": "/drills/prioritization"
+  },
+  {
+    "id": "quantitative-implication",
+    "kind": "skill",
+    "title": "Carry the math into the decision",
+    "summary": "Correct arithmetic matters only when you translate the result into its business implication.",
+    "principles": [
+      "State the formula and units before calculating.",
+      "Sense-check the scale and direction of the result.",
+      "Compare the answer with the decision threshold and say what changes."
+    ],
+    "example": "A 12% margin is not just a result: against a 15% hurdle, it means the proposal is not yet viable.",
+    "skillId": "quantitative",
+    "drillRoute": "/drills/quantitative"
+  },
+  {
+    "id": "what-so-what-now-what",
+    "kind": "skill",
+    "title": "Read exhibits in three moves",
+    "summary": "Use What / So what / Now what to turn a chart observation into a focused next action.",
+    "principles": [
+      "What: identify the strongest comparison or change without explaining it yet.",
+      "So what: connect that pattern to the case objective.",
+      "Now what: name the next question or analysis that would confirm the implication."
+    ],
+    "example": "What: churn doubled in small accounts. So what: they drive the retention gap. Now what: test whether service delays explain their exits.",
+    "skillId": "exhibit",
+    "drillRoute": "/drills/exhibit"
+  },
+  {
+    "id": "synthesis",
+    "kind": "skill",
+    "title": "Synthesize around the decision",
+    "summary": "A synthesis selects the few facts that alter the answer and uses them to direct the next move.",
+    "principles": [
+      "Lead with the current answer, not a recap of the process.",
+      "Support it with two or three decisive facts.",
+      "Close with the unresolved risk or highest-value next step."
+    ],
+    "example": "Profit pressure is cost-led, mainly overtime; validate the staffing and turnover link before recommending a labor intervention.",
+    "skillId": "synthesis",
+    "drillRoute": "/drills/synthesis"
+  },
+  {
+    "id": "segmentation",
+    "kind": "pattern",
+    "title": "Segment where behavior differs",
+    "summary": "A total can hide opposing stories. Split the problem only along dimensions that may change the decision.",
+    "principles": [
+      "Choose segments with a reason to behave differently: customer, product, channel, region, or time.",
+      "Compare both size and performance so a dramatic but tiny segment does not distract you.",
+      "Avoid cuts that merely reorganize the same information."
+    ],
+    "example": "Flat total growth can conceal enterprise gains offset by small-business losses, requiring different actions for each segment.",
+    "skillId": "structure",
+    "drillRoute": "/drills/structure"
+  },
+  {
+    "id": "mix-shift",
+    "kind": "pattern",
+    "title": "Separate performance from mix shift",
+    "summary": "An average can move even when every segment is unchanged because the weight of high- and low-value segments changed.",
+    "principles": [
+      "Inspect segment shares alongside segment-level performance.",
+      "Ask whether the overall change comes from within segments or between them.",
+      "Target the cause: fix segment economics or influence the mix."
+    ],
+    "example": "Average price may fall with unchanged product prices when customers buy more entry-level products.",
+    "skillId": "exhibit",
+    "drillRoute": "/drills/exhibit"
+  },
+  {
+    "id": "hidden-denominator",
+    "kind": "pattern",
+    "title": "Find the hidden denominator",
+    "summary": "Rates and averages can mislead when the population beneath them changes.",
+    "principles": [
+      "Rewrite every rate as numerator divided by denominator.",
+      "Check whether either component changed before interpreting the ratio.",
+      "Use absolute values when the denominator masks business scale."
+    ],
+    "example": "Revenue per user can rise after low-usage customers leave even though no remaining customer spends more.",
+    "skillId": "quantitative",
+    "drillRoute": "/drills/quantitative"
+  },
+  {
+    "id": "bottleneck",
+    "kind": "pattern",
+    "title": "Capacity is set by the bottleneck",
+    "summary": "In a linked process, total output is constrained by the lowest effective capacity, not the average capacity.",
+    "principles": [
+      "Convert each step to the same output unit and time period.",
+      "Identify the lowest effective capacity after downtime and yield loss.",
+      "Improve the constraint before adding capacity elsewhere."
+    ],
+    "example": "Adding ovens does not raise bakery output when packaging remains the slowest stage.",
+    "skillId": "prioritization",
+    "drillRoute": "/drills/prioritization"
+  },
+  {
+    "id": "math-answer-business-answer",
+    "kind": "pattern",
+    "title": "The math answer is not the business answer",
+    "summary": "A calculation gives a threshold or outcome; the recommendation must also address feasibility, risk, and action.",
+    "principles": [
+      "Compare the result with a realistic operating or market benchmark.",
+      "Test whether the required behavior is commercially achievable.",
+      "Recommend what to do, under which condition, and what to validate next."
+    ],
+    "example": "Break-even at 4,000 customers is useful only after judging whether 4,000 reachable customers will actually buy.",
+    "skillId": "quantitative",
+    "drillRoute": "/drills/quantitative"
+  }
+]

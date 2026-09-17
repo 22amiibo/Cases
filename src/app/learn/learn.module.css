@@ -1,0 +1,192 @@
+.page {
+  min-height: 100svh;
+  padding: 28px clamp(20px, 5vw, 76px) 96px;
+  color: #18211c;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(239, 141, 68, 0.13), transparent 24rem),
+    #f4f0e6;
+}
+
+.header,
+.intro,
+.lessonSection {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #aeb6ad;
+  color: #667169;
+  font-family: var(--font-geist-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.wordmark {
+  color: #18211c;
+  font-family: var(--font-geist-sans);
+  font-size: 1.1rem;
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  text-transform: none;
+}
+
+.intro {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 20px 48px;
+  padding: clamp(72px, 11vw, 130px) 0 92px;
+}
+
+.intro > p,
+.sectionHeading > p,
+.number {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  max-width: 850px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(3rem, 7vw, 6.2rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.intro > span {
+  grid-column: 2;
+  max-width: 590px;
+  color: #5f6a63;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.lessonSection + .lessonSection {
+  margin-top: 112px;
+}
+
+.sectionHeading {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 24px 48px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid #8e9991;
+}
+
+.sectionHeading h2 {
+  max-width: 720px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.sectionHeading span {
+  display: block;
+  max-width: 590px;
+  margin-top: 18px;
+  color: #5f6a63;
+  line-height: 1.55;
+}
+
+.lessonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-left: 1px solid #b8c0b8;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  padding: 34px;
+  border-right: 1px solid #b8c0b8;
+  border-bottom: 1px solid #b8c0b8;
+}
+
+.lesson h3 {
+  max-width: 18ch;
+  margin-top: 38px;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.summary {
+  margin-top: 18px;
+  color: #536158;
+  line-height: 1.55;
+}
+
+.lesson ul {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 0 18px;
+  color: #29372f;
+  line-height: 1.45;
+}
+
+.example {
+  margin-top: 26px;
+  padding: 18px;
+  border-left: 3px solid #dc7c43;
+  background: #ebe9df;
+  color: #46534b;
+  line-height: 1.5;
+}
+
+.example strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #8e3e20;
+  font-family: var(--font-geist-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.practiceLink {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 28px;
+  color: #244a38;
+  font-weight: 700;
+}
+
+.practiceLink:hover,
+.practiceLink:focus-visible {
+  color: #a14724;
+}
+
+@media (max-width: 720px) {
+  .intro,
+  .sectionHeading {
+    grid-template-columns: 1fr;
+  }
+
+  .intro > span {
+    grid-column: 1;
+  }
+
+  .lessonGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson {
+    min-height: auto;
+  }
+
+  .practiceLink {
+    margin-top: 38px;
+  }
+}

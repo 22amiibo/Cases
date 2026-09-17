@@ -4,7 +4,7 @@ export type SkillAttempt = {
   userId: string;
   skillId: SkillId;
   score: number;
-  feedbackCode: string;
+  feedbackCodes: string[];
   completedAt: string;
 };
 

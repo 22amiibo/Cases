@@ -11,6 +11,8 @@ function attempt(
   sequence: number,
 ): SkillAttempt {
   return {
+    attemptId: `attempt-${sequence}`,
+    attemptType: "drill",
     userId: "learner-1",
     skillId,
     score,

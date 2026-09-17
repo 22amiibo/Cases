@@ -69,6 +69,8 @@ function loadHistory(
 
 function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
   return Object.entries(attempt.skillScores).map(([skillId, score]) => ({
+    attemptId: attempt.attemptId,
+    attemptType: "case",
     userId: attempt.userId,
     skillId: SkillIdSchema.parse(skillId),
     score,
@@ -115,6 +117,8 @@ export class MemoryPracticeRepository implements PracticeRepository {
       ...this.history.drillAttempts
         .filter((attempt) => attempt.userId === userId)
         .map((attempt) => ({
+          attemptId: attempt.attemptId,
+          attemptType: "drill" as const,
           userId: attempt.userId,
           skillId: attempt.skillId,
           score: attempt.score,

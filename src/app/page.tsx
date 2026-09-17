@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AuthPanel } from "@/components/auth/AuthPanel";
+import { HomeRecommendation } from "@/components/progress/HomeRecommendation";
 import styles from "./page.module.css";
 
 const practicePaths = [
@@ -19,7 +20,7 @@ const practicePaths = [
     eyebrow: "03 / Improve",
     title: "View progress",
     description: "See patterns in your reasoning and choose the next useful rep.",
-    href: null,
+    href: "/progress",
   },
 ] as const;
 
@@ -43,6 +44,8 @@ export default function Home() {
 
       <AuthPanel />
 
+      <HomeRecommendation />
+
       <section className={styles.paths} aria-label="Practice paths">
         {practicePaths.map((path) => {
           const content = (
@@ -57,11 +60,7 @@ export default function Home() {
             <Link className={`${styles.card} ${styles.active}`} href={path.href} key={path.title}>
               {content}
             </Link>
-          ) : (
-            <article className={styles.card} key={path.title} data-status="coming-soon">
-              {content}
-            </article>
-          );
+          ) : null;
         })}
       </section>
     </main>

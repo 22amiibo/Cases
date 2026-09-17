@@ -1,6 +1,8 @@
 import type { CaseEvent, SkillId } from "@/core/schema";
 
 export type SkillAttempt = {
+  attemptId: string;
+  attemptType: "drill" | "case";
   userId: string;
   skillId: SkillId;
   score: number;
@@ -8,8 +10,8 @@ export type SkillAttempt = {
   completedAt: string;
 };
 
-export type DrillAttempt = SkillAttempt & {
-  attemptId: string;
+export type DrillAttempt = Omit<SkillAttempt, "attemptType"> & {
+  attemptType?: "drill";
   drillId: string;
   conceptIdsPracticed: string[];
 };

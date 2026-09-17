@@ -1,6 +1,6 @@
 # Casework Project Context
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 ## Purpose
 
@@ -278,6 +278,32 @@ npm run build
   or Docker runtime, so the SQL migration/RLS contract is statically tested but
   was not executed against a live local Supabase instance.
 
+### Task 13: Progress dashboard and practice recommendations — complete
+
+- Added the `/progress` dashboard with five trainable-skill cards, plain-language
+  readiness states, last-10 trends, attempt counts, and common deterministic
+  feedback codes.
+- Progress counts unique practice sessions rather than counting each skill row
+  from one case as a separate session. Drill and case IDs remain distinct even
+  if their raw IDs collide.
+- Added the deterministic next-session card to both the dashboard and home page.
+  It preserves Task 12's diagnostic threshold and recommends the weakest
+  drill-supported skill only after sufficient history.
+- Unpracticed skills display `Not assessed`; history failures do not masquerade
+  as low scores and provide a retry path. Sign-in/sign-out changes clear and
+  reload progress to prevent account history from leaking into guest UI.
+- Task 13 browser coverage completes two quantitative drills and AlpineFit,
+  verifies three saved sessions on the dashboard, then verifies the matching
+  recommendation on the home page.
+- Independent review found four Important issues involving auth changes,
+  loading failures, unassessed skills, and full-case-only recommendation inputs.
+  All were fixed; scoped re-review found no Critical or Important regressions.
+- Final verification: 24 test files / 92 tests pass; lint, typecheck, production
+  build, and `git diff --check` pass; all 5 Playwright journeys pass.
+- The first full Playwright run encountered an orphaned local Next.js process on
+  port 3000. After stopping that stale process, a fresh standard run passed all
+  five journeys without changing test concurrency.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -292,7 +318,8 @@ npm run build
 
 ## Next Action
 
-Task 12 is complete and reviewed. Resume with Task 13 by reading this file, the
-Task 13 brief, and the SDD ledger; verify branch/status and remote refs; then add
-the failing progress-dashboard Playwright journey before implementing the
-dashboard or home-page recommendation.
+Task 13 is complete and reviewed. Resume with Task 14 by reading this file, the
+Task 14 brief, and the SDD ledger; verify branch/status and remote refs; then
+write the failing content-count/category validation test before authoring the
+remaining five V1 cases. Preserve exactly six total cases and the existing
+deterministic schema/engine contracts.

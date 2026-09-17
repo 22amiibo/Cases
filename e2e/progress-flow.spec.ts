@@ -76,7 +76,12 @@ test("guest sees progress and a deterministic next session after practice", asyn
   await expect(
     page.getByRole("heading", { name: "Quantitative reasoning" }),
   ).toBeVisible();
-  await expect(page.getByText("Strong").first()).toBeVisible();
+  await expect(
+    page
+      .getByRole("article")
+      .filter({ has: page.getByRole("heading", { name: "Quantitative reasoning" }) })
+      .getByText("Strong", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Last-10 trend").first()).toBeVisible();
   await expect(page.getByText("correct_calculation")).toBeVisible();
   await expect(

@@ -1,0 +1,59 @@
+.recommendation {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, 100%);
+  margin: 0 auto 32px;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid rgba(24, 33, 28, 0.25);
+  border-radius: 18px;
+  background: #294c3b;
+  color: #fffdf6;
+}
+
+.recommendation > p {
+  color: #f0bf96;
+  font-family: var(--font-geist-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommendation h2 {
+  margin-top: 14px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+}
+
+.recommendation > span {
+  display: block;
+  margin-top: 12px;
+  color: #dce6dd;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.actions a,
+.actions button {
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 253, 246, 0.45);
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.actions a:hover,
+.actions a:focus-visible,
+.actions button:hover,
+.actions button:focus-visible {
+  background: #fffdf6;
+  color: #294c3b;
+}

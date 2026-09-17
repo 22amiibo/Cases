@@ -75,6 +75,7 @@ describe("SupabasePracticeRepository", () => {
     const database = client({
       selectDrillAttempts: vi.fn().mockResolvedValue([
         {
+          id: "00000000-0000-4000-8000-000000000001",
           user_id: "user-1",
           skill_id: "quantitative",
           score: 80,
@@ -84,6 +85,7 @@ describe("SupabasePracticeRepository", () => {
       ]),
       selectCaseAttempts: vi.fn().mockResolvedValue([
         {
+          id: "00000000-0000-4000-8000-000000000002",
           user_id: "user-1",
           skill_scores: { structure: 90, synthesis: 60 },
           feedback_codes: ["strong_cross_exhibit_synthesis"],
@@ -95,6 +97,8 @@ describe("SupabasePracticeRepository", () => {
 
     await expect(repository.getSkillHistory("user-1")).resolves.toEqual([
       {
+        attemptId: "00000000-0000-4000-8000-000000000002",
+        attemptType: "case",
         userId: "user-1",
         skillId: "structure",
         score: 90,
@@ -102,6 +106,8 @@ describe("SupabasePracticeRepository", () => {
         completedAt: "2026-01-03T00:00:00.000Z",
       },
       {
+        attemptId: "00000000-0000-4000-8000-000000000002",
+        attemptType: "case",
         userId: "user-1",
         skillId: "synthesis",
         score: 60,
@@ -109,6 +115,8 @@ describe("SupabasePracticeRepository", () => {
         completedAt: "2026-01-03T00:00:00.000Z",
       },
       {
+        attemptId: "00000000-0000-4000-8000-000000000001",
+        attemptType: "drill",
         userId: "user-1",
         skillId: "quantitative",
         score: 80,
@@ -135,6 +143,7 @@ describe("SupabasePracticeRepository", () => {
     const database = client({
       selectDrillAttempts: vi.fn().mockResolvedValue([
         {
+          id: "bad-row",
           user_id: "user-1",
           skill_id: "invented-skill",
           score: 120,
@@ -142,6 +151,7 @@ describe("SupabasePracticeRepository", () => {
           completed_at: "2026-01-04T00:00:00.000Z",
         },
         {
+          id: "valid-row",
           user_id: "user-1",
           skill_id: "quantitative",
           score: 80,

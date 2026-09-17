@@ -8,6 +8,7 @@ import type {
 } from "./repository";
 
 type DrillAttemptRow = {
+  id: string;
   user_id: string;
   skill_id: string;
   score: number;
@@ -16,6 +17,7 @@ type DrillAttemptRow = {
 };
 
 type CaseAttemptRow = {
+  id: string;
   user_id: string;
   skill_scores: Record<string, number>;
   feedback_codes: string[];
@@ -67,7 +69,7 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   async selectDrillAttempts(userId: string) {
     const { data, error } = await this.client
       .from("drill_attempts")
-      .select("user_id, skill_id, score, feedback_codes, completed_at")
+      .select("id, user_id, skill_id, score, feedback_codes, completed_at")
       .eq("user_id", userId);
     if (error) throw error;
     return (data ?? []) as DrillAttemptRow[];
@@ -76,7 +78,7 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   async selectCaseAttempts(userId: string) {
     const { data, error } = await this.client
       .from("case_attempts")
-      .select("user_id, skill_scores, feedback_codes, completed_at")
+      .select("id, user_id, skill_scores, feedback_codes, completed_at")
       .eq("user_id", userId);
     if (error) throw error;
     return (data ?? []) as CaseAttemptRow[];
@@ -122,6 +124,8 @@ export class SupabasePracticeRepository implements PracticeRepository {
         const skillId = SkillIdSchema.safeParse(row.skill_id);
         return skillId.success && Number.isFinite(row.score) && row.score >= 0 && row.score <= 100
           ? [{
+              attemptId: row.id,
+              attemptType: "drill" as const,
               userId: row.user_id,
               skillId: skillId.data,
               score: row.score,
@@ -135,6 +139,8 @@ export class SupabasePracticeRepository implements PracticeRepository {
           const skillId = SkillIdSchema.safeParse(rawSkillId);
           return skillId.success && Number.isFinite(score) && score >= 0 && score <= 100
             ? [{
+                attemptId: row.id,
+                attemptType: "case" as const,
                 userId: row.user_id,
                 skillId: skillId.data,
                 score,

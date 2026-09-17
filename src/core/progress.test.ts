@@ -14,7 +14,7 @@ function attempt(
     userId: "learner-1",
     skillId,
     score,
-    feedbackCode: `feedback-${sequence}`,
+    feedbackCodes: [`feedback-${sequence}`],
     completedAt: new Date(Date.UTC(2026, 0, sequence)).toISOString(),
   };
 }

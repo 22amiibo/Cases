@@ -153,6 +153,23 @@ describe("deterministic case engine", () => {
     expect(forgedFramework).toBe(structure);
   });
 
+  it("accepts canonical framework concepts even when they are not scored by this case", () => {
+    const structure = applyCaseEvent(createCaseSession(alpineFit), {
+      type: "clarification_selected",
+      clarificationId: "target-metric",
+      atMs: 1,
+    });
+    const investigate = applyCaseEvent(structure, {
+      type: "framework_submitted",
+      conceptIds: ["customers", "mix", "risk"],
+      priorityConceptId: "customers",
+      atMs: 2,
+    });
+
+    expect(investigate.currentStage).toBe("investigate");
+    expect(investigate.events).toHaveLength(2);
+  });
+
   it("requires investigation and calculation prerequisites before recording events", () => {
     const investigate = applyCaseEvent(
       applyCaseEvent(createCaseSession(alpineFit), {

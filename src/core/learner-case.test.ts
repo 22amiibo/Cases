@@ -40,25 +40,19 @@ describe("toLearnerCaseReview", () => {
     );
   });
 
-  it("only awards cross-exhibit feedback when one valid synthesis connects both exhibits", () => {
+  it("ignores undiscovered evidence when checking cross-exhibit synthesis", () => {
     const definition = CaseDefinitionSchema.parse(alpineFitContent);
     const events: CaseEvent[] = [
       { type: "node_investigated", nodeId: "costs", atMs: 1 },
       { type: "node_investigated", nodeId: "variable_cost", atMs: 2 },
       { type: "node_investigated", nodeId: "labor", atMs: 3 },
-      { type: "node_investigated", nodeId: "overtime", atMs: 4 },
       {
         type: "synthesis_submitted",
-        evidenceIds: ["cost-growth", "variable-growth"],
+        evidenceIds: ["cost-growth", "variable-growth", "overtime-spike"],
         nextStepNodeId: "turnover",
         atMs: 5,
       },
-      {
-        type: "synthesis_submitted",
-        evidenceIds: ["cost-growth", "turnover-link"],
-        nextStepNodeId: "turnover",
-        atMs: 6,
-      },
+      { type: "node_investigated", nodeId: "overtime", atMs: 6 },
     ];
 
     expect(

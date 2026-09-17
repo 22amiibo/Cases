@@ -1,6 +1,10 @@
 import type { CaseStage, RevealedFact } from "./case-engine";
 import type { CaseDefinition, CaseEvent, ExhibitDefinition } from "./schema";
-import { isValidSynthesisSubmission, scoreCase } from "./case-scoring";
+import {
+  getDiscoveredFactIdsBefore,
+  isValidSynthesisSubmission,
+  scoreCase,
+} from "./case-scoring";
 import type { RecommendationSubmission } from "./schema";
 
 export type LearnerExhibitDefinition = Omit<
@@ -124,14 +128,28 @@ export function toLearnerCaseReview(
   }
   if (
     events.some(
-      (event) =>
-        event.type === "synthesis_submitted" &&
-        isValidSynthesisSubmission(definition, events, event) &&
-        definition.exhibits.filter((exhibit) =>
-          exhibit.sourceFactIds.some((factId) =>
-            event.evidenceIds.includes(factId),
-          ),
-        ).length >= 2,
+      (event) => {
+        if (
+          event.type !== "synthesis_submitted" ||
+          !isValidSynthesisSubmission(definition, events, event)
+        ) {
+          return false;
+        }
+        const discoveredFacts = getDiscoveredFactIdsBefore(
+          definition,
+          events,
+          event.atMs,
+        );
+        return (
+          definition.exhibits.filter((exhibit) =>
+            exhibit.sourceFactIds.some(
+              (factId) =>
+                discoveredFacts.has(factId) &&
+                event.evidenceIds.includes(factId),
+            ),
+          ).length >= 2
+        );
+      },
     )
   ) {
     feedback.push({

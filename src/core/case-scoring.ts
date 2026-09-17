@@ -47,7 +47,7 @@ function investigatedNodeIdsBefore(
   );
 }
 
-function discoveredFactIdsBefore(
+export function getDiscoveredFactIdsBefore(
   definition: CaseDefinition,
   events: CaseEvent[],
   beforeAtMs: number,
@@ -213,7 +213,11 @@ export function isValidSynthesisSubmission(
   const nodeIds = new Set(definition.investigationNodes.map((node) => node.id));
   if (!nodeIds.has(event.nextStepNodeId)) return false;
 
-  const discoveredFacts = discoveredFactIdsBefore(definition, events, event.atMs);
+  const discoveredFacts = getDiscoveredFactIdsBefore(
+    definition,
+    events,
+    event.atMs,
+  );
   const discoveredEvidenceCount = unique(event.evidenceIds).filter((factId) =>
     discoveredFacts.has(factId),
   ).length;
@@ -246,7 +250,7 @@ function scoreRecommendation(
         if (event.type !== "recommendation_submitted") {
           return [];
         }
-        const discoveredFacts = discoveredFactIdsBefore(
+        const discoveredFacts = getDiscoveredFactIdsBefore(
           definition,
           events,
           event.atMs,

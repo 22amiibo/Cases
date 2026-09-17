@@ -1,3 +1,4 @@
+import concepts from "@/content/concepts.json";
 import type { CaseDefinition, CaseEvent } from "./schema";
 import { withinTolerance } from "./validation";
 
@@ -42,6 +43,8 @@ function includesId(items: Array<{ id: string }>, id: string) {
   return items.some((item) => item.id === id);
 }
 
+const canonicalConceptIds = new Set(concepts.map(({ id }) => id));
+
 export function isCaseEventAllowed(
   session: CaseSession,
   event: CaseEvent,
@@ -58,12 +61,9 @@ export function isCaseEventAllowed(
         includesId(caseDefinition.clarificationOptions, event.clarificationId)
       );
     case "framework_submitted": {
-      const authoredConceptIds = new Set(
-        caseDefinition.frameworkRubric.concepts.map(({ conceptId }) => conceptId),
-      );
       return (
         currentStage === "structure" &&
-        event.conceptIds.every((conceptId) => authoredConceptIds.has(conceptId)) &&
+        event.conceptIds.every((conceptId) => canonicalConceptIds.has(conceptId)) &&
         event.conceptIds.includes(event.priorityConceptId)
       );
     }

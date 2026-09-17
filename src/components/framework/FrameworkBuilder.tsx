@@ -13,6 +13,7 @@ type Concept = {
 type FrameworkBuilderProps = {
   concepts: Concept[];
   onSubmit: (submission: FrameworkSubmission) => void;
+  requireRationale?: boolean;
 };
 
 function collectIds(branches: FrameworkBranch[]): string[] {
@@ -46,11 +47,13 @@ function appendChild(
 export function FrameworkBuilder({
   concepts,
   onSubmit,
+  requireRationale = false,
 }: FrameworkBuilderProps) {
   const [branches, setBranches] = useState<FrameworkBranch[]>([]);
   const [selectedConceptId, setSelectedConceptId] = useState("");
   const [priorityConceptId, setPriorityConceptId] = useState("");
   const [search, setSearch] = useState("");
+  const [rationale, setRationale] = useState("");
   const [childSelections, setChildSelections] = useState<Record<string, string>>(
     {},
   );
@@ -197,8 +200,16 @@ export function FrameworkBuilder({
       className={styles.builder}
       onSubmit={(event) => {
         event.preventDefault();
-        if (!priorityConceptId || branches.length === 0) return;
-        onSubmit({ branches, priorityConceptId });
+        if (
+          !priorityConceptId ||
+          branches.length === 0 ||
+          (requireRationale && !rationale.trim())
+        ) return;
+        onSubmit({
+          branches,
+          priorityConceptId,
+          ...(rationale.trim() ? { rationale: rationale.trim() } : {}),
+        });
       }}
     >
       <div className={styles.composer}>
@@ -242,10 +253,25 @@ export function FrameworkBuilder({
         </ol>
       )}
 
+      {requireRationale && (
+        <label>
+          Why start with this branch?
+          <textarea
+            value={rationale}
+            onChange={(event) => setRationale(event.target.value)}
+            maxLength={2000}
+          />
+        </label>
+      )}
+
       <button
         className={styles.submit}
         type="submit"
-        disabled={branches.length === 0 || !priorityConceptId}
+        disabled={
+          branches.length === 0 ||
+          !priorityConceptId ||
+          (requireRationale && !rationale.trim())
+        }
       >
         Submit framework
       </button>

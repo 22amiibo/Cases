@@ -71,6 +71,15 @@ npm run build
 
 ## Progress Log
 
+### Active V2 checkpoint — 2026-09-17
+
+- V2 Tasks 1–5 are complete through framework hierarchy preservation.
+- Do not stage or commit `supabase/.temp/`; it predates the V2 work and contains
+  local Supabase link metadata.
+- Continue with Task 6, the reusable deterministic generated-response cycle.
+- Continue only through Task 11, then stop at the mandatory owner playtest gate
+  before authoring any remaining drills or upgrading another case.
+
 ### Casework V2 Task 1: Versioned learning contracts — complete
 
 - Added strict V2 content/event/scoring/scaffolding schemas while preserving
@@ -145,6 +154,23 @@ npm run build
   and strict progress separation are implemented. Local SQL execution remains the
   only unavailable gate check; no pilot V1 JSON artifact was modified.
 - Next action: preserve full V2 framework hierarchy in events and replay.
+
+### Casework V2 Task 5: Full framework hierarchy preservation — complete
+
+- V2 framework events retain the complete ordered branch tree, starting
+  priority, committed rationale, and event schema version from submission
+  through engine validation, scoring, browser recovery, and case replay.
+- V1 flat `conceptIds` events remain accepted only by V1 definitions and replay
+  through an explicit adapter that does not invent parent-child relationships.
+- V1 and V2 definitions reject the other version's framework event shape.
+- The framework builder requires a rationale for V2 and keeps nested branches
+  and sibling order intact; replay labels legacy-flat and preserved-hierarchy
+  evidence distinctly.
+- Verification: 133 unit/component tests, typecheck, lint, production build,
+  four legacy case browser journeys, and focused storage-reload/replay coverage
+  pass.
+- Next action: build the reusable generated-response cycle with answer secrecy,
+  linked revisions, deterministic diagnostics, recovery, and accessible focus.
 
 ### Repository preparation — complete
 

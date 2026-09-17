@@ -1,6 +1,11 @@
 import concepts from "@/content/concepts.json";
 import type { CaseDefinition, CaseEvent } from "./schema";
 import { withinTolerance } from "./validation";
+import {
+  flattenFrameworkConceptIds,
+  frameworkSubmissionFromEvent,
+  isFrameworkEventCompatible,
+} from "./framework-events";
 
 export type CaseStage =
   | "clarify"
@@ -61,10 +66,13 @@ export function isCaseEventAllowed(
         includesId(caseDefinition.clarificationOptions, event.clarificationId)
       );
     case "framework_submitted": {
+      const submission = frameworkSubmissionFromEvent(event);
+      const conceptIds = flattenFrameworkConceptIds(submission.branches);
       return (
         currentStage === "structure" &&
-        event.conceptIds.every((conceptId) => canonicalConceptIds.has(conceptId)) &&
-        event.conceptIds.includes(event.priorityConceptId)
+        isFrameworkEventCompatible(caseDefinition, event) &&
+        conceptIds.every((conceptId) => canonicalConceptIds.has(conceptId)) &&
+        conceptIds.includes(event.priorityConceptId)
       );
     }
     case "node_investigated": {

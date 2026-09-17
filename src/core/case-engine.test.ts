@@ -170,6 +170,54 @@ describe("deterministic case engine", () => {
     expect(investigate.events).toHaveLength(2);
   });
 
+  it("preserves an exact V2 framework tree and rejects mismatched event versions", () => {
+    const v2Definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const v2Structure = applyCaseEvent(createCaseSession(v2Definition), {
+      type: "clarification_selected",
+      clarificationId: "target-metric",
+      atMs: 1,
+    });
+    const nestedEvent = {
+      type: "framework_submitted" as const,
+      eventSchemaVersion: 2 as const,
+      branches: [
+        {
+          conceptId: "revenue",
+          children: [
+            { conceptId: "price", children: [] },
+            { conceptId: "volume", children: [] },
+          ],
+        },
+        {
+          conceptId: "variable_cost",
+          children: [{ conceptId: "labor", children: [] }],
+        },
+      ],
+      priorityConceptId: "labor",
+      rationale: "Labor is the fastest-moving cost driver.",
+      atMs: 2,
+    };
+
+    const v2Investigation = applyCaseEvent(v2Structure, nestedEvent);
+    expect(v2Investigation.currentStage).toBe("investigate");
+    expect(v2Investigation.events.at(-1)).toEqual(nestedEvent);
+
+    const legacyEvent = {
+      type: "framework_submitted" as const,
+      conceptIds: ["revenue", "variable_cost"],
+      priorityConceptId: "variable_cost",
+      atMs: 2,
+    };
+    expect(applyCaseEvent(v2Structure, legacyEvent)).toBe(v2Structure);
+
+    const v1Structure = applyCaseEvent(createCaseSession(alpineFit), {
+      type: "clarification_selected",
+      clarificationId: "target-metric",
+      atMs: 1,
+    });
+    expect(applyCaseEvent(v1Structure, nestedEvent)).toBe(v1Structure);
+  });
+
   it("requires investigation and calculation prerequisites before recording events", () => {
     const investigate = applyCaseEvent(
       applyCaseEvent(createCaseSession(alpineFit), {

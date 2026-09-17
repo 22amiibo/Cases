@@ -22,6 +22,60 @@ describe("toLearnerCaseDefinition", () => {
 });
 
 describe("toLearnerCaseReview", () => {
+  it("replays V2 hierarchy, sibling order, priority, and rationale exactly", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const branches = [
+      {
+        conceptId: "variable_cost",
+        children: [
+          { conceptId: "labor", children: [] },
+          { conceptId: "materials", children: [] },
+        ],
+      },
+      { conceptId: "revenue", children: [] },
+    ];
+    const review = toLearnerCaseReview(definition, [
+      {
+        type: "framework_submitted",
+        eventSchemaVersion: 2,
+        branches,
+        priorityConceptId: "labor",
+        rationale: "Labor is both material and actionable.",
+        atMs: 1,
+      },
+    ]);
+
+    expect(review.framework).toEqual({
+      branches,
+      priorityConceptId: "labor",
+      rationale: "Labor is both material and actionable.",
+      source: "v2_hierarchy",
+    });
+  });
+
+  it("adapts legacy flat concepts without inventing hierarchy", () => {
+    const definition = CaseDefinitionSchema.parse(alpineFitContent);
+    const review = toLearnerCaseReview(definition, [
+      {
+        type: "framework_submitted",
+        conceptIds: ["revenue", "variable_cost", "labor"],
+        priorityConceptId: "variable_cost",
+        atMs: 1,
+      },
+    ]);
+
+    expect(review.framework).toEqual({
+      branches: [
+        { conceptId: "revenue", children: [] },
+        { conceptId: "variable_cost", children: [] },
+        { conceptId: "labor", children: [] },
+      ],
+      priorityConceptId: "variable_cost",
+      rationale: null,
+      source: "legacy_flattened",
+    });
+  });
+
   it("projects every replay state and deterministic branch feedback", () => {
     const definition = CaseDefinitionSchema.parse(alpineFitContent);
     const review = toLearnerCaseReview(definition, [

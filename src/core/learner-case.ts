@@ -1,11 +1,20 @@
 import type { CaseStage, RevealedFact } from "./case-engine";
-import type { CaseDefinition, CaseEvent, ExhibitDefinition } from "./schema";
+import type {
+  CaseDefinition,
+  CaseEvent,
+  ExhibitDefinition,
+  FrameworkBranch,
+} from "./schema";
 import {
   getDiscoveredFactIdsBefore,
   isValidSynthesisSubmission,
   scoreCase,
 } from "./case-scoring";
 import type { RecommendationSubmission } from "./schema";
+import {
+  frameworkSubmissionFromEvent,
+  isV2FrameworkEvent,
+} from "./framework-events";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
@@ -48,6 +57,12 @@ export type LearnerFeedback = {
 };
 
 export type LearnerCaseReview = {
+  framework: {
+    branches: FrameworkBranch[];
+    priorityConceptId: string;
+    rationale: string | null;
+    source: "legacy_flattened" | "v2_hierarchy";
+  } | null;
   nodes: LearnerReplayNode[];
   events: Array<{ type: "node_investigated"; nodeId: string; atMs: number }>;
   efficientPath: { label: string; nodeIds: string[] };
@@ -109,6 +124,12 @@ export function toLearnerCaseReview(
   );
   const visitedNodeIds = new Set(investigatedEvents.map((event) => event.nodeId));
   const feedback: LearnerFeedback[] = [];
+  const frameworkEvent = events
+    .filter(
+      (event): event is Extract<CaseEvent, { type: "framework_submitted" }> =>
+        event.type === "framework_submitted",
+    )
+    .at(-1);
 
   if (score.diagnostic.lowValueInvestigations.length > 0) {
     feedback.push({
@@ -165,6 +186,17 @@ export function toLearnerCaseReview(
   }
 
   return {
+    framework: frameworkEvent
+      ? {
+          ...frameworkSubmissionFromEvent(frameworkEvent),
+          rationale: isV2FrameworkEvent(frameworkEvent)
+            ? frameworkEvent.rationale
+            : null,
+          source: isV2FrameworkEvent(frameworkEvent)
+            ? "v2_hierarchy"
+            : "legacy_flattened",
+        }
+      : null,
     nodes: definition.investigationNodes.map((node) => ({
       id: node.id,
       label: node.label,

@@ -73,7 +73,50 @@ export function CaseReplay({ review }: CaseReplayProps) {
           ))}
         </ol>
       </section>
+
+      {review.framework && (
+        <section className={styles.frameworkReview} aria-labelledby="framework-review-title">
+          <span>Your submitted framework</span>
+          <h2 id="framework-review-title">
+            {review.framework.source === "v2_hierarchy"
+              ? "Preserved issue tree"
+              : "Legacy flat framework"}
+          </h2>
+          {review.framework.rationale && <p>{review.framework.rationale}</p>}
+          <FrameworkTree
+            branches={review.framework.branches}
+            priorityConceptId={review.framework.priorityConceptId}
+          />
+        </section>
+      )}
     </div>
+  );
+}
+
+function FrameworkTree({
+  branches,
+  priorityConceptId,
+}: {
+  branches: NonNullable<LearnerCaseReview["framework"]>["branches"];
+  priorityConceptId: string;
+}) {
+  return (
+    <ol className={styles.frameworkTree}>
+      {branches.map((branch) => (
+        <li key={branch.conceptId}>
+          <strong>
+            {branch.conceptId.replaceAll("_", " ")}
+            {branch.conceptId === priorityConceptId ? " · starting priority" : ""}
+          </strong>
+          {branch.children.length > 0 && (
+            <FrameworkTree
+              branches={branch.children}
+              priorityConceptId={priorityConceptId}
+            />
+          )}
+        </li>
+      ))}
+    </ol>
   );
 }
 

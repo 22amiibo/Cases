@@ -8,6 +8,7 @@ import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { CalculationTask } from "@/components/math/CalculationTask";
 import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
+import { flattenFrameworkConceptIds } from "@/core/framework-events";
 import { createCaseAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
@@ -24,7 +25,6 @@ import type {
 import {
   CaseEventSchema,
   type CaseEvent,
-  type FrameworkBranch,
   type FrameworkSubmission,
 } from "@/core/schema";
 import { EvidencePanel } from "./EvidencePanel";
@@ -34,13 +34,6 @@ import styles from "./InvestigationPanel.module.css";
 type InvestigationPanelProps = {
   caseDefinition: LearnerCaseDefinition;
 };
-
-function collectConceptIds(branches: FrameworkBranch[]): string[] {
-  return branches.flatMap((branch) => [
-    branch.conceptId,
-    ...collectConceptIds(branch.children),
-  ]);
-}
 
 function caseStorageKey(caseId: string) {
   return `casework:guest-session:${caseId}`;
@@ -265,12 +258,22 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   }
 
   function submitFramework(submission: FrameworkSubmission) {
-    void record({
-      type: "framework_submitted",
-      conceptIds: collectConceptIds(submission.branches),
-      priorityConceptId: submission.priorityConceptId,
-      atMs: timestamp(),
-    }).catch(() => undefined);
+    const frameworkEvent: CaseEvent = caseDefinition.version >= 2
+      ? {
+          type: "framework_submitted",
+          eventSchemaVersion: 2,
+          branches: submission.branches,
+          priorityConceptId: submission.priorityConceptId,
+          rationale: submission.rationale ?? "Starting priority recorded.",
+          atMs: timestamp(),
+        }
+      : {
+          type: "framework_submitted",
+          conceptIds: flattenFrameworkConceptIds(submission.branches),
+          priorityConceptId: submission.priorityConceptId,
+          atMs: timestamp(),
+        };
+    void record(frameworkEvent).catch(() => undefined);
   }
 
   function submitSynthesis() {
@@ -433,7 +436,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 structure guides the interview; the next questions remain
                 authored and structured.
               </p>
-              <FrameworkBuilder concepts={concepts} onSubmit={submitFramework} />
+              <FrameworkBuilder
+                concepts={concepts}
+                onSubmit={submitFramework}
+                requireRationale={caseDefinition.version >= 2}
+              />
             </StepCard>
           )}
 

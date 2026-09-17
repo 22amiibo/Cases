@@ -47,4 +47,54 @@ describe("FrameworkBuilder", () => {
       priorityConceptId: "variable_cost",
     });
   });
+
+  it("preserves nested branch order and requires a rationale for V2", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <FrameworkBuilder
+        concepts={concepts}
+        onSubmit={onSubmit}
+        requireRationale
+      />,
+    );
+
+    await user.selectOptions(screen.getByLabelText("Concept to add"), "revenue");
+    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.selectOptions(
+      screen.getByLabelText("Concept to add"),
+      "fixed_cost",
+    );
+    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.selectOptions(
+      screen.getByLabelText("Add a child to Revenue"),
+      "variable_cost",
+    );
+    await user.click(screen.getAllByRole("button", { name: "Add child" })[0]);
+    await user.click(screen.getByRole("button", { name: "Move Fixed cost up" }));
+    await user.click(
+      screen.getByRole("button", { name: "Start with Variable cost" }),
+    );
+
+    const submit = screen.getByRole("button", { name: "Submit framework" });
+    expect(submit).toBeDisabled();
+    await user.type(
+      screen.getByLabelText("Why start with this branch?"),
+      "Variable costs changed fastest, so I would isolate their drivers first.",
+    );
+    await user.click(submit);
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      branches: [
+        { conceptId: "fixed_cost", children: [] },
+        {
+          conceptId: "revenue",
+          children: [{ conceptId: "variable_cost", children: [] }],
+        },
+      ],
+      priorityConceptId: "variable_cost",
+      rationale:
+        "Variable costs changed fastest, so I would isolate their drivers first.",
+    });
+  });
 });

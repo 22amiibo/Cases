@@ -187,6 +187,7 @@ export type FrameworkBranch = {
 export const FrameworkSubmissionSchema = z.object({
   branches: z.array(FrameworkBranchSchema).min(1).max(4),
   priorityConceptId: IdentifierSchema,
+  rationale: z.string().trim().min(1).max(2_000).optional(),
 });
 
 export type FrameworkSubmission = z.infer<typeof FrameworkSubmissionSchema>;
@@ -332,16 +333,27 @@ export type CalculationDefinition = z.infer<typeof CalculationDefinitionSchema>;
 
 const TimedEventSchema = z.object({ atMs: z.number().int().nonnegative() });
 
-export const CaseEventSchema = z.discriminatedUnion("type", [
+const LegacyFrameworkSubmittedEventSchema = TimedEventSchema.extend({
+  type: z.literal("framework_submitted"),
+  conceptIds: z.array(IdentifierSchema).min(1),
+  priorityConceptId: IdentifierSchema,
+});
+
+const V2FrameworkSubmittedEventSchema = TimedEventSchema.extend({
+  type: z.literal("framework_submitted"),
+  eventSchemaVersion: z.literal(2),
+  branches: z.array(FrameworkBranchSchema).min(1).max(4),
+  priorityConceptId: IdentifierSchema,
+  rationale: z.string().trim().min(1).max(2_000),
+});
+
+export const CaseEventSchema = z.union([
   TimedEventSchema.extend({
     type: z.literal("clarification_selected"),
     clarificationId: IdentifierSchema,
   }),
-  TimedEventSchema.extend({
-    type: z.literal("framework_submitted"),
-    conceptIds: z.array(IdentifierSchema).min(1),
-    priorityConceptId: IdentifierSchema,
-  }),
+  LegacyFrameworkSubmittedEventSchema,
+  V2FrameworkSubmittedEventSchema,
   TimedEventSchema.extend({
     type: z.literal("hypothesis_selected"),
     hypothesisId: IdentifierSchema,

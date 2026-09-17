@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CaseEventSchema,
   CaseDefinitionSchema,
   CommittedResponseChainSchema,
   DiagnosticOutcomeSchema,
@@ -210,5 +211,37 @@ describe("V2 learning contracts", () => {
         scaffoldingLevel: "beginner",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("versioned framework events", () => {
+  it("keeps legacy flat framework events parseable", () => {
+    expect(CaseEventSchema.safeParse({
+      type: "framework_submitted",
+      conceptIds: ["revenue", "cost"],
+      priorityConceptId: "cost",
+      atMs: 1,
+    }).success).toBe(true);
+  });
+
+  it("preserves an ordered V2 tree and committed rationale", () => {
+    const event = {
+      type: "framework_submitted",
+      eventSchemaVersion: 2,
+      branches: [
+        {
+          conceptId: "cost",
+          children: [
+            { conceptId: "fixed_cost", children: [] },
+            { conceptId: "variable_cost", children: [] },
+          ],
+        },
+        { conceptId: "revenue", children: [] },
+      ],
+      priorityConceptId: "variable_cost",
+      rationale: "Costs changed faster than revenue.",
+      atMs: 2,
+    } as const;
+    expect(CaseEventSchema.parse(event)).toEqual(event);
   });
 });

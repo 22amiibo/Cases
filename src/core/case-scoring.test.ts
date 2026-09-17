@@ -192,4 +192,43 @@ describe("scoreCase", () => {
     });
     expect(revenueThenCost.diagnostic.criticalNodesMissed).toEqual([]);
   });
+
+  it("scores every concept in a nested V2 framework without flattening the event", () => {
+    const v2Definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const frameworkEvent: CaseEvent = {
+      type: "framework_submitted",
+      eventSchemaVersion: 2,
+      branches: [
+        {
+          conceptId: "revenue",
+          children: [
+            { conceptId: "fixed_cost", children: [] },
+            {
+              conceptId: "variable_cost",
+              children: [{ conceptId: "labor", children: [] }],
+            },
+          ],
+        },
+      ],
+      priorityConceptId: "variable_cost",
+      rationale: "Variable costs contain the likely driver.",
+      atMs: 1,
+    };
+
+    expect(scoreCase(v2Definition, [frameworkEvent])).toMatchObject({
+      structure: 0.686,
+      prioritization: 1,
+    });
+    expect(frameworkEvent).toMatchObject({
+      branches: [
+        {
+          conceptId: "revenue",
+          children: [
+            { conceptId: "fixed_cost" },
+            { conceptId: "variable_cost", children: [{ conceptId: "labor" }] },
+          ],
+        },
+      ],
+    });
+  });
 });

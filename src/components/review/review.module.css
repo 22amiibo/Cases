@@ -8,6 +8,7 @@
 .scoreCard,
 .feedbackCard,
 .efficientPath,
+.frameworkReview,
 .emptyState {
   display: grid;
   gap: 15px;
@@ -29,10 +30,20 @@
   text-transform: uppercase;
 }
 
+.frameworkReview > span {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .replayCard h2,
 .scoreCard h2,
 .feedbackCard h2,
 .efficientPath h2,
+.frameworkReview h2,
 .emptyState h2 {
   font-size: 1.62rem;
   letter-spacing: -0.045em;
@@ -85,6 +96,10 @@
 .feedbackCard code { color: #a14724; font-family: var(--font-geist-mono); font-size: 0.74rem; }
 
 .efficientPath { grid-column: 1 / -1; }
+.frameworkReview { grid-column: 1 / -1; }
+.frameworkReview > p { color: #59665e; line-height: 1.55; }
+.frameworkTree { display: grid; gap: 8px; padding-left: 22px; color: #294c3b; }
+.frameworkTree .frameworkTree { margin-top: 8px; }
 .efficientPath ol { display: flex; flex-wrap: wrap; gap: 9px 24px; padding-left: 20px; color: #294c3b; font-weight: 700; line-height: 1.45; }
 .emptyState { max-width: 620px; }
 .emptyState a { color: #294c3b; font-weight: 700; }

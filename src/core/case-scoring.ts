@@ -1,6 +1,7 @@
 import { scoreFramework } from "./framework-scoring";
 import type { CaseDefinition, CaseEvent } from "./schema";
 import { withinTolerance } from "./validation";
+import { frameworkSubmissionFromEvent } from "./framework-events";
 
 export type CaseScore = {
   clarification: number;
@@ -117,13 +118,7 @@ function scoreStructure(definition: CaseDefinition, events: CaseEvent[]) {
   }
 
   const frameworkScore = scoreFramework(
-    {
-      branches: submission.conceptIds.map((conceptId) => ({
-        conceptId,
-        children: [],
-      })),
-      priorityConceptId: submission.priorityConceptId,
-    },
+    frameworkSubmissionFromEvent(submission),
     definition.frameworkRubric,
   );
 

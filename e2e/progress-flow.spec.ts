@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 async function completeQuantitativeDrill(
   page: Page,
@@ -71,31 +72,118 @@ test("guest sees progress and a deterministic next session after practice", asyn
 
   await expect(
     page.getByRole("heading", { name: "Your practice progress" }),
-  ).toBeVisible();
-  await expect(page.getByText("3 sessions completed")).toBeVisible();
+  ).not.toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Quantitative reasoning" }),
+    page.getByRole("heading", { name: "Your learning evidence" }),
   ).toBeVisible();
+  await expect(page.getByText("0 V2 sessions · 3 Legacy V1 sessions")).toBeVisible();
   await expect(
     page
+      .locator("section")
+      .filter({ has: page.getByRole("heading", { name: "Legacy V1" }) })
       .getByRole("article")
       .filter({ has: page.getByRole("heading", { name: "Quantitative reasoning" }) })
       .getByText("Strong", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Last-10 trend").first()).toBeVisible();
-  await expect(page.getByText("correct_calculation")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Recommended next: Diagnostic mix" }),
+    page.getByRole("heading", { name: "Recommended next: V2 diagnostic mix" }),
   ).toBeVisible();
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Recommended next: Diagnostic mix" }),
+    page.getByRole("heading", { name: "Recommended next: V2 diagnostic mix" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /practice quantitative reasoning/i }),
-  ).toHaveAttribute("href", "/drills/quantitative");
+    page.getByRole("link", { name: /practice case opening & clarification/i }),
+  ).toHaveAttribute("href", "/drills/clarification");
   await expect(
     page.getByRole("link", { name: /practice alpinefit/i }),
   ).toHaveAttribute("href", "/cases/alpinefit-profitability");
+});
+
+test("mixed history keeps V2 evidence separate and reflows at 320px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    sessionStorage.setItem("casework:practice-history", JSON.stringify({
+      drillAttempts: [
+        {
+          attemptId: "legacy-extreme",
+          userId: "guest",
+          drillId: "legacy-structure",
+          skillId: "structure",
+          score: 100,
+          feedbackCodes: ["legacy-perfect"],
+          conceptIdsPracticed: ["revenue"],
+          completedAt: "2026-09-16T00:00:00.000Z",
+          scoringVersion: "v1",
+          contentVersion: null,
+          eventSchemaVersion: null,
+          scaffoldingLevel: null,
+          learningEvidence: null,
+          diagnostics: [],
+        },
+        {
+          attemptId: "v2-opening",
+          userId: "guest",
+          drillId: "clarification-v2-1",
+          skillId: "clarification",
+          score: 0,
+          feedbackCodes: [],
+          conceptIdsPracticed: ["objective"],
+          completedAt: "2026-09-17T00:00:00.000Z",
+          scoringVersion: "v2",
+          contentVersion: 2,
+          eventSchemaVersion: 2,
+          scaffoldingLevel: "beginner",
+          learningEvidence: {
+            interactionId: "v2-opening",
+            skillId: "clarification",
+            scoringVersion: "v2",
+            contentVersion: 2,
+            eventSchemaVersion: 2,
+            scaffoldingLevel: "beginner",
+            responses: [{
+              responseId: "v2-opening-r1",
+              interactionId: "v2-opening",
+              revision: 1,
+              revisionOf: null,
+              responseKind: "clarification",
+              text: "Clarify the target metric.",
+              committedAtMs: 1,
+            }],
+            rubricOutcomes: [{ criterionId: "objective", met: false }],
+            diagnostics: [{
+              code: "objective_not_reframed",
+              source: "self_assessment",
+              severity: "coaching",
+              responseId: "v2-opening-r1",
+            }],
+          },
+          diagnostics: [{
+            code: "objective_not_reframed",
+            source: "self_assessment",
+            severity: "coaching",
+            responseId: "v2-opening-r1",
+          }],
+        },
+      ],
+      caseAttempts: [],
+    }));
+  });
+
+  await page.goto("/progress");
+  const openingCard = page
+    .getByRole("article")
+    .filter({ has: page.getByRole("heading", { name: "Case opening & clarification" }) });
+  await expect(openingCard.getByText("Building", { exact: true })).toBeVisible();
+  await expect(openingCard.getByText(/Self-assessed/)).toBeVisible();
+  await expect(page.getByText("Legacy score 100")).toBeVisible();
+  await expect(page.getByText(/Interview ready/i)).toHaveCount(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
 });

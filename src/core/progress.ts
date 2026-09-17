@@ -27,9 +27,14 @@ function newestFirst(attempts: SkillAttempt[]) {
 export function calculateRollingSkillScore(
   attempts: SkillAttempt[],
   skillId: SkillId,
+  scoringVersion: "v1" | "v2",
 ): number | null {
   const recent = newestFirst(
-    attempts.filter((attempt) => attempt.skillId === skillId),
+    attempts.filter(
+      (attempt) =>
+        attempt.skillId === skillId &&
+        (attempt.scoringVersion ?? "v1") === scoringVersion,
+    ),
   ).slice(0, RECENT_ATTEMPT_LIMIT);
 
   if (recent.length === 0) return null;
@@ -51,10 +56,12 @@ export function calculateRollingSkillScore(
 
 export function recommendNextPractice(
   attempts: SkillAttempt[],
+  scoringVersion: "v1" | "v2",
 ): PracticeRecommendation {
   const attemptsBySkill = new Map<SkillId, SkillAttempt[]>();
 
   for (const attempt of attempts) {
+    if ((attempt.scoringVersion ?? "v1") !== scoringVersion) continue;
     const skillAttempts = attemptsBySkill.get(attempt.skillId) ?? [];
     skillAttempts.push(attempt);
     attemptsBySkill.set(attempt.skillId, skillAttempts);
@@ -72,7 +79,7 @@ export function recommendNextPractice(
   const weakest = practicedSkills
     .map(([skillId]) => ({
       skillId,
-      score: calculateRollingSkillScore(attempts, skillId) ?? 0,
+      score: calculateRollingSkillScore(attempts, skillId, scoringVersion) ?? 0,
     }))
     .sort(
       (left, right) =>

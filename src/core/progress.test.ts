@@ -27,7 +27,7 @@ describe("calculateRollingSkillScore", () => {
       attempt("quantitative", index < 5 ? 0 : 100, index + 1),
     );
 
-    expect(calculateRollingSkillScore(history, "quantitative")).toBe(62.5);
+    expect(calculateRollingSkillScore(history, "quantitative", "v1")).toBe(62.5);
   });
 
   it("uses only the most recent ten attempts for the requested skill", () => {
@@ -39,8 +39,8 @@ describe("calculateRollingSkillScore", () => {
       attempt("structure", 0, 20),
     ];
 
-    expect(calculateRollingSkillScore(history, "quantitative")).toBe(100);
-    expect(calculateRollingSkillScore(history, "exhibit")).toBeNull();
+    expect(calculateRollingSkillScore(history, "quantitative", "v1")).toBe(100);
+    expect(calculateRollingSkillScore(history, "exhibit", "v1")).toBeNull();
   });
 });
 
@@ -58,7 +58,7 @@ describe("recommendNextPractice", () => {
       ),
     ];
 
-    expect(recommendNextPractice(history)).toEqual({
+    expect(recommendNextPractice(history, "v1")).toEqual({
       kind: "diagnostic_mix",
       reason: "insufficient_history",
     });
@@ -77,7 +77,7 @@ describe("recommendNextPractice", () => {
       ),
     ];
 
-    expect(recommendNextPractice(history)).toEqual({
+    expect(recommendNextPractice(history, "v1")).toEqual({
       kind: "skill",
       skillId: "prioritization",
       score: 40,

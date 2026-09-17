@@ -123,6 +123,29 @@ npm run build
   can remain without changing legacy reads.
 - Next action: separate Legacy V1 history from V2 diagnostic progress.
 
+### Casework V2 Task 4: Legacy/V2 progress separation — complete
+
+- Replaced the blended readiness dashboard with independent V2 diagnostic
+  evidence and clearly labeled Legacy V1 history sections.
+- V2 shows exactly six trainable skills and deterministic `Not started`,
+  `Building`, or `Consistent` states from a configurable evidence rule:
+  three reviewed attempts, at least one revision or transfer, and no blocking
+  diagnostic recurring across all three most recent reviewed attempts.
+- V2 evidence distinguishes committed, reviewed, revised, and transferred reps;
+  self-assessed diagnostics are explicitly labeled separately from system checks.
+- Legacy numeric scores remain visible but cannot affect V2 statuses,
+  diagnostics, or next-practice recommendations. “Interview ready” is no longer
+  published before full Interview Mode exists.
+- Red proof: existing progress callers failed when scoring-version filters became
+  required; mixed-history, consistency, recurrence, and recommendation isolation
+  regressions now pass.
+- Verification: 125 unit/component tests, typecheck, lint, focused mixed-history
+  Playwright journeys, keyboard-native links, axe scan, and 320px reflow pass.
+- Gate A result: foundation contracts, versioned content, additive persistence,
+  and strict progress separation are implemented. Local SQL execution remains the
+  only unavailable gate check; no pilot V1 JSON artifact was modified.
+- Next action: preserve full V2 framework hierarchy in events and replay.
+
 ### Repository preparation — complete
 
 - Initialized the dedicated repository in the Desktop `Case` folder.

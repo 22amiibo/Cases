@@ -8,7 +8,9 @@
 .header,
 .intro,
 .skills,
-.recommendation {
+.recommendation,
+.sectionIntro,
+.legacy {
   width: min(1120px, 100%);
   margin-inline: auto;
 }
@@ -18,7 +20,7 @@
   justify-content: space-between;
   padding-bottom: 22px;
   border-bottom: 1px solid #aeb6ad;
-  color: #667169;
+  color: #5f6962;
   font-family: var(--font-geist-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -42,7 +44,9 @@
 
 .intro > p,
 .skillHeading p,
-.recommendation > p {
+.recommendation > p,
+.sectionIntro > div > p,
+.legacyGrid article > p {
   color: #a14724;
   font-family: var(--font-geist-mono);
   font-size: 0.7rem;
@@ -75,6 +79,27 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.sectionIntro {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr);
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.sectionIntro h2 {
+  margin-top: 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+}
+
+.sectionIntro > p {
+  color: #5f6a63;
+  line-height: 1.6;
 }
 
 .skill {
@@ -136,6 +161,13 @@
   list-style: none;
 }
 
+.source {
+  color: #8b3d20;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
 .recommendation {
   margin-top: 28px;
   padding: clamp(28px, 5vw, 52px);
@@ -175,9 +207,48 @@
   color: #294c3b;
 }
 
+.legacy {
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid #aeb6ad;
+}
+
+.legacy .sectionIntro {
+  width: 100%;
+}
+
+.legacyGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.legacyGrid article {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+  padding: 18px;
+  border: 1px solid #c7ccc5;
+  border-radius: 12px;
+  background: rgba(250, 248, 241, 0.65);
+}
+
+.legacyGrid h3 {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.legacyGrid strong,
+.legacyGrid span {
+  color: #5f6a63;
+  font-size: 0.78rem;
+}
+
 @media (max-width: 760px) {
   .intro,
-  .skills {
+  .skills,
+  .sectionIntro {
     grid-template-columns: 1fr;
   }
 
@@ -192,5 +263,9 @@
 
   .skillHeading {
     flex-direction: column;
+  }
+
+  .legacyGrid {
+    grid-template-columns: 1fr;
   }
 }

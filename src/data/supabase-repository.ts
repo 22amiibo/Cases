@@ -135,11 +135,15 @@ export class SupabasePracticeRepository implements PracticeRepository {
   }
 }
 
+let browserClient: SupabaseClient | null | undefined;
+
 export function createBrowserSupabaseClient() {
+  if (browserClient !== undefined) return browserClient;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonymousKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonymousKey) return null;
-  return createClient(url, anonymousKey);
+  browserClient =
+    url && anonymousKey ? createClient(url, anonymousKey) : null;
+  return browserClient;
 }
 
 export function createSupabasePracticeRepository(client: SupabaseClient) {

@@ -1,0 +1,86 @@
+.panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(1180px, 100%);
+  margin: 0 auto 28px;
+  padding: 24px 28px;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  border: 1px solid rgba(24, 33, 28, 0.24);
+  border-radius: 18px;
+  background: rgba(246, 244, 236, 0.72);
+}
+
+.eyebrow {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel h2 {
+  margin-top: 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.panel p {
+  margin-top: 8px;
+  color: #536158;
+}
+
+.panel form {
+  display: flex;
+  margin-top: 14px;
+  gap: 10px;
+  align-items: end;
+}
+
+.panel label {
+  display: grid;
+  gap: 5px;
+  color: #536158;
+  font-size: 0.8rem;
+}
+
+.panel input,
+.panel button {
+  min-height: 42px;
+  border: 1px solid rgba(24, 33, 28, 0.35);
+  border-radius: 9px;
+  font: inherit;
+}
+
+.panel input {
+  min-width: min(300px, 50vw);
+  padding: 0 12px;
+  background: #fffdf6;
+}
+
+.panel button {
+  padding: 0 16px;
+  color: #fffdf6;
+  background: #294c3b;
+  cursor: pointer;
+}
+
+.panel > a {
+  color: #294c3b;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .panel,
+  .panel form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel input {
+    min-width: 0;
+    width: 100%;
+  }
+}

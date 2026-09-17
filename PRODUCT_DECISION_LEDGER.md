@@ -1,7 +1,8 @@
 # Casework Product Upgrade Decision Ledger
 
-Status: Accepted and binding for implementation-plan design  
+Status: Accepted and binding
 Decision date: 2026-09-17  
+Last amended: 2026-09-17
 Decider: Product owner  
 Recorded by: Codex  
 
@@ -9,8 +10,8 @@ Recorded by: Codex
 
 This ledger closes Phase 2 of `PRODUCT_AUDIT_PLANNING_PLAN.md`. Its decisions
 are binding inputs to the Casework V2 implementation plan. They do not authorize
-product implementation; implementation begins only after the new plan is
-reviewed and explicitly approved.
+product implementation on their own. The plan is approved, but implementation
+remains paused until the owner separately instructs work to begin.
 
 ## Release Objective
 
@@ -161,6 +162,33 @@ recommendation algorithm.
 **Compatibility rule:** Existing rows without version metadata are interpreted
 as V1 by readers; they are not destructively rewritten.
 
+### D9. Stage drill authoring behind an AlpineFit playtest gate
+
+**Decision:** Do not author all 18 V2 pilot drills before validating the
+learning interaction. First create one high-quality V2 rep for each of the six
+skills, complete the AlpineFit V2 vertical slice, and stop for playtesting and
+owner review. Author the remaining 12 drills only after the owner approves the
+learning cycle based on that evidence.
+
+**Rationale:** The dominant remaining risk is learning quality, not technical
+feasibility. Multiplying an unvalidated Generate → Commit → Self-check → Compare
+→ Diagnose → Retry design across 18 exercises would make weak interaction
+choices more expensive to correct.
+
+**Rejected approach:** Building three drills per skill before the first complete
+case-based playtest. It offers more content but does not reduce the main risk.
+
+**Consequences:**
+
+- The first validation cohort contains exactly six drills, one per skill, plus
+  AlpineFit V2.
+- The implementation must stop after the AlpineFit vertical slice even if later
+  tasks are technically unblocked.
+- The playtest must evaluate learning quality, not merely correctness or test
+  coverage.
+- The remaining 12 drills, PayPilot, and GoldenLoaf require an explicit
+  post-playtest proceed decision.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or
@@ -207,8 +235,10 @@ must not substitute current content.
 - Embedded hypothesis formation and updating.
 - Diagnostic taxonomy and coaching-oriented V2 Progress.
 - Explicit scaffolding levels and the three-case pilot.
-- A small representative V2 lesson/drill set sufficient to test each of the six
-  skills; existing V1 content remains identifiable as legacy.
+- A staged V2 drill set: first six high-quality reps, one per skill, followed by
+  AlpineFit and a mandatory playtest/review gate; the remaining 12 pilot drills
+  are authored only after that gate is approved.
+- Existing V1 content remains identifiable as legacy.
 
 ### Wave 2 — explicitly deferred
 
@@ -257,6 +287,8 @@ must not substitute current content.
 
 ## Approval Gate
 
-This ledger is accepted. The implementation plan derived from it remains a
-draft until the owner reviews and explicitly approves that plan. No product
-implementation is authorized by this document alone.
+This ledger and the implementation plan derived from it are approved with the
+staged-drill amendment in D9. Implementation is deliberately paused by the
+owner. No V2 product work begins until the owner gives a separate instruction
+to start. Once work begins, it must stop again after the six initial reps and
+AlpineFit V2 for the required playtest/review gate.

@@ -1,7 +1,8 @@
-# Casework V2 Learning Foundation — Draft Implementation Plan
+# Casework V2 Learning Foundation — Approved Implementation Plan
 
-Status: Draft for owner review; product implementation is not authorized  
+Status: Approved with staged-drill amendment; implementation not started
 Prepared: 2026-09-17  
+Approved: 2026-09-17
 Inputs: `PRODUCT_DECISION_LEDGER.md`, `CURRENT_STATE_GAP_MATRIX.md`, and
 `PRODUCT_AUDIT_PLANNING_PLAN.md`
 
@@ -30,7 +31,9 @@ as clearly separated legacy history.
 - Six trainable V2 skills: opening/clarification, structure, prioritization,
   quantitative reasoning, exhibit interpretation, and synthesis.
 - Hypothesis formation/update as a cross-case diagnostic behavior.
-- Eighteen V2 pilot drills: three per trainable skill.
+- A staged 18-drill pilot: first build six high-quality V2 reps, one per
+  trainable skill; build the remaining 12 only after the AlpineFit learning
+  cycle passes a mandatory playtest/review gate.
 - One exact embedded V2 practice rep for each of the six core-skill lessons;
   pattern lessons remain concise and link to the most relevant V2 rep.
 - Three upgraded pilot cases with progressively reduced scaffolding.
@@ -47,6 +50,14 @@ as clearly separated legacy history.
 - Conversion of all 50 V1 drills.
 - New case categories or expansion beyond the existing six cases.
 - A single numeric score derived from generated free text.
+
+### Mandatory staging rule
+
+The first implementation stage ends after exactly six V2 drills—one per
+trainable skill—and the complete AlpineFit V2 vertical slice. Work must stop at
+that point for playtesting and owner review. Do not begin the remaining 12
+drills, PayPilot, GoldenLoaf, or downstream release work until the owner gives
+an explicit post-playtest proceed decision.
 
 ## 3. Learner Experience Contract
 
@@ -426,10 +437,10 @@ specific diagnostics.
 **Expected files:** drill schema/engine, new clarification content file,
 `DrillSession`, case opening components, lessons, progress labels, and tests.
 
-**Contract changes:** Add three V2 clarification drills initially. Case opening
-events preserve generated restatement, committed questions, interviewer
+**Contract changes:** Add one initial high-quality V2 clarification drill. Case
+opening events preserve generated restatement, committed questions, interviewer
 responses, rubric outcomes, and retries. Remove the V2 any-one-checkbox full
-credit rule.
+credit rule. The other two clarification pilot drills are deferred to Task 12.
 
 **Red → green → refactor:** Begin with missing-skill content and browser tests.
 Cover high-value, low-value, overload, missing objective, authored response
@@ -446,21 +457,25 @@ new progress records use V2 metadata.
 **Completion evidence:** Skill six appears in V2 practice and Progress; all
 selected case questions return their authored interviewer responses.
 
-### Task 9 — Create the V2 pilot drill set across all six skills
+### Task 9 — Create one high-quality V2 rep for each skill
 
-**User-visible outcome:** Each trainable skill has three generate-first V2 reps
-with diagnostic feedback and a linked retry.
+**User-visible outcome:** Each trainable skill has one complete generate-first
+V2 rep with diagnostic feedback and a linked retry, sufficient to test the
+learning cycle without multiplying unvalidated design.
 
 **Expected files:** versioned drill content, drill schemas/loaders,
 `DrillSession`, quantitative/framework integrations, and content/browser tests.
 
-**Contract changes:** Author 18 V2 definitions. Quantitative reps separate
-setup, numeric answer/unit, sense check, and implication. Prioritization,
-exhibit, and synthesis reveal choices/examples only after commitment.
+**Contract changes:** Complete the initial six-rep set by adding one definition
+for each of the other five skills alongside Task 8's clarification rep. The
+quantitative rep separates setup, numeric answer/unit, sense check, and
+implication. Prioritization, exhibit, and synthesis reveal choices/examples only
+after commitment.
 
-**Red → green → refactor:** Add content-count and per-skill contract tests first;
-implement one complete rep for each skill; review answer secrecy and diagnosis;
-then author the remaining twelve through validated data, not one-off UI.
+**Red → green → refactor:** Add exact total-count and per-skill contract tests
+first. Implement and individually review one complete rep for each remaining
+skill, including the clarification rep in the six-rep quality review. Do not
+author the remaining twelve in this task.
 
 **Checks:** Content validation, evaluator tests, one browser journey per skill,
 keyboard/a11y, responsive checks, full unit suite.
@@ -469,9 +484,10 @@ keyboard/a11y, responsive checks, full unit suite.
 are not silently used as V2 evidence.
 
 **Dependency:** Tasks 4, 6, and 8.  
-**Commit:** `content: add v2 diagnostic drill pilot`  
-**Completion evidence:** Exactly three validated V2 reps per skill; every rep
-proves commit-before-reveal and persists a diagnostic source.
+**Commit:** `content: add six v2 learning cycle reps`
+**Completion evidence:** Exactly one validated V2 rep per skill; every rep
+proves commit-before-reveal, persists diagnostic sources, and supports a linked
+retry. No additional V2 drill definitions exist.
 
 ### Task 10 — Enable hypothesis formation and evidence-linked updates
 
@@ -528,7 +544,62 @@ journey, refresh at each major checkpoint, answer secrecy, a11y, 320px layout.
 **Completion evidence:** Complete V2 journey passes and produces versioned
 diagnostic evidence; V1 replay parity remains green.
 
-### Task 12 — Upgrade PayPilot as the intermediate strategy case
+### Mandatory stop — Playtest and learning-quality review
+
+Stop implementation after Task 11. Do not begin Task 12 or any later task until
+the owner reviews the first six V2 reps and AlpineFit V2 and explicitly says to
+proceed.
+
+The review must assess:
+
+- whether learners genuinely generate before seeing answer-bearing material;
+- whether the self-check criteria are understandable and behavior-specific;
+- whether authored comparisons illuminate more than one defensible response;
+- whether diagnostics explain what to change rather than merely label an error;
+- whether a retry produces a meaningful revision rather than checkbox
+  compliance;
+- whether beginner scaffolding supports thinking without giving away the move;
+- whether AlpineFit transfers the same behaviors from isolated reps into a
+  coherent case; and
+- whether learners leave with an accurate—not inflated—sense of performance.
+
+Record observations, concrete interaction changes, and the owner decision in
+`PROJECT_CONTEXT.md` and the decision ledger. Possible outcomes are `proceed`,
+`revise and replaytest`, or `stop`. Automated tests alone cannot pass this gate.
+
+### Task 12 — Author the remaining twelve V2 pilot drills
+
+**User-visible outcome:** After the learning cycle is validated, each of the six
+skills gains two additional V2 reps for transfer and repetition, bringing the
+pilot total to 18.
+
+**Expected files:** Versioned drill content, content validation fixtures, and
+focused evaluator/browser tests. Shared interaction components should change
+only when the playtest approved a documented correction.
+
+**Contract changes:** Add exactly two definitions per skill using the validated
+Task 9 contract. Vary business context and reasoning demand rather than merely
+changing names or numbers.
+
+**Red → green → refactor:** First add tests expecting three V2 reps per skill
+and rejecting duplicate reasoning templates. Author one transfer rep per skill,
+review the set, then author the final six. Make any cross-cutting interaction
+change in shared code with its own regression test before continuing content
+authoring.
+
+**Checks:** Content validation, evaluator tests, representative browser paths,
+answer secrecy, keyboard/a11y, responsive checks, and the full unit suite.
+
+**Compatibility/data safety:** The first six attempts retain their original
+content versions; the 12 new reps do not change or overwrite them.
+
+**Dependency:** Task 11 plus an explicit `proceed` decision at the mandatory
+playtest/review gate.
+**Commit:** `content: complete v2 diagnostic drill pilot`
+**Completion evidence:** Exactly three validated V2 reps per skill, with no
+unreviewed interaction-pattern changes and no fake content variety.
+
+### Task 13 — Upgrade PayPilot as the intermediate strategy case
 
 **User-visible outcome:** PayPilot requires learner-generated decision criteria,
 a strategic hypothesis, evidence-based updates, and recommendation reasoning
@@ -549,12 +620,13 @@ answer secrecy, a11y, responsive layout.
 
 **Compatibility/data safety:** Historical PayPilot attempts remain bound to V1.
 
-**Dependency:** Task 11 confirms the shared vertical slice.  
+**Dependency:** Task 12 and the approved playtest gate confirm the shared
+learning cycle.
 **Commit:** `content: upgrade paypilot for v2 intermediate practice`  
 **Completion evidence:** Two materially different hypotheses can reach a
 supported conclusion; no pre-commit projection reveals preferred criteria.
 
-### Task 13 — Upgrade GoldenLoaf as the lower-scaffolding transfer case
+### Task 14 — Upgrade GoldenLoaf as the lower-scaffolding transfer case
 
 **User-visible outcome:** GoldenLoaf tests whether the learner can transfer the
 V2 behaviors with minimal prompts and delayed checkpoint support.
@@ -575,12 +647,12 @@ recovery, answer secrecy, keyboard/a11y, responsive layout.
 
 **Compatibility/data safety:** Historical GoldenLoaf attempts resolve V1.
 
-**Dependency:** Tasks 11–12.  
+**Dependency:** Tasks 11–13.
 **Commit:** `content: add goldenloaf v2 transfer case`  
 **Completion evidence:** Learner can finish without beginner/intermediate help;
 review shows the complete hypothesis and revision chain.
 
-### Task 14 — Bind concise lessons to exact embedded V2 reps
+### Task 15 — Bind concise lessons to exact embedded V2 reps
 
 **User-visible outcome:** Each core-skill lesson ends with the exact promised
 practice interaction on the same learning path, not an unrelated ten-question
@@ -607,7 +679,7 @@ redirect explicitly; completed V1 drills remain legacy.
 **Completion evidence:** Every core lesson launches its declared exact rep and
 no authored comparison appears before commitment.
 
-### Task 15 — Turn V2 Progress into diagnostic coaching
+### Task 16 — Turn V2 Progress into diagnostic coaching
 
 **User-visible outcome:** Learners see recurring reasoning errors, evidence of
 revision and reduced scaffolding, and one targeted next repetition tied to the
@@ -630,12 +702,12 @@ accessibility; empty, sparse, and dense responsive states.
 **Compatibility/data safety:** No V1 score influences V2 status; self-assessed
 diagnostics are labeled and not presented as objective findings.
 
-**Dependency:** Tasks 4 and 8–14.  
+**Dependency:** Tasks 4 and 8–15.
 **Commit:** `feat: add diagnostic v2 progress coaching`  
 **Completion evidence:** Seeded histories deterministically produce the expected
 diagnostic and exact next rep, with strict version separation.
 
-### Task 16 — Add version-safe history/replay and release the pilot
+### Task 17 — Add version-safe history/replay and release the pilot
 
 **User-visible outcome:** Signed-in learners can reopen V2 attempts against the
 exact historical content version, and the Wave 1 pilot is resilient,
@@ -661,7 +733,7 @@ and production answer-secrecy inspection.
 approval. Keep a rollback path that selects V1 active content without deleting
 V2 rows.
 
-**Dependency:** Tasks 1–15.  
+**Dependency:** Tasks 1–16.
 **Commit:** `chore: harden and document casework v2 pilot`  
 **Completion evidence:** All quality gates pass on reviewed code; live smoke
 testing is recorded separately after approved deployment.
@@ -683,12 +755,19 @@ results before this gate.
 ### Gate C — Vertical slice proven
 
 After Task 11: one complete beginner V2 case plus six-skill drill coverage is
-usable end to end. Review the interaction and diagnostic quality before
-authoring PayPilot and GoldenLoaf.
+usable end to end. This is a mandatory implementation stop, not an ordinary
+engineering review. Playtest the learning cycle and obtain an explicit owner
+decision before authoring the remaining 12 drills, PayPilot, or GoldenLoaf.
 
-### Gate D — Pilot release candidate
+### Gate D — Drill expansion validated
 
-After Task 16: all three cases, Progress, replay, migrations, accessibility,
+After Task 12: the validated interaction has been extended to exactly three V2
+reps per skill without duplicating weak design or creating fake variety. Review
+content quality before continuing the case progression.
+
+### Gate E — Pilot release candidate
+
+After Task 17: all three cases, Progress, replay, migrations, accessibility,
 responsive behavior, and recovery pass. Production migration/deployment still
 requires explicit owner approval.
 
@@ -698,6 +777,11 @@ Estimated focused engineering time: **60–90 hours**, approximately **9–14
 focused working days** for one agent/developer, assuming the current test and
 deployment baseline remains stable.
 
+The mandatory playtest/review wait is not included in those engineering hours.
+The first stage through Task 11 is estimated at **38–55 hours**. The estimate
+for Tasks 12–17 should be revisited after the playtest because the gate exists
+specifically to expose interaction changes before content multiplication.
+
 Approximate allocation:
 
 - Versioning, persistence, and legacy separation: 14–20 hours.
@@ -706,8 +790,9 @@ Approximate allocation:
 - Three pilot case upgrades and lesson binding: 12–18 hours.
 - Progress, replay, hardening, and release verification: 10–16 hours.
 
-Pilot observation time is separate. Allow at least several real learner
-sessions before deciding whether to convert the remaining V1 content in Wave 2.
+Pilot observation time is separate. Run the first learning-quality review before
+authoring the remaining 12 drills, then allow additional real learner sessions
+before deciding whether to convert the remaining V1 content in Wave 2.
 
 ## 10. Risk Register
 
@@ -725,10 +810,11 @@ sessions before deciding whether to convert the remaining V1 content in Wave 2.
 | Event payloads grow too large | Medium | Length caps, normalized revision metadata, storage-size tests, no scratch persistence |
 | Guest refresh or save retry loses revisions | Medium | Session recovery and idempotent-save browser tests at every checkpoint |
 | V2 work breaks V1 journeys | High | Keep V1 fixtures/content, run V1 solve-through and browser regression at each gate |
+| An unvalidated interaction is copied across the drill set | High | Build only six initial reps, stop after AlpineFit, and require owner approval before the remaining 12 |
 
 ## 11. Pre-Implementation Challenge Review
 
-The draft was checked against the planning failure modes:
+The approved plan was checked against the planning failure modes:
 
 - It establishes the learning loop before broad content conversion.
 - It does not claim deterministic semantic grading of free text.
@@ -736,6 +822,8 @@ The draft was checked against the planning failure modes:
 - It defines diagnostics before Progress and content expansion.
 - It versions content and scoring before pilot definitions change.
 - It keeps lessons concise and invests in difficult repetitions.
+- It validates six isolated reps plus AlpineFit before multiplying the
+  interaction across the remaining drill set.
 - It upgrades three cases, not 15–20.
 - It makes scaffolding explicit and does not call GoldenLoaf full Interview Mode.
 - It retains accessibility, responsive, recovery, privacy, and answer-secrecy
@@ -745,13 +833,19 @@ Two intentional limitations remain visible: structured self-assessment cannot
 prove prose quality, and the pilot cannot prove live conversational performance.
 Those are honest Wave 1 boundaries, not hidden scoring claims.
 
-## 12. Approval and Exact First Action
+## 12. Approval and Execution State
 
-**Approval required:** The owner must review and explicitly approve this draft
-before Task 1 begins. Review should focus on Wave 1 scope, the proposed 18-drill
-pilot size, the V2 Progress status rule, and the 60–90 hour estimate.
+**Plan approval:** Approved by the owner on 2026-09-17 with the binding staged-
+drill amendment. All other decisions and tasks are approved as written.
 
-**Exact first implementation action after approval:** Create Task 1's failing
+**Current execution state:** Paused before implementation at the owner's
+instruction. Do not start Task 1 until the owner separately asks to begin V2.
+
+**Exact first implementation action when authorized:** Create Task 1's failing
 schema tests for V1 compatibility and the new version/scaffolding/diagnostic
 contracts. Do not edit pilot content or apply a database migration at that
 point.
+
+**Mandatory second stop:** After Task 11, stop with exactly six V2 reps and the
+AlpineFit V2 vertical slice complete. Save all evidence and wait for an explicit
+post-playtest `proceed` decision before Task 12.

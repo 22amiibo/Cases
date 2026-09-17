@@ -16,7 +16,7 @@ session.
 
 - Implementation plan: `/Users/noahmartz/Downloads/2026-09-15-case-interview-practice-mvp.md`
 - Product upgrade decision ledger: `PRODUCT_DECISION_LEDGER.md`
-- Draft V2 implementation plan: `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
+- Approved V2 implementation plan: `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
 - Local repository: `/Users/noahmartz/Desktop/Case`
 - GitHub repository: `https://github.com/22amiibo/Cases`
 - Base branch: `main`
@@ -442,9 +442,10 @@ npm run build
 - Fresh Phase 1 verification: lint passed; typecheck passed; 26 test files / 101
   tests passed; production build passed; all 13 Playwright journeys passed.
 
-### Product audit Phase 2 and V2 implementation-plan draft — complete
+### Product audit Phase 2 and V2 implementation-plan approval — complete
 
-- The owner approved eight binding product decisions and three P0 prerequisites.
+- The owner approved eight original binding product decisions, three P0
+  prerequisites, and a ninth staged-drill decision.
 - Recorded the accepted decisions in `PRODUCT_DECISION_LEDGER.md`. The next
   release remains deterministic/no-AI and uses Generate → Commit → Structured
   rubric self-check → Authored comparison → Diagnostic feedback → Retry for
@@ -465,13 +466,21 @@ npm run build
 - P0 order is binding: add case/content versioning before editing pilot
   definitions, preserve the full framework tree/order/rationale, and make
   full-case exhibit interpretation reachable before collecting pilot results.
-- Drafted `CASEWORK_V2_IMPLEMENTATION_PLAN.md` with the learner contract,
-  diagnostic taxonomy, technical design, additive migration strategy, 16 TDD
-  tasks, release gates, 60–90 hour estimate, risk register, and exact first
+- The owner approved `CASEWORK_V2_IMPLEMENTATION_PLAN.md` after requiring a
+  staged learning-quality validation. The plan now contains 17 TDD tasks,
+  release gates, a 60–90 hour estimate, a risk register, and an exact first
   action.
+- Stage one creates exactly six V2 drills—one high-quality rep per skill—and the
+  complete AlpineFit V2 vertical slice. Implementation must stop after Task 11
+  for playtesting and owner review. The remaining 12 drills, PayPilot,
+  GoldenLoaf, and later tasks cannot begin without an explicit post-playtest
+  `proceed` decision.
+- The staging decision treats learning quality as the dominant remaining risk
+  and prevents an unvalidated interaction design from being copied across all
+  18 drills.
 - No product code, case content, database schema, or deployment configuration
-  was changed during planning. The V2 plan is awaiting owner review and does
-  not authorize implementation yet.
+  was changed during planning. Despite plan approval, the owner explicitly
+  instructed that V2 implementation must not start yet.
 
 ## Decisions and Notes
 
@@ -487,9 +496,9 @@ npm run build
 
 ## Next Action
 
-Do not redo the MVP, deployment setup, Phase 1 audit, or Phase 2 decision work.
-Review `PRODUCT_DECISION_LEDGER.md` and `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
-with the owner. Resolve requested plan changes and obtain explicit approval
-before implementing anything. After approval, begin only Task 1 by writing the
-failing V1-compatibility and V2 contract tests; do not edit pilot content or
-apply a database migration yet.
+Do not redo the MVP, deployment setup, audit, decisions, or implementation
+planning. Do not begin V2 implementation until the owner gives a separate start
+instruction. When authorized, begin only Task 1 with failing V1-compatibility
+and V2 contract tests; do not edit pilot content or apply a database migration
+at that point. Execute through Task 11, then stop for the mandatory playtest and
+owner review before Task 12.

@@ -1,3 +1,6 @@
+HAVE TO HAVE EXPLANATION OF CORRECT ANSWER AND HOW. NOT JUST THAT USER IS WRONG
+
+
 What to add in the future. (here so I don't forget)
 "# Casework Future Feature Concepts
 

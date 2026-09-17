@@ -371,7 +371,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               <p role="status">Checking your saved session and available actions…</p>
             </StepCard>
           )}
-          {pendingCaseAttempt && (
+          {viewStatus === "ready" && pendingCaseAttempt && (
             <StepCard eyebrow="Save pending" title="Finish saving your case">
               <p>
                 Your completed case is still in this browser and can be saved
@@ -391,7 +391,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               </button>
             </StepCard>
           )}
-          {!hasFramework && !clarificationComplete && (
+          {viewStatus === "ready" && !hasFramework && !clarificationComplete && (
             <ClarificationStep
               caseDefinition={caseDefinition}
               selectedIds={selectedClarificationIds}
@@ -426,7 +426,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
             />
           )}
 
-          {!hasFramework && clarificationComplete && (
+          {viewStatus === "ready" && !hasFramework && clarificationComplete && (
             <StepCard eyebrow="Structure" title="Build your issue tree">
               <p>
                 Choose distinct branches and mark where you would begin. Your

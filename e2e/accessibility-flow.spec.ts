@@ -123,6 +123,33 @@ test("case routes show explicit missing, expired, and loading failure screens", 
   await expect(page.getByRole("button", { name: "Try loading again" })).toBeVisible();
 });
 
+test("case actions stay unavailable until the authoritative session loads", async ({
+  page,
+}) => {
+  let releaseRequest: (() => void) | undefined;
+  const requestReleased = new Promise<void>((resolve) => {
+    releaseRequest = resolve;
+  });
+
+  await page.route("**/api/cases/alpinefit-profitability/session", async (route) => {
+    await requestReleased;
+    await route.continue();
+  });
+  await page.goto("/cases/alpinefit-profitability");
+
+  await expect(
+    page.getByRole("heading", { name: "Loading case workspace" }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Which performance metric should we explain?"),
+  ).toHaveCount(0);
+
+  releaseRequest?.();
+  await expect(
+    page.getByLabel("Which performance metric should we explain?"),
+  ).toBeVisible();
+});
+
 for (const viewport of [
   { name: "phone", width: 320, height: 900 },
   { name: "tablet", width: 768, height: 1024 },

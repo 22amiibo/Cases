@@ -76,6 +76,55 @@ describe("toLearnerCaseReview", () => {
     });
   });
 
+  it("preserves V2 exhibit revisions and structured evidence in replay", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const review = toLearnerCaseReview(definition, [{
+      type: "exhibit_interpretation_submitted",
+      eventSchemaVersion: 2,
+      exhibitId: "cost-category",
+      responses: [
+        {
+          responseId: "response-1",
+          interactionId: "cost-interpretation",
+          revision: 1,
+          revisionOf: null,
+          responseKind: "exhibit_interpretation",
+          text: "Costs rose.",
+          committedAtMs: 1,
+        },
+        {
+          responseId: "response-2",
+          interactionId: "cost-interpretation",
+          revision: 2,
+          revisionOf: "response-1",
+          responseKind: "exhibit_interpretation",
+          text: "Labor is the outlier, so compare clubs next.",
+          committedAtMs: 2,
+        },
+      ],
+      rubricOutcomes: [{ criterionId: "comparison", met: true }],
+      diagnostics: [{
+        code: "strong_exhibit_chain",
+        source: "self_assessment",
+        severity: "strength",
+        responseId: "response-2",
+      }],
+      insightIds: ["labor-outlier"],
+      authoredComparisonViewed: true,
+      atMs: 3,
+    }]);
+
+    expect(review.exhibitInterpretations[0]).toMatchObject({
+      exhibitId: "cost-category",
+      responses: [
+        { responseId: "response-1", revision: 1 },
+        { responseId: "response-2", revision: 2, revisionOf: "response-1" },
+      ],
+      insightIds: ["labor-outlier"],
+      authoredComparisonViewed: true,
+    });
+  });
+
   it("projects every replay state and deterministic branch feedback", () => {
     const definition = CaseDefinitionSchema.parse(alpineFitContent);
     const review = toLearnerCaseReview(definition, [

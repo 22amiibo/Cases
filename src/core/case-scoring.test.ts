@@ -231,4 +231,34 @@ describe("scoreCase", () => {
       ],
     });
   });
+
+  it("scores a V2 exhibit only from the structured insight committed after reasoning", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const event: CaseEvent = {
+      type: "exhibit_interpretation_submitted",
+      eventSchemaVersion: 2,
+      exhibitId: "cost-category",
+      responses: [{
+        responseId: "response-1",
+        interactionId: "cost-interpretation",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "exhibit_interpretation",
+        text: "Labor is the outlier.",
+        committedAtMs: 2,
+      }],
+      rubricOutcomes: [{ criterionId: "comparison", met: true }],
+      diagnostics: [],
+      insightIds: ["labor-outlier"],
+      authoredComparisonViewed: true,
+      atMs: 2,
+    };
+
+    expect(
+      scoreCase(definition, [
+        { type: "node_investigated", nodeId: "costs", atMs: 1 },
+        event,
+      ]).exhibit,
+    ).toBe(0.5);
+  });
 });

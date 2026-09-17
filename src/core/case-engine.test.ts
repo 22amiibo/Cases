@@ -10,6 +10,48 @@ import {
 
 const alpineFit = CaseDefinitionSchema.parse(alpineFitContent);
 
+const v2ExhibitDefinition = CaseDefinitionSchema.parse({
+  ...alpineFitContent,
+  version: 2,
+  exhibits: alpineFitContent.exhibits.map((exhibit, index) =>
+    index === 0
+      ? {
+          ...exhibit,
+          interpretation: {
+            interactionId: "cost-exhibit-interpretation",
+            responseKind: "exhibit_interpretation",
+            prompt: "What changed, why does it matter, and what next?",
+            scaffoldingLevel: "beginner",
+            guidance: ["Start with the strongest comparison."],
+            criteria: [{ id: "comparison", label: "Names the strongest comparison" }],
+            comparison: { title: "Example", text: "Labor is the outlier." },
+            diagnosticRules: [],
+          },
+        }
+      : exhibit,
+  ),
+});
+
+const v2InterpretationEvent = {
+  type: "exhibit_interpretation_submitted" as const,
+  eventSchemaVersion: 2 as const,
+  exhibitId: "cost-category",
+  responses: [{
+    responseId: "cost-response-1",
+    interactionId: "cost-exhibit-interpretation",
+    revision: 1,
+    revisionOf: null,
+    responseKind: "exhibit_interpretation",
+    text: "Labor rose most, so I would compare clubs.",
+    committedAtMs: 4,
+  }],
+  rubricOutcomes: [{ criterionId: "comparison", met: true }],
+  diagnostics: [],
+  insightIds: ["labor-outlier"],
+  authoredComparisonViewed: true as const,
+  atMs: 4,
+};
+
 function sessionAtInvestigation() {
   const structured = applyCaseEvent(createCaseSession(alpineFit), {
     type: "clarification_selected",
@@ -248,6 +290,38 @@ describe("deterministic case engine", () => {
         atMs: 3,
       }),
     ).toBe(investigate);
+  });
+
+  it("gates V2 synthesis until each revealed exhibit has a committed interpretation", () => {
+    let session = applyCaseEvent(createCaseSession(v2ExhibitDefinition), {
+      type: "clarification_selected",
+      clarificationId: "target-metric",
+      atMs: 1,
+    });
+    session = applyCaseEvent(session, {
+      type: "framework_submitted",
+      eventSchemaVersion: 2,
+      branches: [{ conceptId: "variable_cost", children: [] }],
+      priorityConceptId: "variable_cost",
+      rationale: "Costs grew faster than revenue.",
+      atMs: 2,
+    });
+    session = applyCaseEvent(session, {
+      type: "node_investigated",
+      nodeId: "costs",
+      atMs: 3,
+    });
+    const synthesis = {
+      type: "synthesis_submitted" as const,
+      evidenceIds: ["cost-growth"],
+      nextStepNodeId: "variable_cost",
+      atMs: 5,
+    };
+
+    expect(applyCaseEvent(session, synthesis)).toBe(session);
+    const interpreted = applyCaseEvent(session, v2InterpretationEvent);
+    expect(interpreted.events.at(-1)).toEqual(v2InterpretationEvent);
+    expect(applyCaseEvent(interpreted, synthesis).currentStage).toBe("recommend");
   });
 
   it("validates authored recommendation choices and discovered evidence", () => {

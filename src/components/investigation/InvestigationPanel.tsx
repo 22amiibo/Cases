@@ -9,6 +9,8 @@ import { CalculationTask } from "@/components/math/CalculationTask";
 import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
 import { flattenFrameworkConceptIds } from "@/core/framework-events";
+import type { LearningCycleReveal } from "@/core/learning-cycle";
+import type { CommittedResponse } from "@/core/schema";
 import { createCaseAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
@@ -176,7 +178,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       const response = await fetch(`/api/cases/${caseDefinition.id}/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ events: nextEvents }),
+        body: JSON.stringify({
+          events: nextEvents,
+          contentVersion: caseDefinition.version,
+        }),
       });
       if (!response.ok) throw new Error("Unable to load case session");
       const nextView = (await response.json()) as LearnerSessionView;
@@ -200,7 +205,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     void fetch(`/api/cases/${caseDefinition.id}/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ events: initialEvents.current }),
+      body: JSON.stringify({
+        events: initialEvents.current,
+        contentVersion: caseDefinition.version,
+      }),
     })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to load case session");
@@ -220,7 +228,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     return () => {
       active = false;
     };
-  }, [caseDefinition.id, sessionExpired]);
+  }, [caseDefinition.id, caseDefinition.version, sessionExpired]);
 
   useEffect(() => {
     if (sessionExpired) return;
@@ -284,6 +292,32 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       nextStepNodeId,
       atMs: timestamp(),
     }).catch(() => undefined);
+  }
+
+  async function commitExhibitResponse(
+    exhibitId: string,
+    response: CommittedResponse,
+  ): Promise<{
+    reveal: LearningCycleReveal;
+    insightOptions: Array<{ id: string; label: string }>;
+  }> {
+    const result = await fetch(
+      `/api/cases/${caseDefinition.id}/exhibits/${exhibitId}/commit`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentVersion: caseDefinition.version,
+          events,
+          response,
+        }),
+      },
+    );
+    if (!result.ok) throw new Error("Unable to commit exhibit response");
+    return result.json() as Promise<{
+      reveal: LearningCycleReveal;
+      insightOptions: Array<{ id: string; label: string }>;
+    }>;
   }
 
   const availableCalculations = view?.calculations ?? [];
@@ -571,6 +605,16 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           <EvidencePanel
             facts={facts}
             exhibits={view?.exhibits ?? []}
+            interpretedExhibitIds={view?.interpretedExhibitIds ?? []}
+            onCommitResponse={commitExhibitResponse}
+            onSubmitInterpretation={async (submission) => {
+              await record({
+                type: "exhibit_interpretation_submitted",
+                eventSchemaVersion: 2,
+                ...submission,
+                atMs: timestamp(),
+              });
+            }}
           />
           <Scratchpad storageKey={`${storageKey}:scratchpad`} />
         </div>

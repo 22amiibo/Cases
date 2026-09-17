@@ -245,3 +245,34 @@ describe("versioned framework events", () => {
     expect(CaseEventSchema.parse(event)).toEqual(event);
   });
 });
+
+describe("V2 exhibit interpretation events", () => {
+  it("retains committed revisions, self-check evidence, and the selected insight", () => {
+    const event = {
+      type: "exhibit_interpretation_submitted",
+      eventSchemaVersion: 2,
+      exhibitId: "cost-category",
+      responses: [{
+        responseId: "response-1",
+        interactionId: "cost-interpretation",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "exhibit_interpretation",
+        text: "Labor is the outlier.",
+        committedAtMs: 10,
+      }],
+      rubricOutcomes: [{ criterionId: "comparison", met: true }],
+      diagnostics: [{
+        code: "strong_exhibit_chain",
+        source: "self_assessment",
+        severity: "strength",
+        responseId: "response-1",
+      }],
+      insightIds: ["labor-outlier"],
+      authoredComparisonViewed: true,
+      atMs: 20,
+    } as const;
+
+    expect(CaseEventSchema.parse(event)).toEqual(event);
+  });
+});

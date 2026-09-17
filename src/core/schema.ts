@@ -243,6 +243,30 @@ export const ExhibitDefinitionSchema = z.object({
       }),
     )
     .min(1),
+  interpretation: z
+    .object({
+      interactionId: IdentifierSchema,
+      responseKind: IdentifierSchema,
+      prompt: z.string().min(1),
+      scaffoldingLevel: ScaffoldingLevelSchema,
+      guidance: z.array(z.string().min(1)),
+      criteria: z
+        .array(z.object({ id: IdentifierSchema, label: z.string().min(1) }))
+        .min(1),
+      comparison: z.object({
+        title: z.string().min(1),
+        text: z.string().min(1).max(10_000),
+      }),
+      diagnosticRules: z.array(
+        z.object({
+          criterionId: IdentifierSchema,
+          when: z.enum(["met", "not_met"]),
+          code: z.enum(diagnosticCodes),
+          severity: z.enum(["strength", "coaching", "blocking"]),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export const CalculationDefinitionSchema = z.object({
@@ -323,6 +347,33 @@ export const CaseDefinitionSchema = CaseDefinitionBaseSchema.superRefine(
           });
         }
       });
+      if (exhibit.interpretation) {
+        const criterionIds = new Set(
+          exhibit.interpretation.criteria.map(({ id }) => id),
+        );
+        if (criterionIds.size !== exhibit.interpretation.criteria.length) {
+          context.addIssue({
+            code: "custom",
+            message: `Exhibit ${exhibit.id} interpretation criteria must be unique`,
+            path: ["exhibits", exhibitIndex, "interpretation", "criteria"],
+          });
+        }
+        exhibit.interpretation.diagnosticRules.forEach((rule, ruleIndex) => {
+          if (!criterionIds.has(rule.criterionId)) {
+            context.addIssue({
+              code: "custom",
+              message: `Exhibit ${exhibit.id} diagnostic references unknown criterion ${rule.criterionId}`,
+              path: [
+                "exhibits",
+                exhibitIndex,
+                "interpretation",
+                "diagnosticRules",
+                ruleIndex,
+              ],
+            });
+          }
+        });
+      }
     });
   },
 );
@@ -366,6 +417,16 @@ export const CaseEventSchema = z.union([
     type: z.literal("exhibit_insight_submitted"),
     exhibitId: IdentifierSchema,
     insightIds: z.array(IdentifierSchema).min(1),
+  }),
+  TimedEventSchema.extend({
+    type: z.literal("exhibit_interpretation_submitted"),
+    eventSchemaVersion: z.literal(2),
+    exhibitId: IdentifierSchema,
+    responses: CommittedResponseChainSchema,
+    rubricOutcomes: z.array(RubricOutcomeSchema),
+    diagnostics: z.array(DiagnosticOutcomeSchema),
+    insightIds: z.array(IdentifierSchema).min(1),
+    authoredComparisonViewed: z.literal(true),
   }),
   TimedEventSchema.extend({
     type: z.literal("calculation_submitted"),

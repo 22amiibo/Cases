@@ -14,6 +14,7 @@ import type {
   LearnerSessionView,
 } from "@/core/learner-case";
 import { CaseEventSchema } from "@/core/schema";
+import { projectLearningCyclePrompt } from "@/core/learning-cycle";
 
 export async function POST(
   request: Request,
@@ -77,9 +78,26 @@ export async function POST(
     exhibits: caseDefinition.exhibits
       .filter((exhibit) => session.revealedExhibitIds.includes(exhibit.id))
       .map(
-        ({ id, title, type, unit, columns, rows, series, categories }) =>
-          ({ id, title, type, unit, columns, rows, series, categories }) satisfies LearnerExhibitDefinition,
+        ({ id, title, type, unit, columns, rows, series, categories, interpretation }) =>
+          ({
+            id,
+            title,
+            type,
+            unit,
+            columns,
+            rows,
+            series,
+            categories,
+            ...(interpretation
+              ? { interpretationPrompt: projectLearningCyclePrompt(interpretation) }
+              : {}),
+          }) satisfies LearnerExhibitDefinition,
       ),
+    interpretedExhibitIds: session.events.flatMap((event) =>
+      event.type === "exhibit_interpretation_submitted"
+        ? [event.exhibitId]
+        : [],
+    ),
     calculations: caseDefinition.calculations
       .filter((calculation) =>
         calculation.prerequisiteNodeIds.every((nodeId) =>

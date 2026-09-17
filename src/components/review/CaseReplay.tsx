@@ -89,6 +89,24 @@ export function CaseReplay({ review }: CaseReplayProps) {
           />
         </section>
       )}
+
+      {review.exhibitInterpretations.map((interpretation) => (
+        <section className={styles.frameworkReview} key={interpretation.exhibitId}>
+          <span>Exhibit interpretation</span>
+          <h2>{interpretation.exhibitTitle}</h2>
+          <ol>
+            {interpretation.responses.map((response) => (
+              <li key={response.responseId}>
+                <strong>Revision {response.revision}</strong>
+                <p>{response.text}</p>
+              </li>
+            ))}
+          </ol>
+          <p>
+            Structured insight: {interpretation.insightIds.join(", ").replaceAll("-", " ")}
+          </p>
+        </section>
+      ))}
     </div>
   );
 }

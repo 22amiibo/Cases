@@ -2,8 +2,11 @@ import type { CaseStage, RevealedFact } from "./case-engine";
 import type {
   CaseDefinition,
   CaseEvent,
+  CommittedResponse,
+  DiagnosticOutcome,
   ExhibitDefinition,
   FrameworkBranch,
+  RubricOutcome,
 } from "./schema";
 import {
   getDiscoveredFactIdsBefore,
@@ -15,11 +18,12 @@ import {
   frameworkSubmissionFromEvent,
   isV2FrameworkEvent,
 } from "./framework-events";
+import type { LearnerLearningCyclePrompt } from "./learning-cycle";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
-  "sourceFactIds" | "insights"
->;
+  "sourceFactIds" | "insights" | "interpretation"
+> & { interpretationPrompt?: LearnerLearningCyclePrompt };
 
 export type LearnerCalculationDefinition = Pick<
   CaseDefinition["calculations"][number],
@@ -63,6 +67,15 @@ export type LearnerCaseReview = {
     rationale: string | null;
     source: "legacy_flattened" | "v2_hierarchy";
   } | null;
+  exhibitInterpretations: Array<{
+    exhibitId: string;
+    exhibitTitle: string;
+    responses: CommittedResponse[];
+    rubricOutcomes: RubricOutcome[];
+    diagnostics: DiagnosticOutcome[];
+    insightIds: string[];
+    authoredComparisonViewed: true;
+  }>;
   nodes: LearnerReplayNode[];
   events: Array<{ type: "node_investigated"; nodeId: string; atMs: number }>;
   efficientPath: { label: string; nodeIds: string[] };
@@ -82,6 +95,7 @@ export type LearnerSessionView = {
   availableActions: Array<{ id: string; conceptId: string; label: string }>;
   facts: RevealedFact[];
   exhibits: LearnerExhibitDefinition[];
+  interpretedExhibitIds: string[];
   calculations: LearnerCalculationDefinition[];
   completedCalculationIds: string[];
   interviewerResponse: string | null;
@@ -197,6 +211,21 @@ export function toLearnerCaseReview(
             : "legacy_flattened",
         }
       : null,
+    exhibitInterpretations: events.flatMap((event) => {
+      if (event.type !== "exhibit_interpretation_submitted") return [];
+      const exhibit = definition.exhibits.find(
+        (candidate) => candidate.id === event.exhibitId,
+      );
+      return [{
+        exhibitId: event.exhibitId,
+        exhibitTitle: exhibit?.title ?? event.exhibitId,
+        responses: event.responses,
+        rubricOutcomes: event.rubricOutcomes,
+        diagnostics: event.diagnostics,
+        insightIds: event.insightIds,
+        authoredComparisonViewed: event.authoredComparisonViewed,
+      }];
+    }),
     nodes: definition.investigationNodes.map((node) => ({
       id: node.id,
       label: node.label,

@@ -183,6 +183,9 @@ function scoreExhibits(
       events.flatMap((event) =>
         event.type === "exhibit_insight_submitted" && event.exhibitId === exhibit.id
           ? event.insightIds
+          : event.type === "exhibit_interpretation_submitted" &&
+              event.exhibitId === exhibit.id
+            ? event.insightIds
           : [],
       ),
     );

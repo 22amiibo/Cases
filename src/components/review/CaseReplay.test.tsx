@@ -19,6 +19,7 @@ const review: LearnerCaseReview = {
     rationale: "Labor is both material and actionable.",
     source: "v2_hierarchy",
   },
+  exhibitInterpretations: [],
   nodes: [],
   events: [],
   efficientPath: { label: "Direct path", nodeIds: [] },

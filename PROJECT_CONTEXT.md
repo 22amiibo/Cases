@@ -73,10 +73,10 @@ npm run build
 
 ### Active V2 checkpoint — 2026-09-17
 
-- V2 Tasks 1–6 are complete through the reusable generated-response cycle.
+- V2 Tasks 1–7 are complete through scoreable exhibit interpretation.
 - Do not stage or commit `supabase/.temp/`; it predates the V2 work and contains
   local Supabase link metadata.
-- Continue with Task 7, scoreable full-case exhibit interpretation.
+- Continue with Task 8, the clarification skill and first V2 drill rep.
 - Continue only through Task 11, then stop at the mandatory owner playtest gate
   before authoring any remaining drills or upgrading another case.
 
@@ -193,6 +193,30 @@ npm run build
   first real V2 consumer in Tasks 8–9 rather than adding a throwaway demo route.
 - Next action: integrate this cycle into V2 exhibit interpretation, gate case
   progress on commitment, and preserve the complete evidence in replay.
+
+### Casework V2 Task 7: Scoreable full-case exhibit interpretation — complete
+
+- Added optional authored V2 exhibit-practice definitions and a V2 event that
+  retains the committed response chain, latest rubric outcomes, sourced
+  diagnostics, structured insight selection, and comparison-view evidence.
+- The case session sends only the safe generate-first prompt. A dedicated commit
+  endpoint validates the content version, event history, revealed exhibit, and
+  matching response before returning criteria, authored comparison, and safe
+  insight labels; hidden insight strengths never leave the server.
+- Revealed configured exhibits now block synthesis until interpretation is
+  committed. V2 exhibit scoring uses the post-commit structured insight, while
+  V1 insight events and scoring remain unchanged.
+- The evidence panel runs the shared cycle, supports refresh recovery between
+  commitment and structured selection, and submits complete evidence. Case
+  replay retains every interpretation revision and selected insight.
+- Red proof: the engine regression first demonstrated synthesis could advance
+  without V2 exhibit evidence; the new gate and event make that path fail closed.
+- Verification: 147 unit/component tests, typecheck, lint, production build,
+  commit-endpoint answer-secrecy tests, component journey coverage, and four V1
+  browser case journeys pass. The live V2 browser journey will use AlpineFit V2
+  in Task 11; no throwaway pilot content was added before that task.
+- Next action: add clarification as the sixth trainable skill through one real
+  V2 generated-response rep, with relevance rules and diagnostic evidence.
 
 ### Repository preparation — complete
 

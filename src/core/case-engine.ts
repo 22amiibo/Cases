@@ -48,6 +48,23 @@ function includesId(items: Array<{ id: string }>, id: string) {
   return items.some((item) => item.id === id);
 }
 
+function hasCompletedRevealedExhibits(session: CaseSession) {
+  const requiredIds = session.caseDefinition.exhibits
+    .filter(
+      (exhibit) =>
+        exhibit.interpretation && session.revealedExhibitIds.includes(exhibit.id),
+    )
+    .map((exhibit) => exhibit.id);
+  const completedIds = new Set(
+    session.events.flatMap((event) =>
+      event.type === "exhibit_interpretation_submitted"
+        ? [event.exhibitId]
+        : [],
+    ),
+  );
+  return requiredIds.every((id) => completedIds.has(id));
+}
+
 const canonicalConceptIds = new Set(concepts.map(({ id }) => id));
 
 export function isCaseEventAllowed(
@@ -90,10 +107,54 @@ export function isCaseEventAllowed(
         (candidate) => candidate.id === event.exhibitId,
       );
       return Boolean(
-        currentStage === "investigate" &&
+        caseDefinition.version === 1 &&
+          currentStage === "investigate" &&
           exhibit &&
           session.revealedExhibitIds.includes(exhibit.id) &&
           event.insightIds.every((insightId) => includesId(exhibit.insights, insightId)),
+      );
+    }
+    case "exhibit_interpretation_submitted": {
+      const exhibit = caseDefinition.exhibits.find(
+        (candidate) => candidate.id === event.exhibitId,
+      );
+      const interpretation = exhibit?.interpretation;
+      const responseIds = new Set(event.responses.map(({ responseId }) => responseId));
+      const criterionIds = new Set(interpretation?.criteria.map(({ id }) => id) ?? []);
+      const submittedCriterionIds = new Set(
+        event.rubricOutcomes.map(({ criterionId }) => criterionId),
+      );
+      const diagnosticCodes = new Set(
+        interpretation?.diagnosticRules.map(({ code }) => code) ?? [],
+      );
+      return Boolean(
+        caseDefinition.version >= 2 &&
+          currentStage === "investigate" &&
+          exhibit &&
+          interpretation &&
+          session.revealedExhibitIds.includes(exhibit.id) &&
+          !session.events.some(
+            (candidate) =>
+              candidate.type === "exhibit_interpretation_submitted" &&
+              candidate.exhibitId === exhibit.id,
+          ) &&
+          event.responses.every(
+            (response) =>
+              response.interactionId === interpretation.interactionId &&
+              response.responseKind === interpretation.responseKind,
+          ) &&
+          event.rubricOutcomes.length === criterionIds.size &&
+          submittedCriterionIds.size === criterionIds.size &&
+          event.rubricOutcomes.every(({ criterionId }) =>
+            criterionIds.has(criterionId),
+          ) &&
+          event.diagnostics.every(
+            ({ responseId, source, code }) =>
+              source === "self_assessment" &&
+              diagnosticCodes.has(code) &&
+              (!responseId || responseIds.has(responseId)),
+          ) &&
+          event.insightIds.every((id) => includesId(exhibit.insights, id)),
       );
     }
     case "calculation_submitted": {
@@ -109,6 +170,7 @@ export function isCaseEventAllowed(
     case "synthesis_submitted":
       return (
         currentStage === "investigate" &&
+        hasCompletedRevealedExhibits(session) &&
         event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
         getAvailableActions(session).some(({ id }) => id === event.nextStepNodeId)
       );

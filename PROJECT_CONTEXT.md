@@ -223,7 +223,7 @@ npm run build
 - Fresh controller verification: 42 unit/component tests pass; lint, typecheck,
   and `git diff --check` pass.
 
-### Task 11: Structured recommendation and case replay — review fixes pending
+### Task 11: Structured recommendation and case replay — complete
 
 - Implementation commit: `0731be1 feat: add recommendation builder and case
   replay`; pushed to both `origin/feature/case-practice-mvp` and
@@ -233,19 +233,21 @@ npm run build
   path, and browser journey through review.
 - Implementer verification reported 43 unit/component tests and 2 focused
   case-flow Playwright tests passing; lint, typecheck, and diff check passed.
-- Independent review found one Critical issue: a shape-valid early
-  `recommendation_submitted` event can forge completion and expose
-  critical-derived replay states and the efficient path. Server-side event
-  validation must enforce legal stages, authored choices, and discovered
-  evidence before returning review data.
-- Important review findings: tie cross-exhibit feedback to one valid synthesis
-  event; show pending/error/retry state for recommendation submission; add
-  focused projection/API safety and positive scoring/replay tests.
-- Minor findings: derive evidence-count copy from authored minimum, handle
-  sessionStorage exceptions, distinguish network errors from incomplete cases,
-  and rename the expanded browser test.
-- Task 11 is not complete until a fix round, scoped re-review, and fresh
-  controller verification pass.
+- Fix commits: `2a582e9 fix: validate case replay events` and `524a9e2 fix:
+  close task 11 review gaps`.
+- The server now records only semantically valid events: legal stage, authored
+  choices, valid prerequisites, and evidence already discovered by the learner.
+  A forged early recommendation cannot complete a session or expose replay data.
+- Recommendation submission has pending, failure, and retry states. Review
+  storage failures and network failures are handled separately.
+- Replay tests cover all four node states, positive recommendation scoring,
+  feedback-code conditions, and API projection safety.
+- Review round 2 found two additional edge cases: canonical but unscored
+  framework concepts were rejected, and cross-exhibit feedback could count an
+  undiscovered cited fact. Both received failing regressions and fixes.
+- Scoped re-review found both findings resolved with no new regressions.
+- Fresh controller verification: 14 test files / 53 tests pass; lint,
+  typecheck, and `git diff --check` pass; both case-flow Playwright tests pass.
 
 ## Decisions and Notes
 
@@ -261,9 +263,7 @@ npm run build
 
 ## Next Action
 
-Resume Task 11 fix round 1. Add failing regression tests for forged early
-completion and temporal/cross-exhibit feedback, then enforce semantic event
-validation server-side. Add recommendation pending/error handling and focused
-review projection tests. Address the recorded minor findings, append evidence
-to the Task 11 report, commit, run scoped re-review and fresh verification,
-then update this file before Task 12.
+Paused by user after completing Task 11 and before starting Task 12. No Task 12
+implementation has begun. Resume by reading this file, the Task 12 brief, and
+the SDD ledger; verify branch/status and remote refs; then begin Task 12 with
+strict TDD and the Superpowers review loop.

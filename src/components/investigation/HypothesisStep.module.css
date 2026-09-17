@@ -1,0 +1,50 @@
+.card {
+  display: grid;
+  gap: 20px;
+  border: 1px solid #9dac9f;
+  border-radius: 18px;
+  padding: clamp(22px, 5vw, 38px);
+  background: #edf0e6;
+}
+
+.card > span {
+  color: #9b4a29;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.form,
+.form fieldset,
+.form label {
+  display: grid;
+  gap: 12px;
+}
+
+.form fieldset {
+  border: 0;
+}
+
+.form select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #aeb6ad;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fffef9;
+}
+
+.form button {
+  justify-self: start;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 20px;
+  color: #fffdf6;
+  background: #234b38;
+  font-weight: 700;
+}
+
+.form button:disabled {
+  opacity: 0.45;
+}

@@ -361,3 +361,51 @@ export function restoreLearningCycleState(
     return null;
   }
 }
+
+export function validateCompletedLearningCycleState(
+  value: unknown,
+  definition: AuthoredLearningCycle,
+): LearningCycleState | null {
+  const parsed = LearningCycleStateSchema.safeParse(value);
+  if (
+    !parsed.success ||
+    parsed.data.phase !== "complete" ||
+    parsed.data.interactionId !== definition.interactionId ||
+    parsed.data.responses.length !== parsed.data.assessments.length ||
+    !CommittedResponseChainSchema.safeParse(parsed.data.responses).success
+  ) return null;
+
+  try {
+    let canonical = createLearningCycleState(definition.interactionId);
+    for (const [index, response] of parsed.data.responses.entries()) {
+      const matchingAssessments = parsed.data.assessments.filter(
+        (assessment) => assessment.responseId === response.responseId,
+      );
+      if (matchingAssessments.length !== 1) return null;
+      canonical = applyLearningCycleAction(canonical, {
+        type: "response_committed",
+        response,
+        reveal: revealLearningCycleAfterCommit(definition, response),
+      });
+      canonical = applyLearningCycleAction(canonical, {
+        type: "self_check_submitted",
+        outcomes: matchingAssessments[0].outcomes,
+      });
+      canonical = applyLearningCycleAction(canonical, {
+        type: "comparison_viewed",
+      });
+      canonical = applyLearningCycleAction(
+        canonical,
+        index === parsed.data.responses.length - 1
+          ? { type: "cycle_completed" }
+          : { type: "retry_started" },
+      );
+    }
+
+    return serializeLearningCycleState(canonical) === serializeLearningCycleState(parsed.data)
+      ? canonical
+      : null;
+  } catch {
+    return null;
+  }
+}

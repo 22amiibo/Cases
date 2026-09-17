@@ -276,3 +276,53 @@ describe("V2 exhibit interpretation events", () => {
     expect(CaseEventSchema.parse(event)).toEqual(event);
   });
 });
+
+describe("V2 hypothesis events", () => {
+  it("preserves initial and evidence-linked update contracts", () => {
+    expect(CaseEventSchema.safeParse({
+      type: "hypothesis_formed",
+      eventSchemaVersion: 2,
+      hypothesisId: "cost-pressure",
+      evidenceIds: [],
+      revisionOfResponseId: null,
+      responses: [{
+        responseId: "hypothesis-1",
+        interactionId: "initial-hypothesis",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "initial_hypothesis",
+        text: "Costs are likely driving the decline.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "testable", met: true }],
+      diagnostics: [],
+      rationale: "Costs are likely driving the decline.",
+      authoredComparisonViewed: true,
+      atMs: 2,
+    }).success).toBe(true);
+
+    expect(CaseEventSchema.safeParse({
+      type: "hypothesis_updated",
+      eventSchemaVersion: 2,
+      status: "reject",
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "cost-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+      responses: [{
+        responseId: "hypothesis-2",
+        interactionId: "hypothesis-update",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "hypothesis_update",
+        text: "The evidence rejects the prior view.",
+        committedAtMs: 3,
+      }],
+      rubricOutcomes: [{ criterionId: "evidence", met: true }],
+      diagnostics: [],
+      rationale: "The evidence rejects the prior view.",
+      authoredComparisonViewed: true,
+      atMs: 4,
+    }).success).toBe(false);
+  });
+});

@@ -10,6 +10,10 @@ const v2MigrationPath = path.resolve(
   process.cwd(),
   "supabase/migrations/002_v2_learning_evidence.sql",
 );
+const caseEventEvidenceMigrationPath = path.resolve(
+  process.cwd(),
+  "supabase/migrations/003_case_event_evidence.sql",
+);
 
 function migrationSql() {
   return readFileSync(migrationPath, "utf8")
@@ -19,6 +23,12 @@ function migrationSql() {
 
 function v2MigrationSql() {
   return readFileSync(v2MigrationPath, "utf8")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function caseEventEvidenceMigrationSql() {
+  return readFileSync(caseEventEvidenceMigrationPath, "utf8")
     .toLowerCase()
     .replace(/\s+/g, " ");
 }
@@ -100,5 +110,17 @@ describe("V2 learning evidence migration", () => {
     expect(sql).toContain("create or replace function public.get_case_events");
     expect(sql).toContain("user_id = auth.uid()");
     expect(sql).toContain("order by sequence asc");
+  });
+});
+
+describe("V2 case event evidence migration", () => {
+  it("keeps V2 case evidence in ordered events without weakening drill evidence", () => {
+    const sql = caseEventEvidenceMigrationSql();
+
+    expect(sql).not.toMatch(/drop table|truncate|delete from/);
+    expect(sql).toContain("alter table public.case_attempts");
+    expect(sql).toContain("learning_evidence is null or jsonb_typeof(learning_evidence) = 'object'");
+    expect(sql).toContain("jsonb_typeof(diagnostics) = 'array'");
+    expect(sql).not.toContain("alter table public.drill_attempts");
   });
 });

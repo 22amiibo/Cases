@@ -107,6 +107,34 @@ export function CaseReplay({ review }: CaseReplayProps) {
           </p>
         </section>
       ))}
+
+      {review.hypotheses.length > 0 && (
+        <section className={styles.frameworkReview} aria-labelledby="hypothesis-review-title">
+          <span>Hypothesis history</span>
+          <h2 id="hypothesis-review-title">Evidence-linked updates</h2>
+          <ol>
+            {review.hypotheses.map((hypothesis, index) => (
+              <li key={`${hypothesis.type}-${index}`}>
+                <strong>{hypothesis.status} · {hypothesis.hypothesisId ?? "no current hypothesis"}</strong>
+                <p>{hypothesis.rationale}</p>
+                {hypothesis.evidenceIds.length > 0 && (
+                  <small>Evidence: {hypothesis.evidenceIds.join(", ").replaceAll("-", " ")}</small>
+                )}
+                {hypothesis.revisionOfResponseId && (
+                  <small>Updates response {hypothesis.revisionOfResponseId}</small>
+                )}
+                <ul>
+                  {hypothesis.diagnostics.map((diagnostic) => (
+                    <li key={`${diagnostic.source}-${diagnostic.code}`}>
+                      {diagnostic.code.replaceAll("_", " ")} · {diagnostic.source}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
     </div>
   );
 }

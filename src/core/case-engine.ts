@@ -6,6 +6,13 @@ import {
   frameworkSubmissionFromEvent,
   isFrameworkEventCompatible,
 } from "./framework-events";
+import {
+  getCurrentHypothesisId,
+  getHypothesisEvents,
+  getHypothesisSystemDiagnostic,
+  getLastHypothesisResponseId,
+  isHypothesisLearningEvidenceValid,
+} from "./hypothesis";
 
 export type CaseStage =
   | "clarify"
@@ -125,6 +132,52 @@ export function isCaseEventAllowed(
         conceptIds.includes(event.priorityConceptId)
       );
     }
+    case "hypothesis_formed": {
+      const practice = caseDefinition.hypothesisPractice;
+      return Boolean(
+        caseDefinition.version >= 2 &&
+          practice &&
+          currentStage === "investigate" &&
+          getHypothesisEvents(session.events).length === 0 &&
+          !session.events.some(({ type }) => type === "node_investigated") &&
+          includesId(practice.options, event.hypothesisId) &&
+          isHypothesisLearningEvidenceValid(caseDefinition, event),
+      );
+    }
+    case "hypothesis_updated": {
+      const practice = caseDefinition.hypothesisPractice;
+      const currentHypothesisId = getCurrentHypothesisId(session.events);
+      const latestResponse = event.responses.at(-1);
+      const expectedDiagnostic = latestResponse && currentHypothesisId
+        ? getHypothesisSystemDiagnostic(
+            caseDefinition,
+            currentHypothesisId,
+            event.status,
+            event.evidenceIds,
+            latestResponse.responseId,
+          )
+        : null;
+      const selectionValid = event.status === "reject"
+        ? event.hypothesisId === null
+        : event.hypothesisId !== null && includesId(practice?.options ?? [], event.hypothesisId);
+      const systemDiagnostics = event.diagnostics.filter(({ source }) => source === "system");
+      return Boolean(
+        caseDefinition.version >= 2 &&
+          practice &&
+          currentStage === "investigate" &&
+          currentHypothesisId &&
+          event.previousHypothesisId === currentHypothesisId &&
+          event.revisionOfResponseId === getLastHypothesisResponseId(session.events) &&
+          event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
+          selectionValid &&
+          isHypothesisLearningEvidenceValid(caseDefinition, event) &&
+          expectedDiagnostic &&
+          systemDiagnostics.length === 1 &&
+          systemDiagnostics[0].code === expectedDiagnostic.code &&
+          systemDiagnostics[0].severity === expectedDiagnostic.severity &&
+          systemDiagnostics[0].responseId === expectedDiagnostic.responseId,
+      );
+    }
     case "node_investigated": {
       const node = caseDefinition.investigationNodes.find(
         (candidate) => candidate.id === event.nodeId,
@@ -132,6 +185,7 @@ export function isCaseEventAllowed(
       return Boolean(
         currentStage === "investigate" &&
           node &&
+          (!caseDefinition.hypothesisPractice || getHypothesisEvents(session.events).length > 0) &&
           node.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
       );
     }
@@ -203,6 +257,8 @@ export function isCaseEventAllowed(
     case "synthesis_submitted":
       return (
         currentStage === "investigate" &&
+        (!caseDefinition.hypothesisPractice ||
+          session.events.some(({ type }) => type === "hypothesis_updated")) &&
         hasCompletedRevealedExhibits(session) &&
         event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
         getAvailableActions(session).some(({ id }) => id === event.nextStepNodeId)
@@ -229,6 +285,19 @@ export function createCaseSession(caseDefinition: CaseDefinition): CaseSession {
     completedCalculationIds: [],
     currentStage: "clarify",
   };
+}
+
+export function replayCaseEvents(
+  caseDefinition: CaseDefinition,
+  events: CaseEvent[],
+): CaseSession | null {
+  let session = createCaseSession(caseDefinition);
+  for (const event of events) {
+    const next = applyCaseEvent(session, event);
+    if (next.events.length !== session.events.length + 1) return null;
+    session = next;
+  }
+  return session;
 }
 
 function nextStage(currentStage: CaseStage, event: CaseEvent): CaseStage {
@@ -312,6 +381,10 @@ export function applyCaseEvent(
 }
 
 export function getAvailableActions(session: CaseSession): AvailableAction[] {
+  if (
+    session.caseDefinition.hypothesisPractice &&
+    getHypothesisEvents(session.events).length === 0
+  ) return [];
   const visited = investigatedNodeIds(session.events);
 
   return session.caseDefinition.investigationNodes

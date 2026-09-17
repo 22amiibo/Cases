@@ -62,6 +62,7 @@ test("guest sees progress and a deterministic next session after practice", asyn
   page,
 }) => {
   await page.goto("/drills/quantitative");
+  await page.getByText("Open the 10-drill Legacy V1 library").click();
   await completeQuantitativeDrill(page, "25", "$/unit");
   await page.getByRole("button", { name: "Next question" }).click();
   await completeQuantitativeDrill(page, "40000", "orders");

@@ -93,4 +93,68 @@ describe("practice attempt mapping", () => {
       completedAt: "2026-01-03T00:00:00.000Z",
     });
   });
+
+  it("stores V2 hypothesis diagnostics as case evidence without a hypothesis score", () => {
+    const diagnostic = {
+      code: "strong_hypothesis_update" as const,
+      source: "system" as const,
+      severity: "strength" as const,
+      responseId: "hypothesis-2",
+    };
+    const events = [{
+      type: "hypothesis_updated" as const,
+      eventSchemaVersion: 2 as const,
+      status: "revise" as const,
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "cost-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+      responses: [{
+        responseId: "hypothesis-2",
+        interactionId: "hypothesis-update",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "hypothesis_update",
+        text: "Costs grew despite stable revenue.",
+        committedAtMs: 4,
+      }],
+      rubricOutcomes: [{ criterionId: "evidence", met: true }],
+      diagnostics: [diagnostic],
+      rationale: "Costs grew despite stable revenue.",
+      authoredComparisonViewed: true as const,
+      atMs: 5,
+    }];
+    const review: LearnerCaseReview = {
+      framework: null,
+      exhibitInterpretations: [],
+      hypotheses: [],
+      nodes: [],
+      events: [],
+      efficientPath: { label: "Cost path", nodeIds: ["costs"] },
+      scores: [{ id: "structure", label: "Structure", value: 0.8 }],
+      feedback: [],
+    };
+
+    const attempt = createCaseAttempt({
+      attemptId: "attempt-v2",
+      userId: "user-1",
+      caseId: "alpinefit-profitability",
+      review,
+      events,
+      completedAt: "2026-01-03T00:00:00.000Z",
+      contentVersion: 2,
+      scaffoldingLevel: "beginner",
+    });
+
+    expect(attempt).toMatchObject({
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [diagnostic],
+      skillScores: { structure: 80 },
+    });
+    expect(attempt.skillScores).not.toHaveProperty("hypothesis");
+  });
 });

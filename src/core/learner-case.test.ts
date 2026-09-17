@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
 import { CaseDefinitionSchema } from "./schema";
-import { toLearnerCaseDefinition, toLearnerCaseReview } from "./learner-case";
+import { projectHypothesisPractice, toLearnerCaseDefinition, toLearnerCaseReview } from "./learner-case";
 import type { CaseEvent } from "./schema";
 
 describe("toLearnerCaseDefinition", () => {
@@ -18,6 +18,44 @@ describe("toLearnerCaseDefinition", () => {
     expect(serialized).not.toContain('"supportingEvidenceIds"');
     expect(serialized).not.toContain('"weight"');
     expect(serialized).not.toContain('"insights"');
+  });
+
+  it("projects hypothesis prompts and options without future evidence or authored comparisons", () => {
+    const definition = CaseDefinitionSchema.parse({
+      ...alpineFitContent,
+      version: 2,
+      hypothesisPractice: {
+        options: [
+          { id: "revenue-pressure", label: "Revenue pressure" },
+          { id: "cost-pressure", label: "Cost pressure" },
+        ],
+        initial: {
+          interactionId: "initial-hypothesis",
+          responseKind: "initial_hypothesis",
+          prompt: "State an initial hypothesis.",
+          scaffoldingLevel: "beginner",
+          guidance: [],
+          criteria: [{ id: "testable", label: "Testable" }],
+          comparison: { title: "Hidden", text: "Hidden initial comparison" },
+          diagnosticRules: [],
+        },
+        update: {
+          interactionId: "hypothesis-update",
+          responseKind: "hypothesis_update",
+          prompt: "Update with evidence.",
+          scaffoldingLevel: "beginner",
+          guidance: [],
+          criteria: [{ id: "evidence", label: "Uses evidence" }],
+          comparison: { title: "Hidden", text: "Hidden update comparison" },
+          diagnosticRules: [],
+        },
+        contradictions: [{ hypothesisId: "revenue-pressure", evidenceFactIds: ["cost-growth"] }],
+      },
+    });
+    const initial = projectHypothesisPractice(definition, []);
+    expect(initial?.phase).toBe("initial");
+    expect(JSON.stringify(initial)).not.toContain("Hidden initial comparison");
+    expect(JSON.stringify(initial)).not.toContain("cost-growth");
   });
 });
 
@@ -123,6 +161,46 @@ describe("toLearnerCaseReview", () => {
       insightIds: ["labor-outlier"],
       authoredComparisonViewed: true,
     });
+  });
+
+  it("replays the complete hypothesis and evidence-linked revision chain without a score", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const review = toLearnerCaseReview(definition, [{
+      type: "hypothesis_updated",
+      eventSchemaVersion: 2,
+      status: "revise",
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "cost-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+      responses: [{
+        responseId: "hypothesis-2",
+        interactionId: "hypothesis-update",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "hypothesis_update",
+        text: "Cost evidence changes the leading explanation.",
+        committedAtMs: 2,
+      }],
+      rubricOutcomes: [{ criterionId: "evidence", met: true }],
+      diagnostics: [{
+        code: "strong_hypothesis_update",
+        source: "system",
+        severity: "strength",
+        responseId: "hypothesis-2",
+      }],
+      rationale: "Cost evidence changes the leading explanation.",
+      authoredComparisonViewed: true,
+      atMs: 3,
+    }]);
+    expect(review.hypotheses[0]).toMatchObject({
+      status: "revise",
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "cost-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+    });
+    expect(review.scores.some(({ id }) => id === "hypothesis")).toBe(false);
   });
 
   it("projects every replay state and deterministic branch feedback", () => {

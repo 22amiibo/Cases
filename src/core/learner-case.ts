@@ -19,6 +19,8 @@ import {
   isV2FrameworkEvent,
 } from "./framework-events";
 import type { LearnerLearningCyclePrompt } from "./learning-cycle";
+import { projectLearningCyclePrompt } from "./learning-cycle";
+import { getCurrentHypothesisId, getHypothesisEvents } from "./hypothesis";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
@@ -76,6 +78,17 @@ export type LearnerCaseReview = {
     insightIds: string[];
     authoredComparisonViewed: true;
   }>;
+  hypotheses: Array<{
+    type: "hypothesis_formed" | "hypothesis_updated";
+    status: "initial" | "retain" | "revise" | "reject";
+    previousHypothesisId: string | null;
+    hypothesisId: string | null;
+    evidenceIds: string[];
+    rationale: string;
+    responses: CommittedResponse[];
+    diagnostics: DiagnosticOutcome[];
+    revisionOfResponseId: string | null;
+  }>;
   nodes: LearnerReplayNode[];
   events: Array<{ type: "node_investigated"; nodeId: string; atMs: number }>;
   efficientPath: { label: string; nodeIds: string[] };
@@ -88,6 +101,7 @@ export type LearnerCaseDefinition = Pick<
   "id" | "version" | "title" | "category" | "difficulty" | "prompt" | "objective"
 > & {
   clarificationOptions: Array<{ id: string; label: string }>;
+  scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
 };
 
 export type LearnerSessionView = {
@@ -99,6 +113,13 @@ export type LearnerSessionView = {
   calculations: LearnerCalculationDefinition[];
   completedCalculationIds: string[];
   interviewerResponse: string | null;
+  hypothesis: {
+    phase: "initial" | "update";
+    prompt: LearnerLearningCyclePrompt;
+    options: Array<{ id: string; label: string }>;
+    currentHypothesisId: string | null;
+    revisionOfResponseId: string | null;
+  } | null;
   recommendation: LearnerRecommendation | null;
   review: LearnerCaseReview | null;
 };
@@ -112,6 +133,13 @@ export type StoredCaseWorkspace = {
 export function toLearnerCaseDefinition(
   definition: CaseDefinition,
 ): LearnerCaseDefinition {
+  const scaffoldingLevel = definition.version >= 2
+    ? definition.opening?.responseCycle.scaffoldingLevel ??
+      definition.hypothesisPractice?.initial.scaffoldingLevel ??
+      definition.exhibits.find(({ interpretation }) => interpretation)
+        ?.interpretation?.scaffoldingLevel ??
+      null
+    : null;
   return {
     id: definition.id,
     version: definition.version,
@@ -120,6 +148,7 @@ export function toLearnerCaseDefinition(
     difficulty: definition.difficulty,
     prompt: definition.prompt,
     objective: definition.objective,
+    scaffoldingLevel,
     clarificationOptions: definition.clarificationOptions.map(({ id, label }) => ({
       id,
       label,
@@ -226,6 +255,19 @@ export function toLearnerCaseReview(
         authoredComparisonViewed: event.authoredComparisonViewed,
       }];
     }),
+    hypotheses: getHypothesisEvents(events).map((event) => ({
+      type: event.type,
+      status: event.type === "hypothesis_formed" ? "initial" : event.status,
+      previousHypothesisId: event.type === "hypothesis_updated"
+        ? event.previousHypothesisId
+        : null,
+      hypothesisId: event.hypothesisId,
+      evidenceIds: [...event.evidenceIds],
+      rationale: event.rationale,
+      responses: event.responses,
+      diagnostics: event.diagnostics,
+      revisionOfResponseId: event.revisionOfResponseId,
+    })),
     nodes: definition.investigationNodes.map((node) => ({
       id: node.id,
       label: node.label,
@@ -258,4 +300,35 @@ export function toLearnerCaseReview(
     ],
     feedback,
   };
+}
+
+export function projectHypothesisPractice(
+  definition: CaseDefinition,
+  events: CaseEvent[],
+): LearnerSessionView["hypothesis"] {
+  const practice = definition.hypothesisPractice;
+  if (!practice) return null;
+  const hypothesisEvents = getHypothesisEvents(events);
+  if (hypothesisEvents.length === 0) {
+    return {
+      phase: "initial",
+      prompt: projectLearningCyclePrompt(practice.initial),
+      options: practice.options.map((option) => ({ ...option })),
+      currentHypothesisId: null,
+      revisionOfResponseId: null,
+    };
+  }
+  if (
+    events.some(({ type }) => type === "node_investigated") &&
+    !events.some(({ type }) => type === "hypothesis_updated")
+  ) {
+    return {
+      phase: "update",
+      prompt: projectLearningCyclePrompt(practice.update),
+      options: practice.options.map((option) => ({ ...option })),
+      currentHypothesisId: getCurrentHypothesisId(events),
+      revisionOfResponseId: hypothesisEvents.at(-1)?.responses.at(-1)?.responseId ?? null,
+    };
+  }
+  return null;
 }

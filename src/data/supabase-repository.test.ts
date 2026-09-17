@@ -123,6 +123,7 @@ describe("SupabasePracticeRepository", () => {
         scaffoldingLevel: null,
         learningEvidence: null,
         diagnostics: [],
+        caseDiagnostics: [],
       },
       {
         attemptId: "00000000-0000-4000-8000-000000000002",
@@ -138,6 +139,7 @@ describe("SupabasePracticeRepository", () => {
         scaffoldingLevel: null,
         learningEvidence: null,
         diagnostics: [],
+        caseDiagnostics: [],
       },
       {
         attemptId: "00000000-0000-4000-8000-000000000001",
@@ -229,6 +231,40 @@ describe("SupabasePracticeRepository", () => {
       scaffoldingLevel: "beginner",
       learningEvidence: evidence,
     });
+  });
+
+  it("accepts V2 case event evidence without fabricating skill evidence", async () => {
+    const diagnostic = {
+      code: "strong_hypothesis_update",
+      source: "system",
+      severity: "strength",
+      responseId: "hypothesis-2",
+    };
+    const database = client({
+      selectCaseAttempts: vi.fn().mockResolvedValue([{
+        id: "case-v2",
+        user_id: "user-1",
+        skill_scores: { structure: 90, synthesis: 60 },
+        feedback_codes: ["strong_hypothesis_update"],
+        completed_at: "2026-01-04T00:00:00.000Z",
+        scoring_version: "v2",
+        content_version: 2,
+        event_schema_version: 2,
+        scaffolding_level: "beginner",
+        learning_evidence: null,
+        diagnostics: [diagnostic],
+      }]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    const history = await repository.getSkillHistory("user-1");
+
+    expect(history).toHaveLength(2);
+    expect(history.every(({ learningEvidence }) => learningEvidence === null)).toBe(true);
+    expect(history.every(({ diagnostics }) => diagnostics?.length === 0)).toBe(true);
+    expect(history.every(({ caseDiagnostics }) =>
+      caseDiagnostics?.[0]?.code === "strong_hypothesis_update",
+    )).toBe(true);
   });
 
   it("reads valid case events in database sequence order", async () => {

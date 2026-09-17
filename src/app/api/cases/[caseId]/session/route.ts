@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCaseDefinition } from "@/content/cases";
 import {
-  applyCaseEvent,
-  createCaseSession,
   getAvailableActions,
   getRevealedFacts,
+  replayCaseEvents,
 } from "@/core/case-engine";
 import {
   toLearnerCaseReview,
+  projectHypothesisPractice,
 } from "@/core/learner-case";
 import type {
   LearnerExhibitDefinition,
@@ -53,11 +53,13 @@ export async function POST(
     return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
   }
 
-  const session = parsedEvents.reduce(
-    (current, parsed) =>
-      parsed.success ? applyCaseEvent(current, parsed.data) : current,
-    createCaseSession(caseDefinition),
+  const session = replayCaseEvents(
+    caseDefinition,
+    parsedEvents.flatMap((parsed) => parsed.success ? [parsed.data] : []),
   );
+  if (!session) {
+    return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
+  }
   const investigatedNodeIds = new Set(
     session.events
       .filter((event) => event.type === "node_investigated")
@@ -112,6 +114,9 @@ export async function POST(
             (node) => node.id === lastInvestigation.nodeId,
           )?.interviewerResponse ?? null
         : null,
+    hypothesis: session.currentStage === "investigate"
+      ? projectHypothesisPractice(caseDefinition, session.events)
+      : null,
     recommendation: recommendationVisible
       ? {
           decisions: caseDefinition.recommendation.decisions.map(({ id, label }) => ({

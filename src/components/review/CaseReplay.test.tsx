@@ -20,6 +20,7 @@ const review: LearnerCaseReview = {
     source: "v2_hierarchy",
   },
   exhibitInterpretations: [],
+  hypotheses: [],
   nodes: [],
   events: [],
   efficientPath: { label: "Direct path", nodeIds: [] },

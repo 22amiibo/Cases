@@ -33,6 +33,7 @@ function validateMetadata(
     learningEvidence: unknown;
   },
   context: z.RefinementCtx,
+  requireLearningEvidence: boolean,
 ) {
   if (value.scoringVersion === "v1") {
     if (
@@ -53,7 +54,6 @@ function validateMetadata(
     "contentVersion",
     "eventSchemaVersion",
     "scaffoldingLevel",
-    "learningEvidence",
   ] as const) {
     if (value[field] === null) {
       context.addIssue({
@@ -62,6 +62,13 @@ function validateMetadata(
         path: [field],
       });
     }
+  }
+  if (requireLearningEvidence && value.learningEvidence === null) {
+    context.addIssue({
+      code: "custom",
+      message: "learningEvidence is required for V2 drill attempts",
+      path: ["learningEvidence"],
+    });
   }
 }
 
@@ -75,7 +82,7 @@ const DrillAttemptSchema = z.object({
   conceptIdsPracticed: z.array(z.string()),
   completedAt: z.iso.datetime(),
   ...metadataFields,
-}).superRefine(validateMetadata);
+}).superRefine((value, context) => validateMetadata(value, context, true));
 
 const CaseAttemptSchema = z.object({
   attemptId: z.string().min(1),
@@ -89,7 +96,7 @@ const CaseAttemptSchema = z.object({
   feedbackCodes: z.array(z.string()),
   events: z.array(CaseEventSchema),
   ...metadataFields,
-}).superRefine(validateMetadata);
+}).superRefine((value, context) => validateMetadata(value, context, false));
 
 const StoredHistorySchema = z.object({
   drillAttempts: z.array(DrillAttemptSchema),
@@ -126,21 +133,28 @@ function loadHistory(
 }
 
 function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
-  return Object.entries(attempt.skillScores).map(([skillId, score]) => ({
-    attemptId: attempt.attemptId,
-    attemptType: "case",
-    userId: attempt.userId,
-    skillId: SkillIdSchema.parse(skillId),
-    score,
-    feedbackCodes: attempt.feedbackCodes,
-    completedAt: attempt.completedAt,
-    scoringVersion: attempt.scoringVersion ?? "v1",
-    contentVersion: attempt.contentVersion ?? null,
-    eventSchemaVersion: attempt.eventSchemaVersion ?? null,
-    scaffoldingLevel: attempt.scaffoldingLevel ?? null,
-    learningEvidence: attempt.learningEvidence ?? null,
-    diagnostics: attempt.diagnostics ?? [],
-  }));
+  return Object.entries(attempt.skillScores).map(([skillId, score]) => {
+    const parsedSkillId = SkillIdSchema.parse(skillId);
+    const learningEvidence = attempt.learningEvidence?.skillId === parsedSkillId
+      ? attempt.learningEvidence
+      : null;
+    return {
+      attemptId: attempt.attemptId,
+      attemptType: "case",
+      userId: attempt.userId,
+      skillId: parsedSkillId,
+      score,
+      feedbackCodes: attempt.feedbackCodes,
+      completedAt: attempt.completedAt,
+      scoringVersion: attempt.scoringVersion ?? "v1",
+      contentVersion: attempt.contentVersion ?? null,
+      eventSchemaVersion: attempt.eventSchemaVersion ?? null,
+      scaffoldingLevel: attempt.scaffoldingLevel ?? null,
+      learningEvidence,
+      diagnostics: learningEvidence?.diagnostics ?? [],
+      caseDiagnostics: attempt.diagnostics ?? [],
+    };
+  });
 }
 
 export class MemoryPracticeRepository implements PracticeRepository {

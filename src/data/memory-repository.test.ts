@@ -105,6 +105,34 @@ describe("MemoryPracticeRepository", () => {
     ]);
   });
 
+  it("keeps V2 case diagnostics separate from skill evidence", async () => {
+    const diagnostic = {
+      code: "strong_hypothesis_update" as const,
+      source: "system" as const,
+      severity: "strength" as const,
+      responseId: "hypothesis-2",
+    };
+    const repository = new MemoryPracticeRepository();
+    await repository.saveCaseAttempt({
+      ...caseAttempt,
+      attemptId: "case-v2",
+      skillScores: { structure: 90, synthesis: 60 },
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [diagnostic],
+    });
+
+    const history = await repository.getSkillHistory("guest-1");
+    expect(history).toHaveLength(2);
+    expect(history.every(({ diagnostics }) => diagnostics?.length === 0)).toBe(true);
+    expect(history.every(({ caseDiagnostics }) =>
+      caseDiagnostics?.[0]?.code === "strong_hypothesis_update",
+    )).toBe(true);
+  });
+
   it("recovers complete guest attempts from browser session storage", async () => {
     const storage = window.sessionStorage;
     storage.clear();

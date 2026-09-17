@@ -71,6 +71,34 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 10: Evidence-linked hypothesis updates — complete
+
+- V2 cases can require a generated initial hypothesis before investigation and
+  one retain/revise/reject update linked to revealed evidence before synthesis.
+  Legacy `hypothesis_selected` events remain rejected and the new events are
+  version-gated.
+- Hypothesis events retain the committed response chain, latest rubric outcomes,
+  deterministic diagnostics, selected status, evidence IDs, rationale, and the
+  link to the prior hypothesis response. Replay renders the full chain.
+- Hypothesis diagnostics persist at the case level and appear in a separate V2
+  Progress section. They never create or contaminate a numeric skill score.
+- Learner projections and commit APIs keep future facts, rubric criteria, and
+  authored comparisons hidden until the legal phase and response commitment.
+- Final adversarial review made server replay reject partially accepted event
+  histories, rebuild completed learning cycles from authored rules, reject
+  tampered diagnostic/reveal state, validate latest self-check diagnostics, and
+  clear completed hypothesis recovery keys after save or a fresh restart.
+- Verification: 188 unit/component tests, typecheck, lint, production build,
+  and 21 browser tests pass. Browser coverage includes formation, contrary
+  evidence, refresh recovery, revision linkage, keyboard/accessibility checks,
+  Progress isolation, and 320px reflow.
+- Next action: Task 11 architecture and test design for an immutable AlpineFit
+  V2 beginner case. Stop again before bulk implementation per the required model
+  checkpoint, then stop after Task 11 at the owner playtest gate. Do not begin
+  Task 12.
+- Continue leaving `supabase/.temp/` untracked and untouched; it predates this
+  work and contains local Supabase link metadata.
+
 ### Casework V2 Task 9: Six complete learning-cycle reps — complete
 
 - The pilot now contains exactly six validated V2 reps: one each for

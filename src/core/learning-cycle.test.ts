@@ -7,6 +7,7 @@ import {
   restoreLearningCycleState,
   revealLearningCycleAfterCommit,
   serializeLearningCycleState,
+  validateCompletedLearningCycleState,
   type AuthoredLearningCycle,
   type LearningCycleReveal,
 } from "./learning-cycle";
@@ -183,5 +184,43 @@ describe("generated response learning cycle", () => {
         { type: "cycle_skipped" },
       ),
     ).toThrow(/skip/i);
+  });
+
+  it("rebuilds completed evidence from authored rules and rejects tampered state", () => {
+    let completed = applyLearningCycleAction(
+      createLearningCycleState(definition.interactionId),
+      {
+        type: "response_committed",
+        response: firstResponse,
+        reveal: committedReveal(),
+      },
+    );
+    completed = applyLearningCycleAction(completed, {
+      type: "self_check_submitted",
+      outcomes: [
+        { criterionId: "observation", met: false },
+        { criterionId: "implication", met: true },
+      ],
+    });
+    completed = applyLearningCycleAction(completed, { type: "comparison_viewed" });
+    completed = applyLearningCycleAction(completed, { type: "cycle_completed" });
+
+    expect(validateCompletedLearningCycleState(completed, definition)).toEqual(completed);
+    expect(validateCompletedLearningCycleState({
+      ...completed,
+      diagnostics: [{
+        code: "strong_hypothesis_update",
+        source: "system",
+        severity: "strength",
+        responseId: firstResponse.responseId,
+      }],
+    }, definition)).toBeNull();
+    expect(validateCompletedLearningCycleState({
+      ...completed,
+      reveal: {
+        ...completed.reveal,
+        comparison: { title: "Forged", text: "Forged comparison" },
+      },
+    }, definition)).toBeNull();
   });
 });

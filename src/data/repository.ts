@@ -24,6 +24,7 @@ export type SkillAttempt = AttemptLearningMetadata & {
   score: number;
   feedbackCodes: string[];
   completedAt: string;
+  caseDiagnostics?: DiagnosticOutcome[];
 };
 
 export type DrillAttempt = Omit<SkillAttempt, "attemptType"> & {

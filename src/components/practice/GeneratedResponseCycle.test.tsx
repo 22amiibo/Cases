@@ -109,6 +109,13 @@ describe("GeneratedResponseCycle", () => {
     await screen.findByRole("heading", { name: "Check your response" });
 
     firstRender.unmount();
+    const onComplete = vi.fn(() => {
+      expect(
+        JSON.parse(
+          window.sessionStorage.getItem("learning-cycle:test") ?? "null",
+        ).phase,
+      ).toBe("complete");
+    });
     render(
       <GeneratedResponseCycle
         prompt={prompt}
@@ -116,6 +123,7 @@ describe("GeneratedResponseCycle", () => {
         createResponseId={() => "response-3"}
         now={() => 300}
         storageKey="learning-cycle:test"
+        onComplete={onComplete}
       />,
     );
 
@@ -123,5 +131,9 @@ describe("GeneratedResponseCycle", () => {
     expect(window.sessionStorage.getItem("learning-cycle:test")).toContain(
       "Second response",
     );
+    await user.click(screen.getByRole("button", { name: "Save self-check" }));
+    await user.click(screen.getByRole("button", { name: "View comparison" }));
+    await user.click(screen.getByRole("button", { name: "Finish practice" }));
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

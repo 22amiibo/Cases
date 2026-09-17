@@ -101,6 +101,40 @@ export default function ProgressPage() {
             ))}
           </section>
 
+          <section className={styles.hypothesis} aria-labelledby="hypothesis-progress-heading">
+            <div>
+              <p>Case reasoning</p>
+              <h2 id="hypothesis-progress-heading">Hypothesis updates</h2>
+              <span>
+                {dashboard.v2.hypothesis.casesReviewed} V2 case review
+                {dashboard.v2.hypothesis.casesReviewed === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div>
+              <h3>Diagnostic evidence</h3>
+              {dashboard.v2.hypothesis.diagnostics.length > 0 ? (
+                <ul>
+                  {dashboard.v2.hypothesis.diagnostics.map(({ diagnostic, count }) => (
+                    <li key={`${diagnostic.source}:${diagnostic.code}`}>
+                      <span className={styles.source}>
+                        {diagnostic.source === "self_assessment"
+                          ? "Self-assessed"
+                          : "System check"}
+                      </span>{" "}
+                      {readableFeedback(diagnostic.code)} · {count}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Complete a V2 case update to see hypothesis patterns.</p>
+              )}
+              <small>
+                This reflects how you updated your thinking; it is not graded
+                as a separate score.
+              </small>
+            </div>
+          </section>
+
           <section className={styles.recommendation}>
             <p>Next V2 practice</p>
             <h2>Recommended next: {recommendation.title}</h2>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCaseDefinition } from "@/content/cases";
-import { applyCaseEvent, createCaseSession } from "@/core/case-engine";
+import { replayCaseEvents } from "@/core/case-engine";
 import { revealLearningCycleAfterCommit } from "@/core/learning-cycle";
 import { CaseEventSchema, CommittedResponseSchema } from "@/core/schema";
 
@@ -32,11 +32,13 @@ export async function POST(
   if (parsedEvents.some((event) => !event.success) || !response.success) {
     return NextResponse.json({ error: "Invalid commitment" }, { status: 400 });
   }
-  const session = parsedEvents.reduce(
-    (current, parsed) =>
-      parsed.success ? applyCaseEvent(current, parsed.data) : current,
-    createCaseSession(definition),
+  const session = replayCaseEvents(
+    definition,
+    parsedEvents.flatMap((parsed) => parsed.success ? [parsed.data] : []),
   );
+  if (!session) {
+    return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
+  }
   const exhibit = definition.exhibits.find((candidate) => candidate.id === exhibitId);
   if (
     !exhibit?.interpretation ||

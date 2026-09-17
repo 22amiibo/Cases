@@ -1,5 +1,6 @@
 import type { DiagnosticOutcome, V2SkillId } from "./schema";
 import type { SkillAttempt } from "@/data/repository";
+import { diagnosticDefinitions } from "./diagnostics";
 import {
   calculateRollingSkillScore,
   recommendNextPractice,
@@ -143,11 +144,9 @@ export function calculateV2EvidenceStatus(
     : "Consistent";
 }
 
-function diagnosticSummary(attempts: SkillAttempt[]) {
+function summarizeDiagnostics(diagnostics: DiagnosticOutcome[]) {
   const counts = new Map<string, { diagnostic: DiagnosticOutcome; count: number }>();
-  for (const diagnostic of attempts.flatMap(
-    (attempt) => attempt.diagnostics ?? [],
-  )) {
+  for (const diagnostic of diagnostics) {
     const key = `${diagnostic.source}:${diagnostic.code}`;
     const prior = counts.get(key);
     counts.set(key, { diagnostic, count: (prior?.count ?? 0) + 1 });
@@ -157,6 +156,35 @@ function diagnosticSummary(attempts: SkillAttempt[]) {
       right.count - left.count ||
       left.diagnostic.code.localeCompare(right.diagnostic.code),
   );
+}
+
+function diagnosticSummary(attempts: SkillAttempt[]) {
+  return summarizeDiagnostics(
+    attempts.flatMap((attempt) => attempt.diagnostics ?? []),
+  );
+}
+
+function hypothesisDiagnosticSummary(attempts: SkillAttempt[]) {
+  const seenCaseAttempts = new Set<string>();
+  let casesReviewed = 0;
+  const diagnostics = attempts.flatMap((attempt) => {
+    if (
+      attempt.attemptType !== "case" ||
+      seenCaseAttempts.has(attempt.attemptId)
+    ) {
+      return [];
+    }
+    seenCaseAttempts.add(attempt.attemptId);
+    const hypothesisDiagnostics = (attempt.caseDiagnostics ?? []).filter(
+      ({ code }) => diagnosticDefinitions[code].area === "hypothesis",
+    );
+    if (hypothesisDiagnostics.length > 0) casesReviewed += 1;
+    return hypothesisDiagnostics;
+  });
+  return {
+    casesReviewed,
+    diagnostics: summarizeDiagnostics(diagnostics),
+  };
 }
 
 export function buildProgressDashboard(
@@ -173,6 +201,7 @@ export function buildProgressDashboard(
   return {
     v2: {
       sessionsCompleted: uniqueSessions(v2History),
+      hypothesis: hypothesisDiagnosticSummary(v2History),
       skills: V2_TRAINABLE_SKILLS.map((skillId) => {
         const attempts = oldestFirst(
           v2History.filter((attempt) => attempt.skillId === skillId),

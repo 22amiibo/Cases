@@ -38,6 +38,7 @@ function v2Attempt({
   revised = false,
   transferred = false,
   diagnostics = [],
+  caseDiagnostics = [],
 }: {
   attemptId: string;
   skillId?: V2SkillId;
@@ -45,6 +46,7 @@ function v2Attempt({
   revised?: boolean;
   transferred?: boolean;
   diagnostics?: DiagnosticOutcome[];
+  caseDiagnostics?: DiagnosticOutcome[];
 }): SkillAttempt {
   const responses: CommittedResponse[] = [{
     responseId: `${attemptId}-r1`,
@@ -79,6 +81,7 @@ function v2Attempt({
     eventSchemaVersion: 2,
     scaffoldingLevel: "beginner",
     diagnostics,
+    caseDiagnostics,
     learningEvidence: {
       interactionId: attemptId,
       skillId,
@@ -177,6 +180,41 @@ describe("buildProgressDashboard", () => {
       v2Attempt({ attemptId: "v2-one", day: 1, diagnostics: [diagnostic] }),
     ]).v2.skills.find((item) => item.skillId === "structure");
     expect(skill?.diagnostics).toEqual([{ diagnostic, count: 1 }]);
+  });
+
+  it("counts case-level hypothesis diagnostics once without creating a scored skill", () => {
+    const diagnostic: DiagnosticOutcome = {
+      code: "strong_hypothesis_update",
+      source: "system",
+      severity: "strength",
+      responseId: "hypothesis-2",
+    };
+    const structure = v2Attempt({
+      attemptId: "case-1",
+      day: 1,
+      transferred: true,
+      caseDiagnostics: [diagnostic],
+    });
+    const synthesis = {
+      ...structure,
+      skillId: "synthesis" as const,
+      learningEvidence: null,
+      diagnostics: [],
+    };
+
+    const dashboard = buildProgressDashboard([structure, synthesis]);
+
+    expect(dashboard.v2.hypothesis).toEqual({
+      casesReviewed: 1,
+      diagnostics: [{ diagnostic, count: 1 }],
+    });
+    expect(dashboard.v2.skills).toHaveLength(6);
+    expect(dashboard.v2.skills.map(({ skillId }) => skillId)).not.toContain(
+      "hypothesis",
+    );
+    expect(
+      dashboard.v2.skills.flatMap(({ diagnostics }) => diagnostics),
+    ).not.toContainEqual({ diagnostic, count: 1 });
   });
 });
 

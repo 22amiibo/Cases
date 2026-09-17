@@ -71,6 +71,82 @@ const v2OpeningDefinition = CaseDefinitionSchema.parse({
   },
 });
 
+const v2HypothesisDefinition = CaseDefinitionSchema.parse({
+  ...alpineFitContent,
+  version: 2,
+  hypothesisPractice: {
+    options: [
+      { id: "revenue-pressure", label: "Revenue pressure is the main cause" },
+      { id: "cost-pressure", label: "Cost pressure is the main cause" },
+    ],
+    initial: {
+      interactionId: "initial-hypothesis",
+      responseKind: "initial_hypothesis",
+      prompt: "State your initial hypothesis.",
+      scaffoldingLevel: "beginner",
+      guidance: [],
+      criteria: [{ id: "testable", label: "Makes a testable claim" }],
+      comparison: { title: "Example", text: "Costs may be growing too quickly." },
+      diagnosticRules: [],
+    },
+    update: {
+      interactionId: "hypothesis-update",
+      responseKind: "hypothesis_update",
+      prompt: "Update your hypothesis using evidence.",
+      scaffoldingLevel: "beginner",
+      guidance: [],
+      criteria: [{ id: "evidence", label: "Links evidence to the update" }],
+      comparison: { title: "Example", text: "Revise toward cost pressure." },
+      diagnosticRules: [{
+        criterionId: "evidence",
+        when: "not_met",
+        code: "evidence_link_missing",
+        severity: "blocking",
+      }],
+    },
+    contradictions: [{ hypothesisId: "revenue-pressure", evidenceFactIds: ["cost-growth"] }],
+  },
+});
+
+const initialHypothesisEvent = {
+  type: "hypothesis_formed" as const,
+  eventSchemaVersion: 2 as const,
+  hypothesisId: "revenue-pressure",
+  evidenceIds: [] as [],
+  revisionOfResponseId: null,
+  responses: [{
+    responseId: "hypothesis-1",
+    interactionId: "initial-hypothesis",
+    revision: 1,
+    revisionOf: null,
+    responseKind: "initial_hypothesis",
+    text: "Revenue pressure is testable by checking price and volume.",
+    committedAtMs: 3,
+  }],
+  rubricOutcomes: [{ criterionId: "testable", met: true }],
+  diagnostics: [],
+  rationale: "Revenue pressure is testable by checking price and volume.",
+  authoredComparisonViewed: true as const,
+  atMs: 3,
+};
+
+function hypothesisSession() {
+  let session = applyCaseEvent(createCaseSession(v2HypothesisDefinition), {
+    type: "clarification_selected",
+    clarificationId: "target-metric",
+    atMs: 1,
+  });
+  session = applyCaseEvent(session, {
+    type: "framework_submitted",
+    eventSchemaVersion: 2,
+    branches: [{ conceptId: "revenue", children: [] }],
+    priorityConceptId: "revenue",
+    rationale: "Test revenue first.",
+    atMs: 2,
+  });
+  return session;
+}
+
 function sessionAtInvestigation() {
   const structured = applyCaseEvent(createCaseSession(alpineFit), {
     type: "clarification_selected",
@@ -374,6 +450,114 @@ describe("deterministic case engine", () => {
         questions: [{ questionId: opening.questions[0].questionId, interviewerResponse: "Forged" }],
       }),
     ).toBe(session);
+  });
+
+  it("requires an initial V2 hypothesis before investigation and an evidence-linked update before synthesis", () => {
+    const initial = hypothesisSession();
+    expect(applyCaseEvent(initial, { type: "node_investigated", nodeId: "costs", atMs: 4 })).toBe(initial);
+
+    const formed = applyCaseEvent(initial, initialHypothesisEvent);
+    const investigated = applyCaseEvent(formed, {
+      type: "node_investigated",
+      nodeId: "costs",
+      atMs: 4,
+    });
+    expect(investigated.revealedFactIds).toContain("cost-growth");
+
+    const synthesis = {
+      type: "synthesis_submitted" as const,
+      evidenceIds: ["cost-growth"],
+      nextStepNodeId: "variable_cost",
+      atMs: 6,
+    };
+    expect(applyCaseEvent(investigated, synthesis)).toBe(investigated);
+
+    const update = {
+      type: "hypothesis_updated" as const,
+      eventSchemaVersion: 2 as const,
+      status: "revise" as const,
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "cost-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+      responses: [{
+        responseId: "hypothesis-2",
+        interactionId: "hypothesis-update",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "hypothesis_update",
+        text: "Cost growth contradicts the revenue-led hypothesis.",
+        committedAtMs: 5,
+      }],
+      rubricOutcomes: [{ criterionId: "evidence", met: true }],
+      diagnostics: [{
+        code: "strong_hypothesis_update" as const,
+        source: "system" as const,
+        severity: "strength" as const,
+        responseId: "hypothesis-2",
+      }],
+      rationale: "Cost growth contradicts the revenue-led hypothesis.",
+      authoredComparisonViewed: true as const,
+      atMs: 5,
+    };
+    const updated = applyCaseEvent(investigated, update);
+    expect(updated.events.at(-1)).toEqual(update);
+    expect(applyCaseEvent(updated, synthesis).currentStage).toBe("recommend");
+
+    const missingDerivedDiagnostic = {
+      ...update,
+      rubricOutcomes: [{ criterionId: "evidence", met: false }],
+    };
+    expect(applyCaseEvent(investigated, missingDerivedDiagnostic)).toBe(investigated);
+
+    const forgedSeverity = {
+      ...missingDerivedDiagnostic,
+      diagnostics: [
+        ...update.diagnostics,
+        {
+          code: "evidence_link_missing" as const,
+          source: "self_assessment" as const,
+          severity: "coaching" as const,
+          responseId: "hypothesis-2",
+        },
+      ],
+    };
+    expect(applyCaseEvent(investigated, forgedSeverity)).toBe(investigated);
+  });
+
+  it("rejects unavailable evidence and diagnoses retaining a contradicted hypothesis", () => {
+    const formed = applyCaseEvent(hypothesisSession(), initialHypothesisEvent);
+    const forged = {
+      type: "hypothesis_updated" as const,
+      eventSchemaVersion: 2 as const,
+      status: "retain" as const,
+      previousHypothesisId: "revenue-pressure",
+      hypothesisId: "revenue-pressure",
+      evidenceIds: ["cost-growth"],
+      revisionOfResponseId: "hypothesis-1",
+      responses: [{
+        responseId: "hypothesis-2",
+        interactionId: "hypothesis-update",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "hypothesis_update",
+        text: "I would retain the revenue hypothesis.",
+        committedAtMs: 4,
+      }],
+      rubricOutcomes: [{ criterionId: "evidence", met: true }],
+      diagnostics: [{
+        code: "contradicted_hypothesis_retained" as const,
+        source: "system" as const,
+        severity: "blocking" as const,
+        responseId: "hypothesis-2",
+      }],
+      rationale: "I would retain the revenue hypothesis.",
+      authoredComparisonViewed: true as const,
+      atMs: 4,
+    };
+    expect(applyCaseEvent(formed, forged)).toBe(formed);
+    const withEvidence = applyCaseEvent(formed, { type: "node_investigated", nodeId: "costs", atMs: 4 });
+    expect(applyCaseEvent(withEvidence, forged).events.at(-1)?.type).toBe("hypothesis_updated");
   });
 
   it("validates authored recommendation choices and discovered evidence", () => {

@@ -30,6 +30,11 @@ import {
   type FrameworkSubmission,
 } from "@/core/schema";
 import { EvidencePanel } from "./EvidencePanel";
+import {
+  clearHypothesisPracticeStorage,
+  HypothesisStep,
+  type HypothesisCompletion,
+} from "./HypothesisStep";
 import { Scratchpad } from "./Scratchpad";
 import styles from "./InvestigationPanel.module.css";
 
@@ -320,6 +325,41 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     }>;
   }
 
+  async function commitHypothesisResponse(
+    phase: "initial" | "update",
+    response: CommittedResponse,
+  ): Promise<LearningCycleReveal> {
+    const result = await fetch(`/api/cases/${caseDefinition.id}/hypotheses/commit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentVersion: caseDefinition.version,
+        events,
+        phase,
+        response,
+      }),
+    });
+    if (!result.ok) throw new Error("Unable to commit hypothesis response");
+    return ((await result.json()) as { reveal: LearningCycleReveal }).reveal;
+  }
+
+  async function completeHypothesis(completion: HypothesisCompletion) {
+    const result = await fetch(`/api/cases/${caseDefinition.id}/hypotheses/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentVersion: caseDefinition.version,
+        events,
+        ...completion,
+        atMs: timestamp(),
+      }),
+    });
+    if (!result.ok) throw new Error("Unable to complete hypothesis");
+    const payload = (await result.json()) as { event: CaseEvent };
+    await record(payload.event);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
+  }
+
   const availableCalculations = view?.calculations ?? [];
 
   async function retryPendingCase() {
@@ -351,6 +391,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   function startFreshCase() {
     window.sessionStorage.removeItem(storageKey);
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
     const emptyWorkspace = createEmptyWorkspace();
     initialEvents.current = emptyWorkspace.events;
     setWorkspace(emptyWorkspace);
@@ -480,6 +521,16 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
           {view?.currentStage === "investigate" && (
             <>
+              {view.hypothesis && (
+                <HypothesisStep
+                  key={view.hypothesis.phase}
+                  caseId={caseDefinition.id}
+                  practice={view.hypothesis}
+                  facts={facts}
+                  onCommit={commitHypothesisResponse}
+                  onComplete={completeHypothesis}
+                />
+              )}
               <StepCard eyebrow="Investigate" title="Choose the next question">
                 <p>
                   Select one of the available branches to reveal the next piece
@@ -527,7 +578,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 />
               ))}
 
-              <SynthesisStep
+              {!view.hypothesis || view.hypothesis.phase !== "update" ? <SynthesisStep
                 facts={facts}
                 evidenceIds={synthesisEvidenceIds}
                 nextStepNodeId={nextStepNodeId}
@@ -543,7 +594,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 }
                 onNextStepChange={setNextStepNodeId}
                 onSubmit={submitSynthesis}
-              />
+              /> : null}
             </>
           )}
 
@@ -573,6 +624,8 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                     review: completedView.review,
                     events: nextEvents,
                     completedAt: new Date().toISOString(),
+                    contentVersion: caseDefinition.version,
+                    scaffoldingLevel: caseDefinition.scaffoldingLevel,
                   });
                 savePendingAttempt(
                   window.sessionStorage,

@@ -5,6 +5,7 @@ test("completes a quantitative drill with immediate feedback", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Choose one thinking move" })).toBeVisible();
 
   await page.getByRole("link", { name: /Quantitative reasoning/ }).click();
+  await page.getByText("Open the 10-drill Legacy V1 library").click();
   await page.getByLabel("Your answer").fill("25");
   await page.getByLabel("Unit").selectOption("$/unit");
   await page.getByRole("button", { name: "Check answer" }).click();
@@ -16,6 +17,7 @@ test("completes a quantitative drill with immediate feedback", async ({ page }) 
 test("keeps exhibit charts readable within a phone-width card", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto("/drills/exhibit");
+  await page.getByText("Open the 10-drill Legacy V1 library").click();
 
   const chart = page.getByRole("img", { name: /Cost growth by category chart/ });
   const svg = chart.getByRole("application");

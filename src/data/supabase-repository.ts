@@ -123,7 +123,10 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   }
 }
 
-function metadataFromRow(row: DrillAttemptRow | CaseAttemptRow) {
+function metadataFromRow(
+  row: DrillAttemptRow | CaseAttemptRow,
+  requireLearningEvidence: boolean,
+) {
   const scoringVersion = row.scoring_version ?? "v1";
   if (scoringVersion === "v1") {
     return {
@@ -137,7 +140,9 @@ function metadataFromRow(row: DrillAttemptRow | CaseAttemptRow) {
   }
   if (scoringVersion !== "v2") return null;
   const scaffolding = ScaffoldingLevelSchema.safeParse(row.scaffolding_level);
-  const evidence = LearningEvidenceRecordSchema.safeParse(row.learning_evidence);
+  const evidence = row.learning_evidence == null
+    ? null
+    : LearningEvidenceRecordSchema.safeParse(row.learning_evidence);
   const diagnostics = DiagnosticOutcomeSchema.array().safeParse(row.diagnostics ?? []);
   if (
     !Number.isInteger(row.content_version) ||
@@ -145,11 +150,11 @@ function metadataFromRow(row: DrillAttemptRow | CaseAttemptRow) {
     !Number.isInteger(row.event_schema_version) ||
     Number(row.event_schema_version) < 1 ||
     !scaffolding.success ||
-    !evidence.success ||
-    evidence.data.scoringVersion !== "v2" ||
-    evidence.data.contentVersion !== row.content_version ||
-    evidence.data.eventSchemaVersion !== row.event_schema_version ||
-    evidence.data.scaffoldingLevel !== scaffolding.data ||
+    (requireLearningEvidence && !evidence?.success) ||
+    (evidence?.success && evidence.data.scoringVersion !== "v2") ||
+    (evidence?.success && evidence.data.contentVersion !== row.content_version) ||
+    (evidence?.success && evidence.data.eventSchemaVersion !== row.event_schema_version) ||
+    (evidence?.success && evidence.data.scaffoldingLevel !== scaffolding.data) ||
     !diagnostics.success
   ) {
     return null;
@@ -159,7 +164,7 @@ function metadataFromRow(row: DrillAttemptRow | CaseAttemptRow) {
     contentVersion: row.content_version as number,
     eventSchemaVersion: row.event_schema_version as number,
     scaffoldingLevel: scaffolding.data,
-    learningEvidence: evidence.data,
+    learningEvidence: evidence?.success ? evidence.data : null,
     diagnostics: diagnostics.data,
   };
 }
@@ -213,7 +218,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
     return [
       ...drillRows.flatMap((row) => {
         const skillId = SkillIdSchema.safeParse(row.skill_id);
-        const metadata = metadataFromRow(row);
+        const metadata = metadataFromRow(row, true);
         return skillId.success && metadata && Number.isFinite(row.score) && row.score >= 0 && row.score <= 100
           ? [{
               attemptId: row.id,
@@ -230,7 +235,11 @@ export class SupabasePracticeRepository implements PracticeRepository {
       ...caseRows.flatMap((row) =>
         Object.entries(row.skill_scores).flatMap(([rawSkillId, score]) => {
           const skillId = SkillIdSchema.safeParse(rawSkillId);
-          const metadata = metadataFromRow(row);
+          const metadata = metadataFromRow(row, false);
+          const learningEvidence = skillId.success &&
+            metadata?.learningEvidence?.skillId === skillId.data
+            ? metadata.learningEvidence
+            : null;
           return skillId.success && metadata && Number.isFinite(score) && score >= 0 && score <= 100
             ? [{
                 attemptId: row.id,
@@ -241,6 +250,9 @@ export class SupabasePracticeRepository implements PracticeRepository {
                 feedbackCodes: row.feedback_codes,
                 completedAt: row.completed_at,
                 ...metadata,
+                learningEvidence,
+                diagnostics: learningEvidence?.diagnostics ?? [],
+                caseDiagnostics: metadata.diagnostics,
               }]
             : [];
         }),

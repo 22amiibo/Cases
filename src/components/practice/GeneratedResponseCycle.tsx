@@ -273,6 +273,12 @@ export function GeneratedResponseCycle({
                 const completed = applyLearningCycleAction(state, {
                   type: "cycle_completed",
                 });
+                if (storageKey) {
+                  window.sessionStorage.setItem(
+                    storageKey,
+                    serializeLearningCycleState(completed),
+                  );
+                }
                 setState(completed);
                 onComplete?.(completed);
               }}

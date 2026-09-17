@@ -138,6 +138,8 @@ export function createCaseAttempt({
   review,
   events,
   completedAt,
+  contentVersion,
+  scaffoldingLevel,
 }: {
   attemptId: string;
   userId: string;
@@ -145,7 +147,10 @@ export function createCaseAttempt({
   review: LearnerCaseReview;
   events: CaseEvent[];
   completedAt: string;
+  contentVersion?: number;
+  scaffoldingLevel?: "beginner" | "intermediate" | "interview" | null;
 }): CaseAttempt {
+  const resolvedContentVersion = contentVersion ?? 1;
   const skillScores: Partial<Record<SkillId, number>> = {};
 
   for (const dimension of review.scores) {
@@ -154,13 +159,32 @@ export function createCaseAttempt({
     skillScores[skillId.data] = Math.round(dimension.value * 1000) / 10;
   }
 
-  return {
+  const diagnostics = events.flatMap((event) =>
+    "diagnostics" in event ? event.diagnostics : [],
+  );
+  const baseAttempt = {
     attemptId,
     userId,
     caseId,
     skillScores,
-    feedbackCodes: review.feedback.map((item) => item.code),
+    feedbackCodes: [
+      ...review.feedback.map((item) => item.code),
+      ...diagnostics.map(({ code }) => code),
+    ],
     events,
     completedAt,
+  };
+  if (resolvedContentVersion < 2) return baseAttempt;
+  if (!scaffoldingLevel) {
+    throw new Error("V2 case attempts require a scaffolding level");
+  }
+  return {
+    ...baseAttempt,
+    scoringVersion: "v2",
+    contentVersion: resolvedContentVersion,
+    eventSchemaVersion: 2,
+    scaffoldingLevel,
+    learningEvidence: null,
+    diagnostics,
   };
 }

@@ -32,7 +32,7 @@ describe("case session projection", () => {
     });
   });
 
-  it("does not expose replay data for a forged early completion", async () => {
+  it("rejects a forged early completion instead of replaying a partial history", async () => {
     const response = await POST(
       new Request("http://localhost/api/cases/alpinefit-profitability/session", {
         method: "POST",
@@ -51,12 +51,9 @@ describe("case session projection", () => {
       }),
       { params: Promise.resolve({ caseId: "alpinefit-profitability" }) },
     );
-    const view = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(view.currentStage).toBe("clarify");
-    expect(view.review).toBeNull();
-    expect(JSON.stringify(view)).not.toContain("critical-found");
-    expect(JSON.stringify(view)).not.toContain("Example efficient path");
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Invalid event history",
+    });
   });
 });

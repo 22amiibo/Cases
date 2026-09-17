@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import lessons from "./lessons.json";
 import { drillSkillIds, isDrillSkillId } from "./drills";
+import { getLessonDefinition } from "./lessons/index";
 
 type Lesson = {
   id: string;
@@ -58,5 +59,15 @@ describe("lesson content", () => {
     expect(new Set(typedLessons.map((lesson) => lesson.skillId))).toEqual(
       new Set(drillSkillIds),
     );
+  });
+
+  it("resolves V1 lessons by explicit historical version", () => {
+    for (const lesson of lessons) {
+      expect(getLessonDefinition(lesson.id, 1)).toBeDefined();
+      expect(getLessonDefinition(lesson.id, 99)).toBeUndefined();
+      expect(getLessonDefinition(lesson.id)).toBe(
+        getLessonDefinition(lesson.id, 1),
+      );
+    }
   });
 });

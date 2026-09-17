@@ -6,6 +6,7 @@ import northStarContent from "./northstar-profitability.json";
 import payPilotContent from "./paypilot-growth.json";
 import { CaseDefinitionSchema } from "@/core/schema";
 import { assertValidCase } from "@/core/validation";
+import { createVersionedRegistry } from "@/content/versioned-registry";
 
 const authoredCases = [
   alpineFitContent,
@@ -22,6 +23,22 @@ export const caseDefinitions = authoredCases.map((content) => {
   return definition;
 });
 
-export function getCaseDefinition(caseId: string) {
-  return caseDefinitions.find((definition) => definition.id === caseId);
+export const activeCaseVersions = Object.freeze(
+  Object.fromEntries(caseDefinitions.map(({ id, version }) => [id, version])),
+) as Readonly<Record<string, number>>;
+
+const caseRegistry = createVersionedRegistry(
+  caseDefinitions,
+  activeCaseVersions,
+  ({ version }) => version,
+);
+
+export function getCaseDefinition(caseId: string, contentVersion?: number) {
+  return contentVersion === undefined
+    ? caseRegistry.getActive(caseId)
+    : caseRegistry.get(caseId, contentVersion);
+}
+
+export function getCaseVersions(caseId: string) {
+  return caseRegistry.getVersions(caseId);
 }

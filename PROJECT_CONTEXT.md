@@ -85,6 +85,22 @@ npm run build
 - Next action: add immutable versioned content registries without changing any
   validated V1 case projection.
 
+### Casework V2 Task 2: Immutable versioned content registries — complete
+
+- Added immutable registries that resolve cases, drills, and lessons by stable
+  ID plus explicit content version, with active-version selection kept separate.
+- Historical lookup returns `undefined` for unknown versions and the case API
+  returns a safe not-found response instead of replaying current content.
+- Locked all six V1 case artifacts to reviewed SHA-256 hashes and retained the
+  existing deterministic solve-through coverage.
+- Red proof: registry, explicit lookup, and unknown-version route tests failed
+  before the versioned loaders existed.
+- Verification: content and route tests, full unit suite, typecheck, lint, and
+  production build pass.
+- Decision: retain the V1 JSON paths as immutable artifacts and add registries
+  around them; future V2 definitions are new entries, never in-place edits.
+- Next action: add the additive V2 persistence migration and repository contract.
+
 ### Repository preparation — complete
 
 - Initialized the dedicated repository in the Desktop `Case` folder.

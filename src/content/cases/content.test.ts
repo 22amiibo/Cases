@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import { CaseDefinitionSchema } from "@/core/schema";
 import { assertValidCase } from "@/core/validation";
 import {
@@ -6,12 +7,36 @@ import {
   createCaseSession,
   getAvailableActions,
 } from "@/core/case-engine";
-import { caseDefinitions, getCaseDefinition } from ".";
+import {
+  activeCaseVersions,
+  caseDefinitions,
+  getCaseDefinition,
+} from ".";
 
 const caseModules = import.meta.glob("./*.json", {
   eager: true,
   import: "default",
 });
+
+const v1ContentHashes: Record<string, string> = {
+  "alpinefit-profitability": "753c29338de80bf8aa19641009214a23de1c9ffd0a08dee35d68394362b90d69",
+  "fleetfix-market-entry": "322baad0b30f6c7f441d0166fe1fbc94d7ea4bf45aea4a9049a2419be5b5d4df",
+  "goldenloaf-operations": "96552be5e42978978086f0a77e1d760e0237e1da7fdb49122013dab526e6d2aa",
+  "morningjet-pricing-breakeven": "4a67383a30578dc7a870676c3bdb7cc0a0d918fb8461b1e098cdf661eac785b7",
+  "northstar-profitability": "3c7f6b6ed19c69dd11ac007ed1986eb91abf47ab62d7485943c37a7297eab7d4",
+  "paypilot-growth": "0dceb9f40c1b0750fef589d8eb8679fa9bf4b69c1a8ca5d3d432c91dcf921d85",
+};
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => `${JSON.stringify(key)}:${stableJson(child)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
 
 const manualSolveFixtures = [
   {
@@ -114,6 +139,15 @@ describe("case content", () => {
     expect(getCaseDefinition("missing-case")).toBeUndefined();
   });
 
+  it("resolves historical versions explicitly and independently of active lookup", () => {
+    for (const definition of caseDefinitions) {
+      expect(getCaseDefinition(definition.id, 1)).toBe(definition);
+      expect(activeCaseVersions[definition.id]).toBe(1);
+      expect(getCaseDefinition(definition.id, 99)).toBeUndefined();
+      expect(getCaseDefinition(definition.id)).toBe(definition);
+    }
+  });
+
   it("contains validated case definitions", () => {
     expect(Object.keys(caseModules).length).toBeGreaterThan(0);
 
@@ -121,6 +155,14 @@ describe("case content", () => {
       const definition = CaseDefinitionSchema.parse(content);
       expect(() => assertValidCase(definition), path).not.toThrow();
     });
+  });
+
+  it("locks every immutable V1 case artifact to its reviewed projection", () => {
+    for (const content of Object.values(caseModules)) {
+      const definition = CaseDefinitionSchema.parse(content);
+      const hash = createHash("sha256").update(stableJson(content)).digest("hex");
+      expect(hash, definition.id).toBe(v1ContentHashes[definition.id]);
+    }
   });
 
   it("contains the complete six-case MVP library with required depth", () => {

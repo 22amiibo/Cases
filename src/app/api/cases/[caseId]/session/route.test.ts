@@ -2,6 +2,21 @@ import { describe, expect, it } from "vitest";
 import { POST } from "./route";
 
 describe("case session projection", () => {
+  it("stops safely when an unknown historical content version is requested", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/cases/alpinefit-profitability/session", {
+        method: "POST",
+        body: JSON.stringify({ events: [], contentVersion: 99 }),
+      }),
+      { params: Promise.resolve({ caseId: "alpinefit-profitability" }) },
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "Case version not found",
+    });
+  });
+
   it("rejects malformed request JSON without throwing", async () => {
     const response = await POST(
       new Request("http://localhost/api/cases/alpinefit-profitability/session", {

@@ -20,19 +20,31 @@ export async function POST(
   { params }: { params: Promise<{ caseId: string }> },
 ) {
   const { caseId } = await params;
-  const caseDefinition = getCaseDefinition(caseId);
-  if (!caseDefinition) {
+  if (!getCaseDefinition(caseId)) {
     return NextResponse.json({ error: "Case not found" }, { status: 404 });
   }
 
-  let body: { events?: unknown[] };
+  let body: { events?: unknown[]; contentVersion?: unknown };
   try {
-    body = (await request.json()) as { events?: unknown[] };
+    body = (await request.json()) as { events?: unknown[]; contentVersion?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
   }
   if (!Array.isArray(body.events)) {
     return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
+  }
+  if (
+    body.contentVersion !== undefined &&
+    (!Number.isInteger(body.contentVersion) || Number(body.contentVersion) < 1)
+  ) {
+    return NextResponse.json({ error: "Invalid content version" }, { status: 400 });
+  }
+  const caseDefinition = getCaseDefinition(
+    caseId,
+    body.contentVersion as number | undefined,
+  );
+  if (!caseDefinition) {
+    return NextResponse.json({ error: "Case version not found" }, { status: 404 });
   }
 
   const parsedEvents = body.events.map((event) => CaseEventSchema.safeParse(event));

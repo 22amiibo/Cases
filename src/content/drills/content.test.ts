@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DrillDefinitionSchema } from "@/core/schema";
+import { getDrillDefinition } from ".";
 
 const drillModules = import.meta.glob("./*.json", {
   eager: true,
@@ -32,5 +33,18 @@ describe("drill content", () => {
         expect(definition.skillId).toBe(skillId);
       });
     });
+  });
+
+  it("resolves V1 drills by explicit historical version", () => {
+    for (const exercises of Object.values(drillModules)) {
+      for (const exercise of exercises as unknown[]) {
+        const definition = DrillDefinitionSchema.parse(exercise);
+        expect(getDrillDefinition(definition.id, 1)).toBeDefined();
+        expect(getDrillDefinition(definition.id, 99)).toBeUndefined();
+        expect(getDrillDefinition(definition.id)).toBe(
+          getDrillDefinition(definition.id, 1),
+        );
+      }
+    }
   });
 });

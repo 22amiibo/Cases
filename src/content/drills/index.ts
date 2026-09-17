@@ -4,6 +4,7 @@ import quantitativeContent from "./quantitative.json";
 import exhibitContent from "./exhibit.json";
 import synthesisContent from "./synthesis.json";
 import { DrillDefinitionSchema, type DrillDefinition } from "@/core/schema";
+import { createVersionedRegistry } from "@/content/versioned-registry";
 
 export const drillSkillIds = [
   "structure",
@@ -26,6 +27,22 @@ export const drillBanks: Record<DrillSkillId, DrillDefinition[]> = {
   exhibit: parseBank(exhibitContent),
   synthesis: parseBank(synthesisContent),
 };
+
+const v1Drills = Object.values(drillBanks).flat();
+export const activeDrillVersions = Object.freeze(
+  Object.fromEntries(v1Drills.map(({ id }) => [id, 1])),
+) as Readonly<Record<string, number>>;
+const drillRegistry = createVersionedRegistry(
+  v1Drills,
+  activeDrillVersions,
+  () => 1,
+);
+
+export function getDrillDefinition(id: string, contentVersion?: number) {
+  return contentVersion === undefined
+    ? drillRegistry.getActive(id)
+    : drillRegistry.get(id, contentVersion);
+}
 
 export function isDrillSkillId(value: string): value is DrillSkillId {
   return drillSkillIds.includes(value as DrillSkillId);

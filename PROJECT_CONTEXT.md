@@ -249,6 +249,35 @@ npm run build
 - Fresh controller verification: 14 test files / 53 tests pass; lint,
   typecheck, and `git diff --check` pass; both case-flow Playwright tests pass.
 
+### Task 12: Persistence, authentication, and progress aggregation — complete
+
+- Added `PracticeRepository` with browser-session and Supabase implementations
+  for drill attempts, case attempts, case events, and skill history.
+- Guest history survives refresh in `sessionStorage`; signed-in history uses
+  Supabase Auth/Postgres when the public environment variables are configured.
+- Added passwordless email sign-in without blocking the AlpineFit guest demo.
+- Completed drills and cases now persist their deterministic scores, feedback
+  codes, and complete case event history.
+- Added rolling last-10 skill scores: newest five attempts use weight `1.0`,
+  attempts six through ten use `0.6`. The next-practice policy remains a
+  diagnostic mix until three skills each have at least three attempts, then
+  selects the weakest practiced skill.
+- Added the initial Supabase migration for `profiles`, `drill_attempts`,
+  `case_attempts`, and `case_events`, including RLS ownership policies, atomic
+  case/event persistence, parent-event ownership, and score-shape constraints.
+- Persistence uses stable attempt IDs and idempotent writes. Pending drill and
+  case payloads survive refresh and clear only after confirmed success, so an
+  ambiguous network result can be retried without duplicate progress.
+- Independent review found retry/data-loss risks, an auth render loop and
+  downgrade path, incomplete event-parent ownership, and weak score validation.
+  Fix rounds added regressions and resolved every Critical/Important finding;
+  final scoped re-review was clean.
+- Final verification: 23 test files / 82 tests pass; lint, typecheck, build, and
+  `git diff --check` pass; all 4 Playwright tests pass.
+- Verification limitation: this machine has no Supabase CLI, PostgreSQL client,
+  or Docker runtime, so the SQL migration/RLS contract is statically tested but
+  was not executed against a live local Supabase instance.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -263,7 +292,7 @@ npm run build
 
 ## Next Action
 
-Paused by user after completing Task 11 and before starting Task 12. No Task 12
-implementation has begun. Resume by reading this file, the Task 12 brief, and
-the SDD ledger; verify branch/status and remote refs; then begin Task 12 with
-strict TDD and the Superpowers review loop.
+Task 12 is complete and reviewed. Resume with Task 13 by reading this file, the
+Task 13 brief, and the SDD ledger; verify branch/status and remote refs; then add
+the failing progress-dashboard Playwright journey before implementing the
+dashboard or home-page recommendation.

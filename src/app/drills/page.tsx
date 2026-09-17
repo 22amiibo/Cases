@@ -69,7 +69,7 @@ export default function DrillsPage() {
               <span className={styles.count}>
                 {skillId === "clarification"
                   ? "1 V2 pilot rep →"
-                  : `${drillBanks[skillId].length} legacy drills →`}
+                  : `1 V2 rep · ${drillBanks[skillId].length} legacy →`}
               </span>
             </Link>
           );

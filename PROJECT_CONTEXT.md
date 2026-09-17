@@ -71,14 +71,29 @@ npm run build
 
 ## Progress Log
 
-### Active V2 checkpoint — 2026-09-17
+### Casework V2 Task 9: Six complete learning-cycle reps — complete
 
-- V2 Tasks 1–8 are complete through clarification as skill six.
-- Do not stage or commit `supabase/.temp/`; it predates the V2 work and contains
+- The pilot now contains exactly six validated V2 reps: one each for
+  clarification, structure, prioritization, quantitative reasoning, exhibit
+  interpretation, and synthesis. No additional V2 drill definitions exist.
+- Every rep requires a generated response before criteria, authored comparison,
+  or checkpoint choices appear; the shared cycle supports a linked retry and
+  preserves the full response chain.
+- Server-side checkpoint evaluation keeps framework rubrics, correct choices,
+  expected numeric answers, and synthesis answer keys out of learner payloads.
+  Quantitative reasoning separately records setup, sense check, implication,
+  numeric answer, and unit.
+- V2 attempts persist self-assessed and system diagnostics as versioned learning
+  evidence. The existing 50 drills remain available in a separately labeled
+  Legacy V1 library and cannot count as V2 progress.
+- Verification: 169 unit/component tests, typecheck, lint, production build,
+  and six V2 browser journeys pass. Browser coverage includes commit-before-
+  reveal, linked retry, keyboard operation, axe scans, and 320px reflow.
+- Do not stage or commit `supabase/.temp/`; it predates this work and contains
   local Supabase link metadata.
-- Continue with Task 9, adding exactly five more V2 reps for one per skill.
-- Continue only through Task 11, then stop at the mandatory owner playtest gate
-  before authoring any remaining drills or upgrading another case.
+- Next action: Task 10, evidence-linked hypothesis formation and updates. Then
+  complete Task 11 and stop at the mandatory owner playtest gate; do not begin
+  Task 12.
 
 ### Casework V2 Task 1: Versioned learning contracts — complete
 

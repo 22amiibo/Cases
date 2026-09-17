@@ -4,11 +4,13 @@ import quantitativeContent from "./quantitative.json";
 import exhibitContent from "./exhibit.json";
 import synthesisContent from "./synthesis.json";
 import clarificationV2Content from "./clarification-v2.json";
+import v2PilotContent from "./v2-pilot.json";
 import {
   DrillDefinitionSchema,
   V2ClarificationDrillDefinitionSchema,
   type DrillDefinition,
-  type V2ClarificationDrillDefinition,
+  V2PracticeDrillDefinitionSchema,
+  type V2DrillDefinition,
 } from "@/core/schema";
 import { createVersionedRegistry } from "@/content/versioned-registry";
 
@@ -39,9 +41,15 @@ export const drillBanks: Record<LegacyDrillSkillId, DrillDefinition[]> = {
 
 export const clarificationV2Definition =
   V2ClarificationDrillDefinitionSchema.parse(clarificationV2Content);
+export const v2PracticeDefinitions =
+  V2PracticeDrillDefinitionSchema.array().parse(v2PilotContent);
+export const v2DrillDefinitions: V2DrillDefinition[] = [
+  clarificationV2Definition,
+  ...v2PracticeDefinitions,
+];
 
 const v1Drills = Object.values(drillBanks).flat();
-const v2Drills: V2ClarificationDrillDefinition[] = [clarificationV2Definition];
+const v2Drills: V2DrillDefinition[] = v2DrillDefinitions;
 export const activeDrillVersions = Object.freeze(
   Object.fromEntries([
     ...v1Drills.map(({ id }) => [id, 1] as const),

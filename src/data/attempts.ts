@@ -7,6 +7,7 @@ import {
   type DiagnosticOutcome,
   type LearningEvidenceRecord,
   type SkillId,
+  type V2SkillId,
 } from "@/core/schema";
 import type { LearningCycleState } from "@/core/learning-cycle";
 import type { CaseAttempt, DrillAttempt } from "./repository";
@@ -62,6 +63,40 @@ export function createV2ClarificationAttempt({
   systemDiagnostics: DiagnosticOutcome[];
   completedAt: string;
 }): DrillAttempt {
+  return createV2DrillAttempt({
+    attemptId,
+    userId,
+    definition,
+    cycle,
+    systemDiagnostics,
+    completedAt,
+  });
+}
+
+export function createV2DrillAttempt({
+  attemptId,
+  userId,
+  definition,
+  cycle,
+  systemDiagnostics,
+  completedAt,
+}: {
+  attemptId: string;
+  userId: string;
+  definition: {
+    id: string;
+    contentVersion: 2;
+    eventSchemaVersion: 2;
+    scoringVersion: "v2";
+    scaffoldingLevel: "beginner" | "intermediate" | "interview";
+    skillId: V2SkillId;
+    conceptIdsPracticed: string[];
+    responsePrompt: { interactionId: string };
+  };
+  cycle: LearningCycleState;
+  systemDiagnostics: DiagnosticOutcome[];
+  completedAt: string;
+}): DrillAttempt {
   const latestResponse = cycle.responses.at(-1);
   const latestAssessment = cycle.assessments.find(
     ({ responseId }) => responseId === latestResponse?.responseId,
@@ -69,7 +104,7 @@ export function createV2ClarificationAttempt({
   const diagnostics = [...cycle.diagnostics, ...systemDiagnostics];
   const learningEvidence: LearningEvidenceRecord = {
     interactionId: definition.responsePrompt.interactionId,
-    skillId: "clarification",
+    skillId: definition.skillId,
     scoringVersion: "v2",
     contentVersion: definition.contentVersion,
     eventSchemaVersion: definition.eventSchemaVersion,
@@ -82,7 +117,7 @@ export function createV2ClarificationAttempt({
     attemptId,
     userId,
     drillId: definition.id,
-    skillId: "clarification",
+    skillId: definition.skillId,
     score: 0,
     feedbackCodes: diagnostics.map(({ code }) => code),
     conceptIdsPracticed: definition.conceptIdsPracticed,

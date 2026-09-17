@@ -555,3 +555,70 @@ export const V2ClarificationDrillDefinitionSchema = z.object({
 export type V2ClarificationDrillDefinition = z.infer<
   typeof V2ClarificationDrillDefinitionSchema
 >;
+
+const V2DrillBaseSchema = z.object({
+  id: IdentifierSchema,
+  contentVersion: z.literal(2),
+  eventSchemaVersion: z.literal(2),
+  scoringVersion: z.literal("v2"),
+  scaffoldingLevel: ScaffoldingLevelSchema,
+  conceptIdsPracticed: z.array(IdentifierSchema).min(1),
+  title: z.string().min(1),
+  scenario: z.string().min(1),
+  responseCycle: GeneratedResponseDefinitionSchema,
+});
+
+const V2ChoiceCheckpointSchema = z.object({
+  kind: z.literal("choice"),
+  label: z.string().min(1),
+  options: z.array(z.object({ id: IdentifierSchema, label: z.string().min(1) })).min(2),
+  correctId: IdentifierSchema,
+  successCode: z.enum(diagnosticCodes),
+  coachingCode: z.enum(diagnosticCodes),
+});
+
+export const V2PracticeDrillDefinitionSchema = z.discriminatedUnion("skillId", [
+  V2DrillBaseSchema.extend({
+    skillId: z.literal("structure"),
+    checkpoint: z.object({
+      kind: z.literal("framework"),
+      conceptOptions: z.array(z.object({ id: IdentifierSchema, label: z.string().min(1) })).min(3),
+      rubric: FrameworkRubricSchema,
+    }),
+  }),
+  V2DrillBaseSchema.extend({
+    skillId: z.literal("prioritization"),
+    checkpoint: V2ChoiceCheckpointSchema,
+  }),
+  V2DrillBaseSchema.extend({
+    skillId: z.literal("quantitative"),
+    checkpoint: z.object({
+      kind: z.literal("quantitative"),
+      expectedAnswer: z.number(),
+      tolerance: z.number().nonnegative(),
+      requiredUnit: z.string().min(1),
+    }),
+  }),
+  V2DrillBaseSchema.extend({
+    skillId: z.literal("exhibit"),
+    checkpoint: V2ChoiceCheckpointSchema,
+  }),
+  V2DrillBaseSchema.extend({
+    skillId: z.literal("synthesis"),
+    checkpoint: z.object({
+      kind: z.literal("synthesis"),
+      evidenceOptions: z.array(z.object({ id: IdentifierSchema, label: z.string().min(1) })).min(3),
+      correctEvidenceIds: z.array(IdentifierSchema).min(2).max(3),
+      nextStepOptions: z.array(z.object({ id: IdentifierSchema, label: z.string().min(1) })).min(2),
+      correctNextStepId: IdentifierSchema,
+    }),
+  }),
+]);
+
+export type V2PracticeDrillDefinition = z.infer<
+  typeof V2PracticeDrillDefinitionSchema
+>;
+
+export type V2DrillDefinition =
+  | V2ClarificationDrillDefinition
+  | V2PracticeDrillDefinition;

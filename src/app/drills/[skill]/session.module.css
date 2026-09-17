@@ -19,3 +19,20 @@
   font-size: 0.72rem;
   text-transform: uppercase;
 }
+
+.legacy {
+  width: min(1040px, 100%);
+  margin: 72px auto 0;
+  border-top: 1px solid #aeb6ad;
+  padding-top: 24px;
+}
+
+.legacy summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.legacy > p {
+  margin-top: 10px;
+  color: #5f6a63;
+}

@@ -73,10 +73,10 @@ npm run build
 
 ### Active V2 checkpoint — 2026-09-17
 
-- V2 Tasks 1–5 are complete through framework hierarchy preservation.
+- V2 Tasks 1–6 are complete through the reusable generated-response cycle.
 - Do not stage or commit `supabase/.temp/`; it predates the V2 work and contains
   local Supabase link metadata.
-- Continue with Task 6, the reusable deterministic generated-response cycle.
+- Continue with Task 7, scoreable full-case exhibit interpretation.
 - Continue only through Task 11, then stop at the mandatory owner playtest gate
   before authoring any remaining drills or upgrading another case.
 
@@ -171,6 +171,28 @@ npm run build
   pass.
 - Next action: build the reusable generated-response cycle with answer secrecy,
   linked revisions, deterministic diagnostics, recovery, and accessible focus.
+
+### Casework V2 Task 6: Reusable generated-response cycle — complete
+
+- Added one deterministic state machine for generate, commit, self-check,
+  comparison reveal, diagnostics, retry, completion, and pre-commit skip.
+- Learner-safe prompt projection excludes rubric criteria, diagnostic rules,
+  and authored comparisons; the server-side reveal helper requires a validated
+  committed response for the matching interaction and response kind.
+- The shared component creates correctly linked revisions, labels diagnostics
+  as self-assessed, moves focus to each new phase, and keeps authored comparison
+  content hidden until both commitment and self-check are complete.
+- Session recovery validates phase/response consistency and restores committed
+  revisions and reveal state. In-progress draft text is component-local and is
+  never included in the recovery record or commit payload.
+- Red proof: the focused suites failed because the cycle and component modules
+  did not exist; all seven new state/projection/component regressions now pass.
+- Verification: 140 unit/component tests, typecheck, lint, and production build
+  pass. The component includes keyboard-native controls, programmatic phase
+  focus, and a 320px-safe layout; axe/browser coverage will run against its
+  first real V2 consumer in Tasks 8–9 rather than adding a throwaway demo route.
+- Next action: integrate this cycle into V2 exhibit interpretation, gate case
+  progress on commitment, and preserve the complete evidence in replay.
 
 ### Repository preparation — complete
 

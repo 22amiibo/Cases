@@ -387,6 +387,34 @@ npm run build
   history live, and deploy to Vercel. These actions require project credentials
   or deployment approval and were not performed automatically.
 
+### Live deployment — complete
+
+- Supabase project `vvyozwyodgyszkzuuznr` is connected and migration
+  `001_initial.sql` was applied successfully.
+- Vercel production deployment is live at
+  `https://cases-pi-five.vercel.app` with the public Supabase URL and
+  publishable key configured.
+- Supabase authentication redirect settings were configured for the production
+  and Vercel preview domains.
+- Live passwordless sign-in and signed-in progress persistence were verified by
+  the owner.
+
+### Product audit planning — approved
+
+- The owner supplied a full playtest/product audit covering interview transfer,
+  generation versus recognition, missing skills, case breadth, diagnostic
+  feedback, reduced scaffolding, and a proposed three-wave roadmap.
+- Created and owner-approved
+  `PRODUCT_AUDIT_PLANNING_PLAN.md`. This is a plan for producing the next
+  implementation plan; it does not authorize product implementation yet.
+- Approved direction: improve the learning loop and diagnostic coaching before
+  expanding the case library. The first priority is Generate → Commit → Compare
+  → Feedback → Retry, followed by clarification, explicit hypothesis updates,
+  diagnostic Progress, and progressively reduced scaffolding.
+- Recommended default for the next release is still deterministic/no-AI, using
+  authored comparisons and structured self-assessment for generated work unless
+  the owner explicitly chooses otherwise during product decisions.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -401,8 +429,10 @@ npm run build
 
 ## Next Action
 
-The implementation plan is complete. Do not redo Tasks 1–16. The next optional
-release step is external setup: create/connect the Supabase project, apply the
-checked-in migration, configure the two public Supabase variables in Vercel,
-verify signed-in persistence against the live database, and deploy. Ask for the
-required credentials/approval before any push, migration, or deployment action.
+Do not redo Tasks 1–16 or the Supabase/Vercel setup. Resume from Phase 1 of
+`PRODUCT_AUDIT_PLANNING_PLAN.md`: audit the shipped source, all hidden case
+definitions, current drill/Learn behavior, scoring, Progress, and persistence;
+then produce the `keep` / `adapt` / `replace` / `add` current-state gap matrix.
+After that audit, review the eight Phase 2 product decisions with the owner
+before drafting the new implementation plan. Do not implement product changes
+until that implementation plan is written and approved.

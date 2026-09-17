@@ -351,6 +351,42 @@ npm run build
 - Final verification: 25 test files / 99 tests pass; lint, typecheck,
   production build, and diff check pass; all 7 Playwright journeys pass.
 
+### Task 16: Accessibility, resilience, responsive layout, and release — complete
+
+- Added a keyboard-only AlpineFit browser journey covering framework building,
+  button-based branch reordering, investigation, exhibit access, calculation,
+  synthesis, recommendation, and review.
+- Added automated accessibility checking and explicit chart table-alternative
+  assertions in the complete keyboard journey. Global keyboard focus is now
+  visibly styled.
+- Added explicit stop/recovery screens for invalid case content, unknown case
+  IDs, corrupt or expired browser sessions, and failed session loading. Existing
+  drill/case persistence failures retain their retry paths.
+- Corrupt session data is never partially replayed. Case controls remain hidden
+  until the authoritative server projection loads, and malformed API JSON now
+  returns a controlled HTTP 400.
+- Added browser reflow checks for home, Learn, drill library, case library, case
+  workspace, and progress at 320px, 768px, and 1440px with no horizontal overflow.
+- Replaced the starter README with real local setup, public Supabase variables,
+  migration commands, content-authoring rules, verification commands, Vercel
+  notes, and the explicit `No AI in V1` architecture decision.
+- RED checkpoint: `1310572 test: define release hardening requirements`.
+- GREEN plan commit: `10fb150 chore: harden and document case practice MVP`.
+- Final review found one Important adjacent issue: clarification/framework actions
+  appeared before the authoritative session request completed. Regression and fix
+  commit: `2c93da0 fix: block partial case sessions`; final review is clean.
+- Final release gate on reviewed code: 26 test files / 101 tests pass; lint,
+  typecheck, production build, and diff check pass; all 13 Playwright journeys pass.
+
+### Implementation plan — complete
+
+- Tasks 1–16 are implemented and verified in the isolated feature worktree.
+- The guest V1 is ready to run locally and to connect to Vercel.
+- External follow-up remains: configure a real Supabase project, apply
+  `supabase/migrations/001_initial.sql`, verify passwordless sign-in/RLS/cloud
+  history live, and deploy to Vercel. These actions require project credentials
+  or deployment approval and were not performed automatically.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -365,8 +401,8 @@ npm run build
 
 ## Next Action
 
-Task 15 is complete and verified. The next implementation work is Task 16:
-read this file, `task-16-brief.md`, and the SDD ledger; verify branch/status and
-remote refs; then begin the accessibility, responsive-layout, explicit failure
-state, README, and full release-verification work using strict TDD. Do not redo
-Task 15. Task 16 has not started.
+The implementation plan is complete. Do not redo Tasks 1–16. The next optional
+release step is external setup: create/connect the Supabase project, apply the
+checked-in migration, configure the two public Supabase variables in Vercel,
+verify signed-in persistence against the live database, and deploy. Ask for the
+required credentials/approval before any push, migration, or deployment action.

@@ -8,6 +8,9 @@ test("home introduces deliberate case practice", async ({ page }) => {
       name: "Practice case interviews by practicing the thinking.",
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /continue as guest/i }),
+  ).toHaveAttribute("href", "/cases/alpinefit-profitability");
 });
 
 test("guest can complete AlpineFit and review the case replay", async ({
@@ -114,4 +117,28 @@ test("guest can complete AlpineFit and review the case replay", async ({
       (time, index) => index === 0 || time >= eventTimes[index - 1],
     ),
   ).toBe(true);
+
+  const savedAttempt = await page.evaluate(() => {
+    const stored = window.sessionStorage.getItem("casework:practice-history");
+    if (!stored) return null;
+    const history = JSON.parse(stored) as {
+      caseAttempts: Array<{
+        caseId: string;
+        events: unknown[];
+        skillScores: Record<string, number>;
+      }>;
+    };
+    return history.caseAttempts[0] ?? null;
+  });
+  expect(savedAttempt).toMatchObject({
+    caseId: "alpinefit-profitability",
+    skillScores: {
+      structure: expect.any(Number),
+      prioritization: expect.any(Number),
+      quantitative: expect.any(Number),
+      exhibit: expect.any(Number),
+      synthesis: expect.any(Number),
+    },
+  });
+  expect(savedAttempt?.events).toHaveLength(10);
 });

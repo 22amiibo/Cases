@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CaseDefinitionSchema } from "./schema";
+import {
+  CaseDefinitionSchema,
+  CommittedResponseChainSchema,
+  DiagnosticOutcomeSchema,
+  LearningEvidenceRecordSchema,
+} from "./schema";
 
 function validCase() {
   return {
@@ -109,5 +114,101 @@ describe("CaseDefinitionSchema", () => {
     definition.recommendation.minimumEvidence = 0;
 
     expect(CaseDefinitionSchema.safeParse(definition).success).toBe(false);
+  });
+});
+
+describe("V2 learning contracts", () => {
+  const v2Record = {
+    interactionId: "opening-alpinefit",
+    skillId: "clarification",
+    scoringVersion: "v2",
+    contentVersion: 2,
+    eventSchemaVersion: 2,
+    scaffoldingLevel: "beginner",
+    responses: [
+      {
+        responseId: "opening-r1",
+        interactionId: "opening-alpinefit",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "case_opening",
+        text: "We need to identify the main profit decline driver.",
+        committedAtMs: 100,
+      },
+      {
+        responseId: "opening-r2",
+        interactionId: "opening-alpinefit",
+        revision: 2,
+        revisionOf: "opening-r1",
+        responseKind: "case_opening",
+        text: "We need to identify and size the controllable profit decline driver.",
+        committedAtMs: 200,
+      },
+    ],
+    rubricOutcomes: [{ criterionId: "objective-restated", met: true }],
+    diagnostics: [
+      {
+        code: "strong_opening",
+        source: "self_assessment",
+        severity: "strength",
+        responseId: "opening-r1",
+      },
+    ],
+  } as const;
+
+  it("keeps legacy V1 data parseable", () => {
+    expect(
+      LearningEvidenceRecordSchema.safeParse({
+        interactionId: "legacy-structure",
+        skillId: "structure",
+        scoringVersion: "v1",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts complete V2 evidence and a linked revision chain", () => {
+    expect(LearningEvidenceRecordSchema.safeParse(v2Record).success).toBe(true);
+  });
+
+  it("rejects invalid diagnostic sources", () => {
+    const result = DiagnosticOutcomeSchema.safeParse({
+      code: "strong_opening",
+      source: "author",
+      severity: "strength",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual(["source"]);
+  });
+
+  it("rejects broken revision links with a useful path", () => {
+    const result = CommittedResponseChainSchema.safeParse([
+      v2Record.responses[0],
+      { ...v2Record.responses[1], revisionOf: "missing-response" },
+    ]);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual([1, "revisionOf"]);
+  });
+
+  it("requires version and scaffolding metadata for V2", () => {
+    const missingVersion: Record<string, unknown> = { ...v2Record };
+    Reflect.deleteProperty(missingVersion, "contentVersion");
+    const result = LearningEvidenceRecordSchema.safeParse(missingVersion);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path.includes("contentVersion"))).toBe(true);
+    }
+  });
+
+  it("rejects V2-only metadata on a legacy record", () => {
+    expect(
+      LearningEvidenceRecordSchema.safeParse({
+        interactionId: "mixed",
+        skillId: "structure",
+        scoringVersion: "v1",
+        contentVersion: 2,
+        eventSchemaVersion: 2,
+        scaffoldingLevel: "beginner",
+      }).success,
+    ).toBe(false);
   });
 });

@@ -71,6 +71,20 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 1: Versioned learning contracts — complete
+
+- Added strict V2 content/event/scoring/scaffolding schemas while preserving
+  parseability of legacy V1 learning records.
+- Added validated committed-response revision chains, rubric outcomes, and
+  diagnostic outcomes plus a centralized stable diagnostic taxonomy.
+- Red proof: the six new schema tests failed before the contracts existed.
+- Verification: focused schema/diagnostic tests, full unit suite, typecheck, and
+  lint pass.
+- Decision: `recommendation` remains a full-case score dimension but the V2
+  trainable-skill identifier set contains exactly the six approved skills.
+- Next action: add immutable versioned content registries without changing any
+  validated V1 case projection.
+
 ### Repository preparation — complete
 
 - Initialized the dedicated repository in the Desktop `Case` folder.

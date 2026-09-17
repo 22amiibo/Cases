@@ -1,0 +1,125 @@
+export const diagnosticCodes = [
+  "objective_not_reframed",
+  "material_term_unresolved",
+  "constraint_missed",
+  "low_value_question",
+  "question_overload",
+  "strong_opening",
+  "missing_major_branch",
+  "overlapping_branches",
+  "branch_too_vague",
+  "branch_not_testable",
+  "priority_missing",
+  "strong_structure",
+  "low_information_value",
+  "premature_detail",
+  "hypothesis_not_linked",
+  "failed_to_update",
+  "immaterial_branch_continued",
+  "strong_priority",
+  "setup_error",
+  "arithmetic_error",
+  "unit_error",
+  "sense_check_missing",
+  "business_implication_missing",
+  "strong_quantitative_reasoning",
+  "observation_error",
+  "comparison_missed",
+  "implication_missing",
+  "next_test_missing",
+  "strong_exhibit_chain",
+  "answer_not_first",
+  "evidence_dump",
+  "evidence_unsupported",
+  "next_step_missing",
+  "strong_synthesis",
+  "recommendation_not_answer_first",
+  "support_insufficient",
+  "risk_missing",
+  "strong_recommendation",
+  "hypothesis_missing",
+  "evidence_link_missing",
+  "update_missing",
+  "contradicted_hypothesis_retained",
+  "strong_hypothesis_update",
+] as const;
+
+export type DiagnosticCode = (typeof diagnosticCodes)[number];
+
+export const diagnosticAreas = [
+  "clarification",
+  "structure",
+  "prioritization",
+  "quantitative",
+  "exhibit",
+  "synthesis",
+  "recommendation",
+  "hypothesis",
+] as const;
+
+export type DiagnosticArea = (typeof diagnosticAreas)[number];
+
+const areaByCode: Record<DiagnosticCode, DiagnosticArea> = {
+  objective_not_reframed: "clarification",
+  material_term_unresolved: "clarification",
+  constraint_missed: "clarification",
+  low_value_question: "clarification",
+  question_overload: "clarification",
+  strong_opening: "clarification",
+  missing_major_branch: "structure",
+  overlapping_branches: "structure",
+  branch_too_vague: "structure",
+  branch_not_testable: "structure",
+  priority_missing: "structure",
+  strong_structure: "structure",
+  low_information_value: "prioritization",
+  premature_detail: "prioritization",
+  hypothesis_not_linked: "prioritization",
+  failed_to_update: "prioritization",
+  immaterial_branch_continued: "prioritization",
+  strong_priority: "prioritization",
+  setup_error: "quantitative",
+  arithmetic_error: "quantitative",
+  unit_error: "quantitative",
+  sense_check_missing: "quantitative",
+  business_implication_missing: "quantitative",
+  strong_quantitative_reasoning: "quantitative",
+  observation_error: "exhibit",
+  comparison_missed: "exhibit",
+  implication_missing: "exhibit",
+  next_test_missing: "exhibit",
+  strong_exhibit_chain: "exhibit",
+  answer_not_first: "synthesis",
+  evidence_dump: "synthesis",
+  evidence_unsupported: "synthesis",
+  next_step_missing: "synthesis",
+  strong_synthesis: "synthesis",
+  recommendation_not_answer_first: "recommendation",
+  support_insufficient: "recommendation",
+  risk_missing: "recommendation",
+  strong_recommendation: "recommendation",
+  hypothesis_missing: "hypothesis",
+  evidence_link_missing: "hypothesis",
+  update_missing: "hypothesis",
+  contradicted_hypothesis_retained: "hypothesis",
+  strong_hypothesis_update: "hypothesis",
+};
+
+export type DiagnosticDefinition = {
+  code: DiagnosticCode;
+  area: DiagnosticArea;
+  explanation: string;
+  recommendedNextRep: string;
+};
+
+export const diagnosticDefinitions = Object.fromEntries(
+  diagnosticCodes.map((code) => [
+    code,
+    {
+      code,
+      area: areaByCode[code],
+      explanation: code.replaceAll("_", " "),
+      recommendedNextRep: areaByCode[code],
+    } satisfies DiagnosticDefinition,
+  ]),
+) as Record<DiagnosticCode, DiagnosticDefinition>;

@@ -1,4 +1,25 @@
 import { z } from "zod";
+import { diagnosticCodes } from "./diagnostics";
+
+export const ContentVersionSchema = z.number().int().positive();
+export const EventSchemaVersionSchema = z.number().int().positive();
+export const ScoringVersionSchema = z.enum(["v1", "v2"]);
+export const ScaffoldingLevelSchema = z.enum([
+  "beginner",
+  "intermediate",
+  "interview",
+]);
+
+export const V2SkillIdSchema = z.enum([
+  "clarification",
+  "structure",
+  "prioritization",
+  "quantitative",
+  "exhibit",
+  "synthesis",
+]);
+
+export type V2SkillId = z.infer<typeof V2SkillIdSchema>;
 
 export const SkillIdSchema = z.enum([
   "structure",
@@ -16,6 +37,120 @@ const IdentifierSchema = z
   .string()
   .min(1)
   .regex(/^[a-z0-9]+(?:[a-z0-9_-]*[a-z0-9])?$/, "Use a stable slug ID");
+
+export const CommittedResponseSchema = z.object({
+  responseId: IdentifierSchema,
+  interactionId: IdentifierSchema,
+  revision: z.number().int().positive(),
+  revisionOf: IdentifierSchema.nullable(),
+  responseKind: IdentifierSchema,
+  text: z.string().min(1).max(10_000),
+  committedAtMs: z.number().int().nonnegative(),
+});
+
+export type CommittedResponse = z.infer<typeof CommittedResponseSchema>;
+
+export const CommittedResponseChainSchema = z
+  .array(CommittedResponseSchema)
+  .min(1)
+  .superRefine((responses, context) => {
+    const ids = new Set<string>();
+    const revisionByNumber = new Map<number, CommittedResponse>();
+    const interactionId = responses[0]?.interactionId;
+
+    responses.forEach((response, index) => {
+      if (ids.has(response.responseId)) {
+        context.addIssue({
+          code: "custom",
+          message: "Response IDs must be unique",
+          path: [index, "responseId"],
+        });
+      }
+      ids.add(response.responseId);
+      if (revisionByNumber.has(response.revision)) {
+        context.addIssue({
+          code: "custom",
+          message: "Revision numbers must be unique",
+          path: [index, "revision"],
+        });
+      }
+      revisionByNumber.set(response.revision, response);
+      if (response.interactionId !== interactionId) {
+        context.addIssue({
+          code: "custom",
+          message: "A revision chain must use one interaction ID",
+          path: [index, "interactionId"],
+        });
+      }
+    });
+
+    responses.forEach((response, index) => {
+      if (response.revision === 1 && response.revisionOf !== null) {
+        context.addIssue({
+          code: "custom",
+          message: "Revision 1 cannot reference an earlier response",
+          path: [index, "revisionOf"],
+        });
+      }
+      if (response.revision > 1) {
+        const prior = revisionByNumber.get(response.revision - 1);
+        if (!prior || response.revisionOf !== prior.responseId) {
+          context.addIssue({
+            code: "custom",
+            message: "Each revision must link to the preceding revision",
+            path: [index, "revisionOf"],
+          });
+        }
+      }
+    });
+  });
+
+export const RubricOutcomeSchema = z.object({
+  criterionId: IdentifierSchema,
+  met: z.boolean(),
+});
+
+export type RubricOutcome = z.infer<typeof RubricOutcomeSchema>;
+
+export const DiagnosticOutcomeSchema = z.object({
+  code: z.enum(diagnosticCodes),
+  source: z.enum(["system", "self_assessment"]),
+  severity: z.enum(["strength", "coaching", "blocking"]),
+  responseId: IdentifierSchema.optional(),
+});
+
+export type DiagnosticOutcome = z.infer<typeof DiagnosticOutcomeSchema>;
+
+const LegacyLearningEvidenceRecordSchema = z.object({
+  interactionId: IdentifierSchema,
+  skillId: SkillIdSchema,
+  scoringVersion: z.literal("v1"),
+  contentVersion: z.never().optional(),
+  eventSchemaVersion: z.never().optional(),
+  scaffoldingLevel: z.never().optional(),
+  responses: z.never().optional(),
+  rubricOutcomes: z.never().optional(),
+  diagnostics: z.never().optional(),
+});
+
+const V2LearningEvidenceRecordSchema = z.object({
+  interactionId: IdentifierSchema,
+  skillId: V2SkillIdSchema,
+  scoringVersion: z.literal("v2"),
+  contentVersion: ContentVersionSchema,
+  eventSchemaVersion: EventSchemaVersionSchema,
+  scaffoldingLevel: ScaffoldingLevelSchema,
+  responses: CommittedResponseChainSchema,
+  rubricOutcomes: z.array(RubricOutcomeSchema),
+  diagnostics: z.array(DiagnosticOutcomeSchema),
+});
+
+export const LearningEvidenceRecordSchema = z.discriminatedUnion(
+  "scoringVersion",
+  [LegacyLearningEvidenceRecordSchema, V2LearningEvidenceRecordSchema],
+);
+
+export type LearningEvidenceRecord = z.infer<typeof LearningEvidenceRecordSchema>;
 
 export const ConceptSchema = z.object({
   id: IdentifierSchema,

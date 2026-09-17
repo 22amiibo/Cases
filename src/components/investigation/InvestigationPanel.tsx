@@ -8,6 +8,8 @@ import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { CalculationTask } from "@/components/math/CalculationTask";
 import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
+import { createCaseAttempt } from "@/data/attempts";
+import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type {
   LearnerCaseDefinition,
   LearnerSessionView,
@@ -337,11 +339,25 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               recommendation={view.recommendation}
               facts={facts}
               onSubmit={async (recommendation) => {
-                await record({
+                const recommendationEvent: CaseEvent = {
                   type: "recommendation_submitted",
                   ...recommendation,
                   atMs: timestamp(),
-                });
+                };
+                const completedView = await record(recommendationEvent);
+                if (!completedView.review) {
+                  throw new Error("Completed case review was not returned");
+                }
+                const practiceSession = await getBrowserPracticeSession();
+                await practiceSession.repository.saveCaseAttempt(
+                  createCaseAttempt({
+                    userId: practiceSession.userId,
+                    caseId: caseDefinition.id,
+                    review: completedView.review,
+                    events: [...events, recommendationEvent],
+                    completedAt: new Date().toISOString(),
+                  }),
+                );
                 router.push(`/cases/${caseDefinition.id}/review`);
               }}
             />

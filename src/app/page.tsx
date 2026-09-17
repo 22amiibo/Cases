@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthPanel } from "@/components/auth/AuthPanel";
 import styles from "./page.module.css";
 
 const practicePaths = [
@@ -39,6 +40,8 @@ export default function Home() {
           every decision—without AI guesswork.
         </p>
       </section>
+
+      <AuthPanel />
 
       <section className={styles.paths} aria-label="Practice paths">
         {practicePaths.map((path) => {

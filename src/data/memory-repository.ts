@@ -97,9 +97,13 @@ export class MemoryPracticeRepository implements PracticeRepository {
     return [
       ...this.history.drillAttempts
         .filter((attempt) => attempt.userId === userId)
-        .map(({ drillId: _drillId, conceptIdsPracticed: _concepts, ...attempt }) =>
-          attempt,
-        ),
+        .map((attempt) => ({
+          userId: attempt.userId,
+          skillId: attempt.skillId,
+          score: attempt.score,
+          feedbackCodes: attempt.feedbackCodes,
+          completedAt: attempt.completedAt,
+        })),
       ...this.history.caseAttempts
         .filter((attempt) => attempt.userId === userId)
         .flatMap(toCaseSkillHistory),

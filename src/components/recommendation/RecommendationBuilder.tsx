@@ -25,6 +25,8 @@ export function RecommendationBuilder({
     riskId: "",
     nextStepId: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const ready =
     Boolean(submission.decisionId) &&
     submission.evidenceIds.length > 0 &&
@@ -40,6 +42,19 @@ export function RecommendationBuilder({
           ? [...current.evidenceIds, factId]
           : current.evidenceIds,
     }));
+  }
+
+  async function submitRecommendation() {
+    if (!ready || submitting) return;
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      await onSubmit(submission);
+    } catch {
+      setSubmitError(true);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -119,8 +134,19 @@ export function RecommendationBuilder({
         </select>
       </label>
 
-      <button type="button" disabled={!ready} onClick={() => void onSubmit(submission)}>
-        Submit recommendation
+      {submitError && (
+        <p role="alert">We could not save your recommendation. Try again.</p>
+      )}
+      <button
+        type="button"
+        disabled={!ready || submitting}
+        onClick={() => void submitRecommendation()}
+      >
+        {submitting
+          ? "Submitting recommendation"
+          : submitError
+            ? "Try again"
+            : "Submit recommendation"}
       </button>
     </section>
   );

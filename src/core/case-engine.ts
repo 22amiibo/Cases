@@ -38,6 +38,85 @@ function investigatedNodeIds(events: CaseEvent[]) {
   );
 }
 
+function includesId(items: Array<{ id: string }>, id: string) {
+  return items.some((item) => item.id === id);
+}
+
+export function isCaseEventAllowed(
+  session: CaseSession,
+  event: CaseEvent,
+): boolean {
+  const { caseDefinition, currentStage } = session;
+  const visited = investigatedNodeIds(session.events);
+  const revealedFacts = new Set(session.revealedFactIds);
+
+  switch (event.type) {
+    case "clarification_selected":
+      return (
+        (currentStage === "clarify" || currentStage === "structure") &&
+        !session.events.some((candidate) => candidate.type === "framework_submitted") &&
+        includesId(caseDefinition.clarificationOptions, event.clarificationId)
+      );
+    case "framework_submitted": {
+      const authoredConceptIds = new Set(
+        caseDefinition.frameworkRubric.concepts.map(({ conceptId }) => conceptId),
+      );
+      return (
+        currentStage === "structure" &&
+        event.conceptIds.every((conceptId) => authoredConceptIds.has(conceptId)) &&
+        event.conceptIds.includes(event.priorityConceptId)
+      );
+    }
+    case "node_investigated": {
+      const node = caseDefinition.investigationNodes.find(
+        (candidate) => candidate.id === event.nodeId,
+      );
+      return Boolean(
+        currentStage === "investigate" &&
+          node &&
+          node.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
+      );
+    }
+    case "exhibit_insight_submitted": {
+      const exhibit = caseDefinition.exhibits.find(
+        (candidate) => candidate.id === event.exhibitId,
+      );
+      return Boolean(
+        currentStage === "investigate" &&
+          exhibit &&
+          session.revealedExhibitIds.includes(exhibit.id) &&
+          event.insightIds.every((insightId) => includesId(exhibit.insights, insightId)),
+      );
+    }
+    case "calculation_submitted": {
+      const calculation = caseDefinition.calculations.find(
+        (candidate) => candidate.id === event.taskId,
+      );
+      return Boolean(
+        currentStage === "investigate" &&
+          calculation &&
+          calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
+      );
+    }
+    case "synthesis_submitted":
+      return (
+        currentStage === "investigate" &&
+        event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
+        getAvailableActions(session).some(({ id }) => id === event.nextStepNodeId)
+      );
+    case "recommendation_submitted":
+      return (
+        currentStage === "recommend" &&
+        includesId(caseDefinition.recommendation.decisions, event.decisionId) &&
+        includesId(caseDefinition.recommendation.risks, event.riskId) &&
+        includesId(caseDefinition.recommendation.nextSteps, event.nextStepId) &&
+        event.evidenceIds.every((factId) => revealedFacts.has(factId))
+      );
+    case "hypothesis_selected":
+      return false;
+  }
+}
+
 export function createCaseSession(caseDefinition: CaseDefinition): CaseSession {
   return {
     caseDefinition,
@@ -68,16 +147,15 @@ export function applyCaseEvent(
   session: CaseSession,
   event: CaseEvent,
 ): CaseSession {
+  if (!isCaseEventAllowed(session, event)) return session;
+
   if (event.type === "node_investigated") {
     const node = session.caseDefinition.investigationNodes.find(
       (candidate) => candidate.id === event.nodeId,
     );
     const visited = investigatedNodeIds(session.events);
 
-    if (
-      !node ||
-      !node.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId))
-    ) {
+    if (!node || !node.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId))) {
       return session;
     }
 

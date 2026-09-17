@@ -86,15 +86,14 @@ export function ReviewSession({ caseId }: { caseId: string }) {
 
     async function loadReview() {
       await Promise.resolve();
-      const stored = window.sessionStorage.getItem(
-        `casework:guest-session:${caseId}`,
-      );
-      if (!stored) {
-        if (active) setStatus("missing");
-        return;
-      }
-
       try {
+        const stored = window.sessionStorage.getItem(
+          `casework:guest-session:${caseId}`,
+        );
+        if (!stored) {
+          if (active) setStatus("missing");
+          return;
+        }
         const parsed = JSON.parse(stored) as { events?: unknown[] };
         if (!Array.isArray(parsed.events)) {
           if (active) setStatus("missing");
@@ -139,7 +138,11 @@ export function ReviewSession({ caseId }: { caseId: string }) {
   return (
     <section className={styles.emptyState} aria-live="polite">
       <h2>
-        {status === "loading" ? "Loading your review" : "No completed case to review"}
+        {status === "loading"
+          ? "Loading your review"
+          : status === "error"
+            ? "Your review could not be loaded"
+            : "No completed case to review"}
       </h2>
       <p>
         {status === "error"

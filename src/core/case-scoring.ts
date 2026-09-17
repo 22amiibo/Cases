@@ -205,25 +205,27 @@ function scoreExhibits(
   );
 }
 
-function scoreSynthesis(
+export function isValidSynthesisSubmission(
   definition: CaseDefinition,
   events: CaseEvent[],
+  event: Extract<CaseEvent, { type: "synthesis_submitted" }>,
 ) {
   const nodeIds = new Set(definition.investigationNodes.map((node) => node.id));
-  return events.some((event) => {
-    if (event.type !== "synthesis_submitted" || !nodeIds.has(event.nextStepNodeId)) {
-      return false;
-    }
-    const discoveredFacts = discoveredFactIdsBefore(
-      definition,
-      events,
-      event.atMs,
-    );
-    const discoveredEvidenceCount = unique(event.evidenceIds).filter((factId) =>
-      discoveredFacts.has(factId),
-    ).length;
-    return discoveredEvidenceCount >= definition.recommendation.minimumEvidence;
-  })
+  if (!nodeIds.has(event.nextStepNodeId)) return false;
+
+  const discoveredFacts = discoveredFactIdsBefore(definition, events, event.atMs);
+  const discoveredEvidenceCount = unique(event.evidenceIds).filter((factId) =>
+    discoveredFacts.has(factId),
+  ).length;
+  return discoveredEvidenceCount >= definition.recommendation.minimumEvidence;
+}
+
+function scoreSynthesis(definition: CaseDefinition, events: CaseEvent[]) {
+  return events.some(
+    (event) =>
+      event.type === "synthesis_submitted" &&
+      isValidSynthesisSubmission(definition, events, event),
+  )
     ? 1
     : 0;
 }

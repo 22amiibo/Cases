@@ -10,7 +10,7 @@ test("home introduces deliberate case practice", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("guest can work through AlpineFit to the recommendation stage", async ({
+test("guest can complete AlpineFit and review the case replay", async ({
   page,
 }) => {
   await page.goto("/");

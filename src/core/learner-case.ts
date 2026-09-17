@@ -1,6 +1,6 @@
 import type { CaseStage, RevealedFact } from "./case-engine";
 import type { CaseDefinition, CaseEvent, ExhibitDefinition } from "./schema";
-import { scoreCase } from "./case-scoring";
+import { isValidSynthesisSubmission, scoreCase } from "./case-scoring";
 import type { RecommendationSubmission } from "./schema";
 
 export type LearnerExhibitDefinition = Omit<
@@ -123,10 +123,10 @@ export function toLearnerCaseReview(
     });
   }
   if (
-    score.synthesis === 1 &&
     events.some(
       (event) =>
         event.type === "synthesis_submitted" &&
+        isValidSynthesisSubmission(definition, events, event) &&
         definition.exhibits.filter((exhibit) =>
           exhibit.sourceFactIds.some((factId) =>
             event.evidenceIds.includes(factId),
@@ -142,7 +142,7 @@ export function toLearnerCaseReview(
   if (score.recommendation === 0) {
     feedback.push({
       code: "unsupported_recommendation",
-      message: "The recommendation needs at least two discovered pieces of supporting evidence.",
+      message: `The recommendation needs at least ${definition.recommendation.minimumEvidence} discovered pieces of supporting evidence.`,
     });
   }
 

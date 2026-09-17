@@ -15,6 +15,8 @@ session.
 ## Source of Truth
 
 - Implementation plan: `/Users/noahmartz/Downloads/2026-09-15-case-interview-practice-mvp.md`
+- Product upgrade decision ledger: `PRODUCT_DECISION_LEDGER.md`
+- Draft V2 implementation plan: `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
 - Local repository: `/Users/noahmartz/Desktop/Case`
 - GitHub repository: `https://github.com/22amiibo/Cases`
 - Base branch: `main`
@@ -440,6 +442,37 @@ npm run build
 - Fresh Phase 1 verification: lint passed; typecheck passed; 26 test files / 101
   tests passed; production build passed; all 13 Playwright journeys passed.
 
+### Product audit Phase 2 and V2 implementation-plan draft — complete
+
+- The owner approved eight binding product decisions and three P0 prerequisites.
+- Recorded the accepted decisions in `PRODUCT_DECISION_LEDGER.md`. The next
+  release remains deterministic/no-AI and uses Generate → Commit → Structured
+  rubric self-check → Authored comparison → Diagnostic feedback → Retry for
+  genuinely generated answers.
+- Scratch work remains private. Committed responses, rubric outcomes,
+  diagnostic sources/codes, revisions, and relevant case events become durable
+  V2 evidence.
+- The model must define `beginner`, `intermediate`, and `interview` scaffolding
+  now, while full timed Interview Mode remains deferred.
+- Case Opening & Clarification is the sixth Wave 1 skill. Hypothesis formation
+  and evidence-linked updating are tracked cross-case behaviors rather than a
+  separate scored skill.
+- The Wave 1 pilot cases are AlpineFit (beginner), PayPilot (intermediate), and
+  GoldenLoaf (lower-scaffolding transfer). NorthStar, FleetFix, and MorningJet
+  remain V1 in this wave.
+- V1 history is preserved as strictly separate legacy scoring. V1 data cannot
+  affect V2 readiness, trends, weakness detection, or recommendations.
+- P0 order is binding: add case/content versioning before editing pilot
+  definitions, preserve the full framework tree/order/rationale, and make
+  full-case exhibit interpretation reachable before collecting pilot results.
+- Drafted `CASEWORK_V2_IMPLEMENTATION_PLAN.md` with the learner contract,
+  diagnostic taxonomy, technical design, additive migration strategy, 16 TDD
+  tasks, release gates, 60–90 hour estimate, risk register, and exact first
+  action.
+- No product code, case content, database schema, or deployment configuration
+  was changed during planning. The V2 plan is awaiting owner review and does
+  not authorize implementation yet.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -454,8 +487,9 @@ npm run build
 
 ## Next Action
 
-Do not redo Tasks 1–16, deployment setup, or the Phase 1 audit. Resume with
-Phase 2 of `PRODUCT_AUDIT_PLANNING_PLAN.md`: review the eight owner decisions
-listed in `CURRENT_STATE_GAP_MATRIX.md`, record the answers in a decision
-ledger, and only then draft the new implementation plan. Do not implement
-product changes until that implementation plan is written and approved.
+Do not redo the MVP, deployment setup, Phase 1 audit, or Phase 2 decision work.
+Review `PRODUCT_DECISION_LEDGER.md` and `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
+with the owner. Resolve requested plan changes and obtain explicit approval
+before implementing anything. After approval, begin only Task 1 by writing the
+failing V1-compatibility and V2 contract tests; do not edit pilot content or
+apply a database migration yet.

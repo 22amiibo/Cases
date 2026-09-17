@@ -37,4 +37,15 @@ describe("resolvePracticeSession", () => {
     expect(session.isSignedIn).toBe(true);
     expect(session.repository).not.toBe(input.guestRepository);
   });
+
+  it("surfaces authentication lookup failures instead of silently using guest storage", async () => {
+    const input = dependencies(null);
+    input.getAuthenticatedUser = async () => {
+      throw new Error("auth unavailable");
+    };
+
+    await expect(resolvePracticeSession(input)).rejects.toThrow(
+      "auth unavailable",
+    );
+  });
 });

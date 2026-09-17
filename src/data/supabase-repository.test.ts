@@ -6,6 +6,7 @@ import {
 } from "./supabase-repository";
 
 const drillAttempt: DrillAttempt = {
+  attemptId: "00000000-0000-4000-8000-000000000001",
   userId: "user-1",
   drillId: "quant-margin",
   skillId: "quantitative",
@@ -16,6 +17,7 @@ const drillAttempt: DrillAttempt = {
 };
 
 const caseAttempt: CaseAttempt = {
+  attemptId: "00000000-0000-4000-8000-000000000002",
   userId: "user-1",
   caseId: "alpinefit-profitability",
   skillScores: { structure: 90, synthesis: 60 },
@@ -49,6 +51,7 @@ describe("SupabasePracticeRepository", () => {
     await repository.saveCaseAttempt(caseAttempt);
 
     expect(database.insertDrillAttempt).toHaveBeenCalledWith({
+      id: "00000000-0000-4000-8000-000000000001",
       user_id: "user-1",
       drill_id: "quant-margin",
       skill_id: "quantitative",
@@ -58,6 +61,7 @@ describe("SupabasePracticeRepository", () => {
       completed_at: "2026-01-02T00:00:00.000Z",
     });
     expect(database.insertCaseAttempt).toHaveBeenCalledWith({
+      id: "00000000-0000-4000-8000-000000000002",
       user_id: "user-1",
       case_id: "alpinefit-profitability",
       skill_scores: { structure: 90, synthesis: 60 },

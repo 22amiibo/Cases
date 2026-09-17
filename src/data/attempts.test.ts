@@ -24,6 +24,7 @@ describe("practice attempt mapping", () => {
 
     expect(
       createDrillAttempt(
+        "attempt-1",
         "user-1",
         definition,
         result,
@@ -31,6 +32,7 @@ describe("practice attempt mapping", () => {
       ),
     ).toEqual({
       userId: "user-1",
+      attemptId: "attempt-1",
       drillId: "priority-1",
       skillId: "prioritization",
       score: 80,
@@ -68,6 +70,7 @@ describe("practice attempt mapping", () => {
 
     expect(
       createCaseAttempt({
+        attemptId: "attempt-2",
         userId: "user-1",
         caseId: "alpinefit-profitability",
         review,
@@ -76,6 +79,7 @@ describe("practice attempt mapping", () => {
       }),
     ).toEqual({
       userId: "user-1",
+      attemptId: "attempt-2",
       caseId: "alpinefit-profitability",
       skillScores: {
         structure: 75,

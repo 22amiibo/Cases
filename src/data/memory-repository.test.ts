@@ -3,6 +3,7 @@ import type { CaseAttempt, DrillAttempt } from "./repository";
 import { MemoryPracticeRepository } from "./memory-repository";
 
 const drillAttempt: DrillAttempt = {
+  attemptId: "drill-attempt-1",
   userId: "guest-1",
   drillId: "quant-margin",
   skillId: "quantitative",
@@ -13,6 +14,7 @@ const drillAttempt: DrillAttempt = {
 };
 
 const caseAttempt: CaseAttempt = {
+  attemptId: "case-attempt-1",
   userId: "guest-1",
   caseId: "alpinefit-profitability",
   skillScores: {
@@ -75,5 +77,16 @@ describe("MemoryPracticeRepository", () => {
     expect(storage.getItem("casework:practice-history")).toContain(
       '"type":"clarification_selected"',
     );
+  });
+
+  it("does not duplicate an attempt when the same save is retried", async () => {
+    const repository = new MemoryPracticeRepository();
+
+    await repository.saveDrillAttempt(drillAttempt);
+    await repository.saveDrillAttempt(drillAttempt);
+    await repository.saveCaseAttempt(caseAttempt);
+    await repository.saveCaseAttempt(caseAttempt);
+
+    await expect(repository.getSkillHistory("guest-1")).resolves.toHaveLength(6);
   });
 });

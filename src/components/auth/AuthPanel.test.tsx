@@ -44,4 +44,21 @@ describe("AuthPanel", () => {
       screen.getByRole("link", { name: /continue as guest/i }),
     ).toBeInTheDocument();
   });
+
+  it("checks an authenticated session only once across state updates", async () => {
+    const client = authClient();
+    vi.mocked(client.getUser).mockResolvedValue({
+      user: { id: "user-1", email: "learner@example.com" },
+      error: null,
+    });
+    const clientFactory = vi.fn(() => client);
+    render(<AuthPanel clientFactory={clientFactory} />);
+
+    expect(
+      await screen.findByText(/signed in as learner@example.com/i),
+    ).toBeInTheDocument();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(client.getUser).toHaveBeenCalledTimes(1);
+    expect(clientFactory).toHaveBeenCalledTimes(1);
+  });
 });

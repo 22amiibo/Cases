@@ -34,5 +34,20 @@ describe("initial Supabase migration", () => {
     expect(sql).toContain("auth.uid() is distinct from p_user_id");
     expect(sql).toContain("insert into public.case_attempts");
     expect(sql).toContain("insert into public.case_events");
+    expect(sql).toContain(
+      "foreign key (case_attempt_id, user_id) references public.case_attempts(id, user_id)",
+    );
+    expect(sql).toContain("on conflict (id) do nothing");
+    expect(sql).toContain("on conflict (case_attempt_id, sequence) do nothing");
+  });
+
+  it("constrains persisted case scores to the five trainable skills and 0–100", () => {
+    const sql = migrationSql();
+
+    expect(sql).toContain("public.is_valid_skill_scores(skill_scores)");
+    expect(sql).toContain(
+      "'structure', 'prioritization', 'quantitative', 'exhibit', 'synthesis'",
+    );
+    expect(sql).toContain("score_value >= 0 and score_value <= 100");
   });
 });

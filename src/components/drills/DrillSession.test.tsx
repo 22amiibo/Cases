@@ -23,6 +23,7 @@ describe("DrillSession persistence", () => {
         definitions={[definition]}
         repository={repository}
         userId="user-1"
+        createAttemptId={() => "drill-attempt-1"}
         now={() => new Date("2026-01-02T00:00:00.000Z")}
       />,
     );
@@ -36,6 +37,7 @@ describe("DrillSession persistence", () => {
     await waitFor(() =>
       expect(repository.saveDrillAttempt).toHaveBeenCalledWith({
         userId: "user-1",
+        attemptId: "drill-attempt-1",
         drillId: definition.id,
         skillId: "prioritization",
         score: 100,
@@ -45,5 +47,51 @@ describe("DrillSession persistence", () => {
       }),
     );
     expect(screen.getByText("100 / 100")).toBeInTheDocument();
+  });
+
+  it("keeps one attempt ID and offers retry when persistence fails", async () => {
+    const definition = drillBanks.prioritization[0] as Extract<
+      DrillDefinition,
+      { skillId: "prioritization" }
+    >;
+    const repository: PracticeRepository = {
+      saveDrillAttempt: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("offline"))
+        .mockResolvedValueOnce(undefined),
+      saveCaseAttempt: vi.fn().mockResolvedValue(undefined),
+      getSkillHistory: vi.fn().mockResolvedValue([]),
+    };
+    const user = userEvent.setup();
+    render(
+      <DrillSession
+        definitions={[definition]}
+        repository={repository}
+        userId="user-1"
+        createAttemptId={() => "stable-attempt-id"}
+        now={() => new Date("2026-01-02T00:00:00.000Z")}
+      />,
+    );
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /best next branch/i }),
+      definition.options[0].id,
+    );
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    expect(
+      await screen.findByRole("alert", { name: /practice result was not saved/i }),
+    ).toBeInTheDocument();
+    expect(repository.saveDrillAttempt).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: /try saving again/i }));
+
+    await waitFor(() =>
+      expect(repository.saveDrillAttempt).toHaveBeenCalledTimes(2),
+    );
+    const calls = vi.mocked(repository.saveDrillAttempt).mock.calls;
+    expect(calls[0][0].attemptId).toBe("stable-attempt-id");
+    expect(calls[1][0].attemptId).toBe("stable-attempt-id");
+    expect(await screen.findByText("100 / 100")).toBeInTheDocument();
   });
 });

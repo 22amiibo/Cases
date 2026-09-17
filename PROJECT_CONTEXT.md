@@ -71,6 +71,36 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 11: AlpineFit beginner teaching case — complete
+
+- AlpineFit V2 is now the active version while the immutable V1 definition,
+  hashes, explicit lookup, replay, and efficient-path solve-throughs remain
+  intact.
+- The beginner case requires the full generated learning loop: opening,
+  preserved framework plus priority rationale, initial and revised hypothesis,
+  both exhibit interpretations, quantitative reasoning, synthesis, generated
+  recommendation, and optional response revision.
+- Authored criteria, comparisons, checkpoint choices, calculation answers, and
+  recommendation choices stay server-side until the learner commits at the
+  legal phase. Server replay rejects premature reveals, forged diagnostics,
+  duplicate evidence, incomplete loop histories, and stale content versions.
+- Recovery covers refreshes at major checkpoints and a failed final save without
+  creating a duplicate attempt. Replay retains each generated response chain,
+  structured details, and versioned diagnostics.
+- Required case steps cannot be skipped into a dead end. The opening is keyboard
+  operable, generated widgets use unique accessible labels, and the complete
+  journey passes axe and 320px overflow checks.
+- Verification: 43 unit/component files and 196 tests pass; typecheck, lint,
+  production build, and all 23 Playwright journeys pass with no skips.
+- Final review fixes closed premature answer reveal, weak diagnostic replay
+  validation, duplicate-evidence inflation, early synthesis, and missing V2
+  failed-save recovery coverage.
+- Mandatory state: stop here. Do not begin Task 12 or later work until the owner
+  playtests the six V2 reps plus AlpineFit V2 and explicitly records `proceed`,
+  `revise and replaytest`, or `stop`.
+- Continue leaving `supabase/.temp/` untracked and untouched; it predates this
+  work and contains local Supabase link metadata.
+
 ### Casework V2 Task 10: Evidence-linked hypothesis updates — complete
 
 - V2 cases can require a generated initial hypothesis before investigation and
@@ -710,9 +740,8 @@ npm run build
 
 ## Next Action
 
-Do not redo the MVP, deployment setup, audit, decisions, or implementation
-planning. Do not begin V2 implementation until the owner gives a separate start
-instruction. When authorized, begin only Task 1 with failing V1-compatibility
-and V2 contract tests; do not edit pilot content or apply a database migration
-at that point. Execute through Task 11, then stop for the mandatory playtest and
-owner review before Task 12.
+Do not begin Task 12 or any later implementation. The owner must now playtest
+the first six V2 reps and AlpineFit V2, assess the learning-quality criteria in
+`CASEWORK_V2_IMPLEMENTATION_PLAN.md`, and record an explicit `proceed`, `revise
+and replaytest`, or `stop` decision in this context and the decision ledger.
+Automated verification cannot pass this gate.

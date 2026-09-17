@@ -36,6 +36,7 @@ import {
   type HypothesisCompletion,
 } from "./HypothesisStep";
 import { Scratchpad } from "./Scratchpad";
+import { CaseGeneratedStep, clearCaseCycleStorage } from "./CaseGeneratedStep";
 import styles from "./InvestigationPanel.module.css";
 
 type InvestigationPanelProps = {
@@ -66,8 +67,9 @@ function restorePendingCaseAttempt(caseId: string): CaseAttempt | null {
   return pending;
 }
 
-function createEmptyWorkspace(): StoredCaseWorkspace {
+function createEmptyWorkspace(contentVersion: number): StoredCaseWorkspace {
   return {
+    contentVersion,
     events: [],
     clarificationComplete: false,
     clarificationDraftIds: [] as string[],
@@ -78,8 +80,8 @@ type RestoredWorkspace =
   | { status: "ready"; workspace: StoredCaseWorkspace }
   | { status: "expired" };
 
-function restoreWorkspace(stored: string | null): RestoredWorkspace {
-  const emptyWorkspace = createEmptyWorkspace();
+function restoreWorkspace(stored: string | null, contentVersion: number): RestoredWorkspace {
+  const emptyWorkspace = createEmptyWorkspace(contentVersion);
 
   if (!stored) return { status: "ready", workspace: emptyWorkspace };
 
@@ -88,8 +90,11 @@ function restoreWorkspace(stored: string | null): RestoredWorkspace {
       events?: unknown[];
       clarificationComplete?: unknown;
       clarificationDraftIds?: unknown[];
+      contentVersion?: unknown;
     };
     if (!Array.isArray(serialized.events)) return { status: "expired" };
+    const storedVersion = serialized.contentVersion === undefined ? 1 : serialized.contentVersion;
+    if (storedVersion !== contentVersion) return { status: "expired" };
     const parsedEvents = serialized.events.map((rawEvent) =>
       CaseEventSchema.safeParse(rawEvent),
     );
@@ -107,6 +112,7 @@ function restoreWorkspace(stored: string | null): RestoredWorkspace {
     return {
       status: "ready",
       workspace: {
+        contentVersion,
         events: parsedEvents.flatMap((event) =>
           event.success ? [event.data] : [],
         ),
@@ -143,7 +149,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const router = useRouter();
   const storageKey = caseStorageKey(caseDefinition.id);
   const [restoredWorkspace] = useState(() =>
-    restoreWorkspace(window.sessionStorage.getItem(storageKey)),
+    restoreWorkspace(window.sessionStorage.getItem(storageKey), caseDefinition.version),
   );
   const [sessionExpired, setSessionExpired] = useState(
     restoredWorkspace.status === "expired",
@@ -151,7 +157,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const [workspace, setWorkspace] = useState(() =>
     restoredWorkspace.status === "ready"
       ? restoredWorkspace.workspace
-      : createEmptyWorkspace(),
+      : createEmptyWorkspace(caseDefinition.version),
   );
   const elapsedOffset = useRef(
     Math.max(0, ...workspace.events.map((event) => event.atMs)),
@@ -240,12 +246,13 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     window.sessionStorage.setItem(
       storageKey,
       JSON.stringify({
+        contentVersion: caseDefinition.version,
         events,
         clarificationComplete,
         clarificationDraftIds,
       }),
     );
-  }, [clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey]);
+  }, [caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey]);
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
@@ -256,12 +263,47 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const hasFramework = events.some(
     (event) => event.type === "framework_submitted",
   );
+  const hasOpening = events.some(
+    (event) => event.type === "case_opening_submitted",
+  );
   const interviewerResponse = view?.interviewerResponse ?? null;
 
   async function record(event: CaseEvent) {
     const nextEvents = [...events, event];
     setWorkspace((current) => ({ ...current, events: nextEvents }));
     return loadView(nextEvents);
+  }
+
+  async function saveCompletedRecommendation(recommendationEvent: CaseEvent) {
+    const nextEvents = [...events, recommendationEvent];
+    const completedView = await loadView(nextEvents, false);
+    if (!completedView.review) throw new Error("Completed case review was not returned");
+    const practiceSession = await getBrowserPracticeSession();
+    caseAttemptId.current ??= crypto.randomUUID();
+    const attempt = createCaseAttempt({
+      attemptId: caseAttemptId.current,
+      userId: practiceSession.userId,
+      caseId: caseDefinition.id,
+      review: completedView.review,
+      events: nextEvents,
+      completedAt: new Date().toISOString(),
+      contentVersion: caseDefinition.version,
+      scaffoldingLevel: caseDefinition.scaffoldingLevel,
+    });
+    savePendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id), attempt);
+    await practiceSession.repository.saveCaseAttempt(attempt);
+    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id));
+    setWorkspace((current) => ({ ...current, events: nextEvents }));
+    setView(completedView);
+    router.push(`/cases/${caseDefinition.id}/review`);
+  }
+
+  async function recordGeneratedEvent(event: CaseEvent) {
+    if (event.type === "recommendation_submitted") {
+      await saveCompletedRecommendation(event);
+      return;
+    }
+    await record(event);
   }
 
   function timestamp() {
@@ -392,7 +434,8 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     window.sessionStorage.removeItem(storageKey);
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
     clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
-    const emptyWorkspace = createEmptyWorkspace();
+    clearCaseCycleStorage(window.sessionStorage, caseDefinition.id);
+    const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
     initialEvents.current = emptyWorkspace.events;
     setWorkspace(emptyWorkspace);
     setView(null);
@@ -469,7 +512,18 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               </button>
             </StepCard>
           )}
-          {viewStatus === "ready" && !hasFramework && !clarificationComplete && (
+          {viewStatus === "ready" && !hasFramework && !hasOpening && caseDefinition.openingPrompt && (
+            <CaseGeneratedStep
+              caseId={caseDefinition.id}
+              contentVersion={caseDefinition.version}
+              kind="opening"
+              prompt={caseDefinition.openingPrompt}
+              events={events}
+              atMs={timestamp}
+              onEvent={recordGeneratedEvent}
+            />
+          )}
+          {viewStatus === "ready" && !hasFramework && !hasOpening && !caseDefinition.openingPrompt && !clarificationComplete && (
             <ClarificationStep
               caseDefinition={caseDefinition}
               selectedIds={selectedClarificationIds}
@@ -504,7 +558,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
             />
           )}
 
-          {viewStatus === "ready" && !hasFramework && clarificationComplete && (
+          {viewStatus === "ready" && !hasFramework && (clarificationComplete || hasOpening) && (
             <StepCard eyebrow="Structure" title="Build your issue tree">
               <p>
                 Choose distinct branches and mark where you would begin. Your
@@ -562,23 +616,43 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 </aside>
               )}
 
-              {availableCalculations.map((calculation) => (
+              {availableCalculations.map((calculation) => calculation.responsePrompt ? (
+                <CaseGeneratedStep
+                  key={calculation.id}
+                  caseId={caseDefinition.id}
+                  contentVersion={caseDefinition.version}
+                  kind="calculation"
+                  itemId={calculation.id}
+                  prompt={calculation.responsePrompt}
+                  unit={calculation.unit}
+                  events={events}
+                  atMs={timestamp}
+                  onEvent={recordGeneratedEvent}
+                />
+              ) : (
                 <CalculationTask
                   definition={calculation}
                   key={calculation.id}
                   onSubmit={async ({ taskId, answer }) => {
-                    const nextView = await record({
-                      type: "calculation_submitted",
-                      taskId,
-                      answer,
-                      atMs: timestamp(),
-                    });
+                    const nextView = await record({ type: "calculation_submitted", taskId, answer, atMs: timestamp() });
                     return nextView.completedCalculationIds.includes(taskId);
                   }}
                 />
               ))}
 
-              {!view.hypothesis || view.hypothesis.phase !== "update" ? <SynthesisStep
+              {!view.hypothesis ? view.synthesis ? (
+                <CaseGeneratedStep
+                  caseId={caseDefinition.id}
+                  contentVersion={caseDefinition.version}
+                  kind="synthesis"
+                  prompt={view.synthesis.prompt}
+                  events={events}
+                  facts={facts}
+                  actions={availableActions}
+                  atMs={timestamp}
+                  onEvent={recordGeneratedEvent}
+                />
+              ) : <SynthesisStep
                 facts={facts}
                 evidenceIds={synthesisEvidenceIds}
                 nextStepNodeId={nextStepNodeId}
@@ -600,6 +674,21 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
           {!pendingCaseAttempt &&
             view?.currentStage === "recommend" &&
+            view.recommendationPrompt && (
+            <CaseGeneratedStep
+              caseId={caseDefinition.id}
+              contentVersion={caseDefinition.version}
+              kind="recommendation"
+              prompt={view.recommendationPrompt}
+              events={events}
+              facts={facts}
+              atMs={timestamp}
+              onEvent={recordGeneratedEvent}
+            />
+          )}
+
+          {!pendingCaseAttempt &&
+            view?.currentStage === "recommend" &&
             view.recommendation && (
             <RecommendationBuilder
               recommendation={view.recommendation}
@@ -610,36 +699,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   ...recommendation,
                   atMs: timestamp(),
                 };
-                const nextEvents = [...events, recommendationEvent];
-                const completedView = await loadView(nextEvents, false);
-                if (!completedView.review) {
-                  throw new Error("Completed case review was not returned");
-                }
-                const practiceSession = await getBrowserPracticeSession();
-                caseAttemptId.current ??= crypto.randomUUID();
-                const attempt = createCaseAttempt({
-                    attemptId: caseAttemptId.current,
-                    userId: practiceSession.userId,
-                    caseId: caseDefinition.id,
-                    review: completedView.review,
-                    events: nextEvents,
-                    completedAt: new Date().toISOString(),
-                    contentVersion: caseDefinition.version,
-                    scaffoldingLevel: caseDefinition.scaffoldingLevel,
-                  });
-                savePendingAttempt(
-                  window.sessionStorage,
-                  pendingCaseKey(caseDefinition.id),
-                  attempt,
-                );
-                await practiceSession.repository.saveCaseAttempt(attempt);
-                clearPendingAttempt(
-                  window.sessionStorage,
-                  pendingCaseKey(caseDefinition.id),
-                );
-                setWorkspace((current) => ({ ...current, events: nextEvents }));
-                setView(completedView);
-                router.push(`/cases/${caseDefinition.id}/review`);
+                await saveCompletedRecommendation(recommendationEvent);
               }}
             />
           )}

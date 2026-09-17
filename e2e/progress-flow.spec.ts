@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { completeAlpineFitV2 } from "./alpinefit-v2-helpers";
 
 async function completeQuantitativeDrill(
   page: Page,
@@ -12,61 +13,16 @@ async function completeQuantitativeDrill(
   await expect(page.getByText("100 / 100")).toBeVisible();
 }
 
-async function completeAlpineFit(page: Page) {
-  await page.goto("/cases/alpinefit-profitability");
-  await page
-    .getByLabel("Which performance metric should we explain?")
-    .check();
-  await page
-    .getByLabel("Over what period did performance change?")
-    .check();
-  await page.getByRole("button", { name: "Continue to framework" }).click();
-
-  await page.getByLabel("Concept to add").selectOption("revenue");
-  await page.getByRole("button", { name: "Add branch" }).click();
-  await page.getByLabel("Concept to add").selectOption("variable_cost");
-  await page.getByRole("button", { name: "Add branch" }).click();
-  await page.getByRole("button", { name: "Submit framework" }).click();
-
-  await page
-    .getByRole("button", { name: "Break down operating costs" })
-    .click();
-  await page.getByRole("button", { name: "Inspect variable costs" }).click();
-  await page.getByRole("button", { name: "Inspect club labor" }).click();
-  await page.getByRole("button", { name: "Inspect overtime usage" }).click();
-  await page.getByLabel("Answer in $").fill("756000");
-  await page.getByRole("button", { name: "Check calculation" }).click();
-
-  await page.getByLabel("Cost growth").check();
-  await page.getByLabel("Overtime spike").check();
-  await page.getByLabel("Next investigation").selectOption("turnover");
-  await page.getByRole("button", { name: "Move to recommendation" }).click();
-
-  await page
-    .getByRole("combobox", { name: "Recommendation" })
-    .selectOption("stabilize-staffing");
-  await page
-    .getByLabel(
-      "Labor expense grew 34%, while staffed service hours grew only 11%.",
-    )
-    .check();
-  await page.getByLabel("Risk to manage").selectOption("retention-cost");
-  await page.getByLabel("First next step").selectOption("six-club-pilot");
-  await page.getByRole("button", { name: "Submit recommendation" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Your case review" }),
-  ).toBeVisible();
-}
-
 test("guest sees progress and a deterministic next session after practice", async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.goto("/drills/quantitative");
   await page.getByText("Open the 10-drill Legacy V1 library").click();
   await completeQuantitativeDrill(page, "25", "$/unit");
   await page.getByRole("button", { name: "Next question" }).click();
   await completeQuantitativeDrill(page, "40000", "orders");
-  await completeAlpineFit(page);
+  await completeAlpineFitV2(page);
 
   await page.goto("/");
   await page.getByRole("link", { name: "View progress" }).click();
@@ -77,7 +33,7 @@ test("guest sees progress and a deterministic next session after practice", asyn
   await expect(
     page.getByRole("heading", { name: "Your learning evidence" }),
   ).toBeVisible();
-  await expect(page.getByText("0 V2 sessions · 3 Legacy V1 sessions")).toBeVisible();
+  await expect(page.getByText("1 V2 sessions · 2 Legacy V1 sessions")).toBeVisible();
   await expect(
     page
       .locator("section")

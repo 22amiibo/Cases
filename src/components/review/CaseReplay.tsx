@@ -135,6 +135,29 @@ export function CaseReplay({ review }: CaseReplayProps) {
           </ol>
         </section>
       )}
+
+      {review.generatedResponses.map((step) => (
+        <section className={styles.frameworkReview} key={`${step.kind}-${step.label}`}>
+          <span>{step.kind.replaceAll("_", " ")}</span>
+          <h2>{step.label}</h2>
+          <ol>
+            {step.responses.map((response) => (
+              <li key={response.responseId}>
+                <strong>Revision {response.revision}</strong>
+                <p>{response.text}</p>
+              </li>
+            ))}
+          </ol>
+          {step.details.map((detail) => <p key={detail}>{detail.replaceAll("-", " ")}</p>)}
+          <ul>
+            {step.diagnostics.map((diagnostic, index) => (
+              <li key={`${diagnostic.code}-${diagnostic.responseId}-${index}`}>
+                {diagnostic.code.replaceAll("_", " ")} · {diagnostic.source}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
@@ -183,7 +206,7 @@ export function ReviewSession({ caseId }: { caseId: string }) {
           if (active) setStatus("missing");
           return;
         }
-        const parsed = JSON.parse(stored) as { events?: unknown[] };
+        const parsed = JSON.parse(stored) as { events?: unknown[]; contentVersion?: unknown };
         if (!Array.isArray(parsed.events)) {
           if (active) setStatus("missing");
           return;
@@ -195,7 +218,12 @@ export function ReviewSession({ caseId }: { caseId: string }) {
         void fetch(`/api/cases/${caseId}/session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ events }),
+          body: JSON.stringify({
+            events,
+            contentVersion: Number.isInteger(parsed.contentVersion)
+              ? parsed.contentVersion
+              : 1,
+          }),
         })
           .then((response) => {
             if (!response.ok) throw new Error("Unable to load review");

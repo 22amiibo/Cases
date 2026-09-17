@@ -30,7 +30,7 @@ export type LearnerExhibitDefinition = Omit<
 export type LearnerCalculationDefinition = Pick<
   CaseDefinition["calculations"][number],
   "id" | "prompt" | "unit"
->;
+> & { responsePrompt?: LearnerLearningCyclePrompt };
 
 export type LearnerRecommendation = {
   decisions: Array<{ id: string; label: string }>;
@@ -89,6 +89,14 @@ export type LearnerCaseReview = {
     diagnostics: DiagnosticOutcome[];
     revisionOfResponseId: string | null;
   }>;
+  generatedResponses: Array<{
+    kind: "opening" | "calculation" | "synthesis" | "recommendation";
+    label: string;
+    responses: CommittedResponse[];
+    rubricOutcomes: RubricOutcome[];
+    diagnostics: DiagnosticOutcome[];
+    details: string[];
+  }>;
   nodes: LearnerReplayNode[];
   events: Array<{ type: "node_investigated"; nodeId: string; atMs: number }>;
   efficientPath: { label: string; nodeIds: string[] };
@@ -101,6 +109,7 @@ export type LearnerCaseDefinition = Pick<
   "id" | "version" | "title" | "category" | "difficulty" | "prompt" | "objective"
 > & {
   clarificationOptions: Array<{ id: string; label: string }>;
+  openingPrompt: LearnerLearningCyclePrompt | null;
   scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
 };
 
@@ -120,15 +129,72 @@ export type LearnerSessionView = {
     currentHypothesisId: string | null;
     revisionOfResponseId: string | null;
   } | null;
+  synthesis: {
+    prompt: LearnerLearningCyclePrompt;
+  } | null;
+  recommendationPrompt: LearnerLearningCyclePrompt | null;
   recommendation: LearnerRecommendation | null;
   review: LearnerCaseReview | null;
 };
 
 export type StoredCaseWorkspace = {
+  contentVersion: number;
   events: CaseEvent[];
   clarificationComplete: boolean;
   clarificationDraftIds: string[];
 };
+
+function projectGeneratedCaseResponses(
+  definition: CaseDefinition,
+  events: CaseEvent[],
+): LearnerCaseReview["generatedResponses"] {
+  const projected: LearnerCaseReview["generatedResponses"] = [];
+  for (const event of events) {
+    if (event.type === "case_opening_submitted") {
+      projected.push({
+        kind: "opening",
+        label: "Case opening",
+        responses: event.responses,
+        rubricOutcomes: event.rubricOutcomes,
+        diagnostics: event.diagnostics,
+        details: event.questions.map(({ questionId }) => `Question: ${questionId.replaceAll("-", " ")}`),
+      });
+    } else if (event.type === "calculation_submitted" && "responses" in event) {
+      projected.push({
+        kind: "calculation",
+        label: definition.calculations.find(({ id }) => id === event.taskId)?.prompt ?? event.taskId,
+        responses: event.responses,
+        rubricOutcomes: event.rubricOutcomes,
+        diagnostics: event.diagnostics,
+        details: [`Answer: ${event.answer} ${event.unit}`],
+      });
+    } else if (event.type === "synthesis_submitted" && "responses" in event) {
+      projected.push({
+        kind: "synthesis",
+        label: "Case synthesis",
+        responses: event.responses,
+        rubricOutcomes: event.rubricOutcomes,
+        diagnostics: event.diagnostics,
+        details: [`Evidence: ${event.evidenceIds.join(", ")}`, `Next: ${event.nextStepNodeId}`],
+      });
+    } else if (event.type === "recommendation_submitted" && "responses" in event) {
+      projected.push({
+        kind: "recommendation",
+        label: "Final recommendation",
+        responses: event.responses,
+        rubricOutcomes: event.rubricOutcomes,
+        diagnostics: event.diagnostics,
+        details: [
+          `Decision: ${event.decisionId}`,
+          `Evidence: ${event.evidenceIds.join(", ")}`,
+          `Risk: ${event.riskId}`,
+          `Next: ${event.nextStepId}`,
+        ],
+      });
+    }
+  }
+  return projected;
+}
 
 export function toLearnerCaseDefinition(
   definition: CaseDefinition,
@@ -149,10 +215,12 @@ export function toLearnerCaseDefinition(
     prompt: definition.prompt,
     objective: definition.objective,
     scaffoldingLevel,
-    clarificationOptions: definition.clarificationOptions.map(({ id, label }) => ({
-      id,
-      label,
-    })),
+    clarificationOptions: definition.version >= 2 && definition.opening
+      ? []
+      : definition.clarificationOptions.map(({ id, label }) => ({ id, label })),
+    openingPrompt: definition.opening
+      ? projectLearningCyclePrompt(definition.opening.responseCycle)
+      : null,
   };
 }
 
@@ -268,6 +336,7 @@ export function toLearnerCaseReview(
       diagnostics: event.diagnostics,
       revisionOfResponseId: event.revisionOfResponseId,
     })),
+    generatedResponses: projectGeneratedCaseResponses(definition, events),
     nodes: definition.investigationNodes.map((node) => ({
       id: node.id,
       label: node.label,

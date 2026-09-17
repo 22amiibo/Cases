@@ -28,11 +28,21 @@ test("a V2 hypothesis is formed, recovered, and revised with revealed evidence",
     const storageKey = "casework:guest-session:alpinefit-profitability";
     if (window.sessionStorage.getItem(storageKey)) return;
     window.sessionStorage.setItem(storageKey, JSON.stringify({
+      contentVersion: 2,
       clarificationComplete: true,
       clarificationDraftIds: ["target-metric"],
       events: [
-        { type: "clarification_selected", clarificationId: "target-metric", atMs: 1 },
-        { type: "framework_submitted", conceptIds: ["revenue", "variable_cost"], priorityConceptId: "revenue", atMs: 2 },
+        {
+          type: "case_opening_submitted",
+          eventSchemaVersion: 2,
+          responses: [{ responseId: "opening-1", interactionId: "alpinefit-opening", revision: 1, revisionOf: null, responseKind: "case_opening", text: "Clarify the objective.", committedAtMs: 1 }],
+          rubricOutcomes: [],
+          diagnostics: [],
+          questions: [{ questionId: "target-metric", interviewerResponse: "Focus on the six-point decline in EBITDA margin, not absolute revenue growth." }],
+          authoredComparisonViewed: true,
+          atMs: 1,
+        },
+        { type: "framework_submitted", eventSchemaVersion: 2, branches: [{ conceptId: "revenue", children: [] }, { conceptId: "variable_cost", children: [] }], priorityConceptId: "revenue", rationale: "Test revenue first.", atMs: 2 },
       ],
     }));
   });
@@ -58,6 +68,8 @@ test("a V2 hypothesis is formed, recovered, and revised with revealed evidence",
           ? { phase: "update", prompt: updatePrompt, options, currentHypothesisId: "revenue-pressure", revisionOfResponseId: "hypothesis-1" }
           : null,
       recommendation: null,
+      synthesis: null,
+      recommendationPrompt: null,
       review: null,
     } });
   });

@@ -128,6 +128,7 @@ describe("practice attempt mapping", () => {
       framework: null,
       exhibitInterpretations: [],
       hypotheses: [],
+      generatedResponses: [],
       nodes: [],
       events: [],
       efficientPath: { label: "Cost path", nodeIds: ["costs"] },

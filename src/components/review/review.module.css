@@ -79,7 +79,7 @@
 }
 
 .graph li > strong { color: #294c3b; }
-.graph li > small { color: #68736c; line-height: 1.4; }
+.graph li > small { color: #566159; line-height: 1.4; }
 .graph .visited { border-left-color: #789b7d; }
 .graph .critical-found { border-left-color: #294c3b; background: #e5eee7; }
 .graph .critical-missed { border-left-color: #a14724; background: #f8ebe3; }

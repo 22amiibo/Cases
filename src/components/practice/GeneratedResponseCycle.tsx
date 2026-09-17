@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   applyLearningCycleAction,
   createLearningCycleState,
@@ -20,6 +20,7 @@ type GeneratedResponseCycleProps = {
   now?: () => number;
   storageKey?: string;
   onComplete?: (state: LearningCycleState) => void;
+  allowSkip?: boolean;
 };
 
 function defaultResponseId() {
@@ -37,7 +38,9 @@ export function GeneratedResponseCycle({
   now = Date.now,
   storageKey,
   onComplete,
+  allowSkip = true,
 }: GeneratedResponseCycleProps) {
+  const headingId = useId();
   const [state, setState] = useState<LearningCycleState>(() => {
     const restored =
       storageKey && typeof window !== "undefined"
@@ -123,14 +126,14 @@ export function GeneratedResponseCycle({
   const latestResponse = state.responses.at(-1);
 
   return (
-    <section className={styles.card} aria-labelledby="generated-cycle-title">
+    <section className={styles.card} aria-labelledby={headingId}>
       {(state.phase === "drafting" || state.phase === "revising") && (
         <>
           <span className={styles.eyebrow}>
             {prompt.scaffoldingLevel} practice
           </span>
           <h2
-            id="generated-cycle-title"
+            id={headingId}
             ref={phaseHeading}
             tabIndex={state.phase === "revising" ? -1 : undefined}
           >
@@ -166,7 +169,7 @@ export function GeneratedResponseCycle({
                   ? "Commit revision"
                   : "Commit response"}
             </button>
-            {state.phase === "drafting" && (
+            {state.phase === "drafting" && allowSkip && (
               <button
                 type="button"
                 className={styles.secondary}
@@ -184,7 +187,7 @@ export function GeneratedResponseCycle({
           <span className={styles.eyebrow}>
             Revision {latestResponse.revision} of {state.responses.length}
           </span>
-          <h2 id="generated-cycle-title" ref={phaseHeading} tabIndex={-1}>
+          <h2 id={headingId} ref={phaseHeading} tabIndex={-1}>
             Check your response
           </h2>
           <blockquote>{latestResponse.text}</blockquote>
@@ -226,7 +229,7 @@ export function GeneratedResponseCycle({
       {state.phase === "comparison_ready" && (
         <>
           <span className={styles.eyebrow}>Self-check saved</span>
-          <h2 id="generated-cycle-title" ref={phaseHeading} tabIndex={-1}>
+          <h2 id={headingId} ref={phaseHeading} tabIndex={-1}>
             Compare your reasoning
           </h2>
           <p>Your own assessment is recorded. You can now reveal one authored example.</p>
@@ -242,7 +245,7 @@ export function GeneratedResponseCycle({
       {state.phase === "comparison" && state.reveal && latestResponse && (
         <>
           <span className={styles.eyebrow}>Authored comparison</span>
-          <h2 id="generated-cycle-title" ref={phaseHeading} tabIndex={-1}>
+          <h2 id={headingId} ref={phaseHeading} tabIndex={-1}>
             {state.reveal.comparison.title}
           </h2>
           <p className={styles.comparison}>{state.reveal.comparison.text}</p>

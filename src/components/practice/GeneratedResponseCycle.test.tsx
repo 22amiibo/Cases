@@ -82,6 +82,18 @@ describe("GeneratedResponseCycle", () => {
     expect(screen.getByText(/comparison missed/i)).toBeVisible();
   });
 
+  it("can require a response for mandatory case steps", () => {
+    render(
+      <GeneratedResponseCycle
+        prompt={prompt}
+        onCommit={vi.fn().mockResolvedValue(reveal)}
+        allowSkip={false}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Skip this practice" })).toBeNull();
+  });
+
   it("restores two linked revisions while leaving uncommitted text out of storage", async () => {
     const user = userEvent.setup();
     let responseNumber = 0;

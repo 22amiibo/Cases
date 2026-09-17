@@ -3,6 +3,7 @@ import { getCaseDefinition } from "@/content/cases";
 import {
   getAvailableActions,
   getRevealedFacts,
+  isSynthesisReady,
   replayCaseEvents,
 } from "@/core/case-engine";
 import {
@@ -102,11 +103,19 @@ export async function POST(
     ),
     calculations: caseDefinition.calculations
       .filter((calculation) =>
+        !session.completedCalculationIds.includes(calculation.id) &&
         calculation.prerequisiteNodeIds.every((nodeId) =>
           investigatedNodeIds.has(nodeId),
         ),
       )
-      .map(({ id, prompt, unit }) => ({ id, prompt, unit })),
+      .map(({ id, prompt, unit, responseCycle }) => ({
+        id,
+        prompt,
+        unit,
+        ...(responseCycle
+          ? { responsePrompt: projectLearningCyclePrompt(responseCycle) }
+          : {}),
+      })),
     completedCalculationIds: session.completedCalculationIds,
     interviewerResponse:
       lastInvestigation?.type === "node_investigated"
@@ -117,7 +126,13 @@ export async function POST(
     hypothesis: session.currentStage === "investigate"
       ? projectHypothesisPractice(caseDefinition, session.events)
       : null,
-    recommendation: recommendationVisible
+    synthesis: session.currentStage === "investigate" && caseDefinition.synthesis && isSynthesisReady(session)
+      ? { prompt: projectLearningCyclePrompt(caseDefinition.synthesis.responseCycle) }
+      : null,
+    recommendationPrompt: session.currentStage === "recommend" && caseDefinition.recommendation.responseCycle
+      ? projectLearningCyclePrompt(caseDefinition.recommendation.responseCycle)
+      : null,
+    recommendation: recommendationVisible && !caseDefinition.recommendation.responseCycle
       ? {
           decisions: caseDefinition.recommendation.decisions.map(({ id, label }) => ({
             id,

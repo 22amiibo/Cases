@@ -152,6 +152,9 @@ function ExhibitInterpretationPractice({
               diagnostics: completedState.diagnostics,
               insightIds: [insightId],
               authoredComparisonViewed: true,
+            }).then(() => {
+              window.sessionStorage.removeItem(cycleStorageKey);
+              window.sessionStorage.removeItem(optionsStorageKey);
             });
           }}
         >

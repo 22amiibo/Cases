@@ -1,5 +1,5 @@
 import concepts from "@/content/concepts.json";
-import type { CaseDefinition, CaseEvent } from "./schema";
+import type { CaseDefinition, CaseEvent, DiagnosticOutcome } from "./schema";
 import { withinTolerance } from "./validation";
 import {
   flattenFrameworkConceptIds,
@@ -13,6 +13,7 @@ import {
   getLastHypothesisResponseId,
   isHypothesisLearningEvidenceValid,
 } from "./hypothesis";
+import { getCaseLearningCycle, type CaseCycleKind } from "./case-learning";
 
 export type CaseStage =
   | "clarify"
@@ -72,6 +73,99 @@ function hasCompletedRevealedExhibits(session: CaseSession) {
   return requiredIds.every((id) => completedIds.has(id));
 }
 
+function hasGeneratedEvidence(
+  definition: CaseDefinition,
+  event: CaseEvent,
+  kind: CaseCycleKind,
+  itemId?: string,
+) {
+  if (!("eventSchemaVersion" in event) || event.eventSchemaVersion !== 2) return false;
+  if (!("responses" in event) || !("rubricOutcomes" in event) || !("diagnostics" in event)) return false;
+  const cycle = getCaseLearningCycle(definition, kind, itemId);
+  if (!cycle) return false;
+  const criterionIds = new Set(cycle.criteria.map(({ id }) => id));
+  const submittedIds = new Set(event.rubricOutcomes.map(({ criterionId }) => criterionId));
+  const responseIds = new Set(event.responses.map(({ responseId }) => responseId));
+  const authoredRules = new Set(
+    cycle.diagnosticRules.map(({ code, severity }) => `${code}:${severity}`),
+  );
+  return (
+    event.responses.every((response) =>
+      response.interactionId === cycle.interactionId && response.responseKind === cycle.responseKind) &&
+    event.rubricOutcomes.length === criterionIds.size &&
+    submittedIds.size === criterionIds.size &&
+    event.rubricOutcomes.every(({ criterionId }) => criterionIds.has(criterionId)) &&
+    event.diagnostics
+      .filter(({ source }) => source === "self_assessment")
+      .every(({ code, severity, responseId }) =>
+        authoredRules.has(`${code}:${severity}`) &&
+        Boolean(responseId && responseIds.has(responseId)),
+      )
+  );
+}
+
+function hasExpectedSystemDiagnostic(
+  event: CaseEvent,
+  code: DiagnosticOutcome["code"],
+  severity: DiagnosticOutcome["severity"],
+) {
+  if (!("responses" in event) || !("diagnostics" in event)) return false;
+  const latestResponseId = event.responses.at(-1)?.responseId;
+  const diagnostics = event.diagnostics.filter(({ source }) => source === "system");
+  return diagnostics.length === 1 && diagnostics[0].code === code &&
+    diagnostics[0].severity === severity && diagnostics[0].responseId === latestResponseId;
+}
+
+function hasCompletedAvailableCalculations(session: CaseSession) {
+  if (session.caseDefinition.completeLearningLoop) {
+    return session.caseDefinition.calculations
+      .filter(({ responseCycle }) => responseCycle)
+      .every(({ id }) => session.completedCalculationIds.includes(id));
+  }
+  const visited = investigatedNodeIds(session.events);
+  const required = session.caseDefinition.calculations.filter((calculation) =>
+    calculation.responseCycle && calculation.prerequisiteNodeIds.every((id) => visited.has(id)),
+  );
+  return required.every(({ id }) => session.completedCalculationIds.includes(id));
+}
+
+export function isSynthesisReady(session: CaseSession) {
+  const exhibitsComplete = session.caseDefinition.completeLearningLoop
+    ? session.caseDefinition.exhibits.every(({ id }) =>
+        session.events.some((event) =>
+          event.type === "exhibit_interpretation_submitted" && event.exhibitId === id,
+        ),
+      )
+    : hasCompletedRevealedExhibits(session);
+  return (
+    (!session.caseDefinition.hypothesisPractice ||
+      session.events.some(({ type }) => type === "hypothesis_updated")) &&
+    exhibitsComplete &&
+    (!session.caseDefinition.synthesis || hasCompletedAvailableCalculations(session))
+  );
+}
+
+export function isGeneratedCaseCycleAvailable(
+  session: CaseSession,
+  kind: CaseCycleKind,
+  itemId?: string,
+) {
+  const { caseDefinition, currentStage } = session;
+  if (!getCaseLearningCycle(caseDefinition, kind, itemId)) return false;
+  if (kind === "opening") return currentStage === "clarify";
+  if (kind === "recommendation") return currentStage === "recommend";
+  if (currentStage !== "investigate") return false;
+  if (kind === "synthesis") return isSynthesisReady(session);
+
+  const calculation = caseDefinition.calculations.find(({ id }) => id === itemId);
+  const visited = investigatedNodeIds(session.events);
+  return Boolean(
+    calculation &&
+      !session.completedCalculationIds.includes(calculation.id) &&
+      calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
+  );
+}
+
 const canonicalConceptIds = new Set(concepts.map(({ id }) => id));
 
 export function isCaseEventAllowed(
@@ -99,6 +193,13 @@ export function isCaseEventAllowed(
         event.rubricOutcomes.map(({ criterionId }) => criterionId),
       );
       const responseIds = new Set(event.responses.map(({ responseId }) => responseId));
+      const questionIds = event.questions.map(({ questionId }) => questionId);
+      const highValueCount = questionIds.filter((id) =>
+        caseDefinition.clarificationOptions.some(
+          (option) => option.id === id && option.highValue,
+        ),
+      ).length;
+      const strongOpening = highValueCount >= (opening?.minimumHighValueQuestions ?? 1);
       return Boolean(
         currentStage === "clarify" &&
           caseDefinition.version >= 2 &&
@@ -119,7 +220,16 @@ export function isCaseEventAllowed(
               (option) =>
                 option.id === questionId && option.response === interviewerResponse,
             ),
-          )
+          ) &&
+          new Set(questionIds).size === questionIds.length &&
+          (!caseDefinition.completeLearningLoop || (
+            hasGeneratedEvidence(caseDefinition, event, "opening") &&
+            hasExpectedSystemDiagnostic(
+              event,
+              strongOpening ? "strong_opening" : "low_value_question",
+              strongOpening ? "strength" : "coaching",
+            )
+          ))
       );
     }
     case "framework_submitted": {
@@ -251,21 +361,52 @@ export function isCaseEventAllowed(
       return Boolean(
         currentStage === "investigate" &&
           calculation &&
-          calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
+          calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)) &&
+          (calculation.responseCycle
+            ? "eventSchemaVersion" in event && event.unit === calculation.unit &&
+              hasGeneratedEvidence(caseDefinition, event, "calculation", event.taskId) &&
+              hasExpectedSystemDiagnostic(
+                event,
+                withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
+                  ? "strong_quantitative_reasoning"
+                  : "arithmetic_error",
+                withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
+                  ? "strength"
+                  : "blocking",
+              )
+            : !("eventSchemaVersion" in event)),
       );
     }
     case "synthesis_submitted":
       return (
         currentStage === "investigate" &&
-        (!caseDefinition.hypothesisPractice ||
-          session.events.some(({ type }) => type === "hypothesis_updated")) &&
-        hasCompletedRevealedExhibits(session) &&
+        isSynthesisReady(session) &&
+        (!caseDefinition.synthesis ||
+          (hasGeneratedEvidence(caseDefinition, event, "synthesis") &&
+            hasExpectedSystemDiagnostic(
+              event,
+              event.evidenceIds.length >= 2 ? "strong_synthesis" : "evidence_unsupported",
+              event.evidenceIds.length >= 2 ? "strength" : "coaching",
+            ))) &&
+        new Set(event.evidenceIds).size === event.evidenceIds.length &&
         event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
         getAvailableActions(session).some(({ id }) => id === event.nextStepNodeId)
       );
     case "recommendation_submitted":
       return (
         currentStage === "recommend" &&
+        (!caseDefinition.recommendation.responseCycle ||
+          (hasGeneratedEvidence(caseDefinition, event, "recommendation") &&
+            hasExpectedSystemDiagnostic(
+              event,
+              event.evidenceIds.length >= caseDefinition.recommendation.minimumEvidence
+                ? "strong_recommendation"
+                : "support_insufficient",
+              event.evidenceIds.length >= caseDefinition.recommendation.minimumEvidence
+                ? "strength"
+                : "blocking",
+            ))) &&
+        new Set(event.evidenceIds).size === event.evidenceIds.length &&
         includesId(caseDefinition.recommendation.decisions, event.decisionId) &&
         includesId(caseDefinition.recommendation.risks, event.riskId) &&
         includesId(caseDefinition.recommendation.nextSteps, event.nextStepId) &&

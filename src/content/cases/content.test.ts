@@ -141,8 +141,8 @@ describe("case content", () => {
 
   it("resolves historical versions explicitly and independently of active lookup", () => {
     for (const definition of caseDefinitions) {
-      expect(getCaseDefinition(definition.id, 1)).toBe(definition);
-      expect(activeCaseVersions[definition.id]).toBe(1);
+      expect(getCaseDefinition(definition.id, 1)?.version).toBe(1);
+      expect(activeCaseVersions[definition.id]).toBe(definition.version);
       expect(getCaseDefinition(definition.id, 99)).toBeUndefined();
       expect(getCaseDefinition(definition.id)).toBe(definition);
     }

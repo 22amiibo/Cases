@@ -1,91 +1,35 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
-
-async function chooseWithKeyboard(select: Locator, value: string) {
-  const optionLabel =
-    (await select.locator(`option[value="${value}"]`).textContent()) ?? "";
-
-  expect(optionLabel).not.toHaveLength(0);
-  await select.focus();
-  await select.pressSequentially(optionLabel, { delay: 10 });
-  await expect(select).toHaveValue(value);
-}
+import { expect, test, type Page } from "@playwright/test";
+import { completeAlpineFitV2 } from "./alpinefit-v2-helpers";
 
 async function pressButton(page: Page, name: string) {
   await page.getByRole("button", { name }).press("Enter");
 }
 
-test("a guest can complete the full case using keyboard controls", async ({
+test("a guest can complete the full generated case without accessibility violations", async ({
   page,
 }) => {
-  await page.goto("/cases/alpinefit-profitability");
-
-  await page
-    .getByLabel("Which performance metric should we explain?")
-    .press("Space");
-  await page
-    .getByLabel("Over what period did performance change?")
-    .press("Space");
-  await pressButton(page, "Continue to framework");
-
-  const conceptSelect = page.getByLabel("Concept to add");
-  await chooseWithKeyboard(conceptSelect, "revenue");
-  await pressButton(page, "Add branch");
-  await chooseWithKeyboard(conceptSelect, "variable_cost");
-  await pressButton(page, "Add branch");
-  await pressButton(page, "Move Variable cost up");
-  await pressButton(page, "Start with Variable cost");
-  await pressButton(page, "Submit framework");
-
-  await pressButton(page, "Break down operating costs");
-  await expect(
-    page.getByRole("img", { name: "Operating cost by category chart in $m" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("table", {
-      name: "Operating cost by category data ($m)",
-    }),
-  ).toBeVisible();
-  await pressButton(page, "Inspect variable costs");
-  await pressButton(page, "Inspect club labor");
-  await pressButton(page, "Inspect overtime usage");
-
+  test.setTimeout(60_000);
+  await completeAlpineFitV2(page);
   const accessibility = await new AxeBuilder({ page }).analyze();
   expect(accessibility.violations).toEqual([]);
+});
 
-  const answer = page.getByLabel("Answer in $");
-  await answer.focus();
-  await answer.pressSequentially("756000");
-  await pressButton(page, "Check calculation");
-  await expect(page.getByRole("status")).toHaveText("Correct");
+test("the required generated opening is keyboard operable", async ({ page }) => {
+  await page.goto("/cases/alpinefit-profitability");
+  const response = page.getByLabel("Your response");
+  await response.focus();
+  await response.pressSequentially("Clarify the objective, scope, and decision before structuring.");
+  await pressButton(page, "Commit response");
+  await pressButton(page, "Save self-check");
+  await pressButton(page, "View comparison");
+  await pressButton(page, "Finish practice");
 
-  await page.getByLabel("Cost Growth").press("Space");
-  await page.getByLabel("Overtime Spike").press("Space");
-  await chooseWithKeyboard(page.getByLabel("Next investigation"), "turnover");
-  await pressButton(page, "Move to recommendation");
+  await page.getByLabel("Which performance metric should we explain?").press("Space");
+  await page.getByLabel("Over what period did performance change?").press("Space");
+  await pressButton(page, "Save opening");
 
-  await chooseWithKeyboard(
-    page.getByRole("combobox", { name: "Recommendation" }),
-    "stabilize-staffing",
-  );
-  await page
-    .getByLabel(
-      "Labor expense grew 34%, while staffed service hours grew only 11%.",
-    )
-    .press("Space");
-  await chooseWithKeyboard(
-    page.getByLabel("Risk to manage"),
-    "retention-cost",
-  );
-  await chooseWithKeyboard(
-    page.getByLabel("First next step"),
-    "six-club-pilot",
-  );
-  await pressButton(page, "Submit recommendation");
-
-  await expect(
-    page.getByRole("heading", { name: "Your case review" }),
-  ).toBeVisible();
+  await expect(page.getByLabel("Concept to add")).toBeVisible();
 });
 
 test("case routes show explicit missing, expired, and loading failure screens", async ({
@@ -146,7 +90,7 @@ test("case actions stay unavailable until the authoritative session loads", asyn
 
   releaseRequest?.();
   await expect(
-    page.getByLabel("Which performance metric should we explain?"),
+    page.getByLabel("Your response"),
   ).toBeVisible();
 });
 

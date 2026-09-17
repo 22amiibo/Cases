@@ -225,6 +225,24 @@ export const GeneratedResponseDefinitionSchema = z.object({
       severity: z.enum(["strength", "coaching", "blocking"]),
     }),
   ),
+}).superRefine((definition, context) => {
+  const criterionIds = new Set(definition.criteria.map(({ id }) => id));
+  if (criterionIds.size !== definition.criteria.length) {
+    context.addIssue({
+      code: "custom",
+      message: "Generated-response criteria must be unique",
+      path: ["criteria"],
+    });
+  }
+  definition.diagnosticRules.forEach((rule, index) => {
+    if (!criterionIds.has(rule.criterionId)) {
+      context.addIssue({
+        code: "custom",
+        message: `Diagnostic references unknown criterion ${rule.criterionId}`,
+        path: ["diagnosticRules", index, "criterionId"],
+      });
+    }
+  });
 });
 
 export const InvestigationNodeSchema = z.object({
@@ -281,6 +299,7 @@ export const CalculationDefinitionSchema = z.object({
   tolerance: z.number().nonnegative(),
   prerequisiteNodeIds: z.array(IdentifierSchema).default([]),
   evidenceFactId: IdentifierSchema,
+  responseCycle: GeneratedResponseDefinitionSchema.optional(),
 });
 
 const RecommendationRubricSchema = z.object({
@@ -299,6 +318,7 @@ const RecommendationRubricSchema = z.object({
   nextSteps: z
     .array(z.object({ id: IdentifierSchema, label: z.string().min(1) }))
     .min(1),
+  responseCycle: GeneratedResponseDefinitionSchema.optional(),
 });
 
 const CaseDefinitionBaseSchema = z.object({
@@ -313,6 +333,7 @@ const CaseDefinitionBaseSchema = z.object({
     "pricing",
   ]),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
+  completeLearningLoop: z.literal(true).optional(),
   prompt: z.string().min(1),
   objective: z.string().min(1),
   clarificationOptions: z.array(ClarificationOptionSchema).min(1),
@@ -338,6 +359,9 @@ const CaseDefinitionBaseSchema = z.object({
   investigationNodes: z.array(InvestigationNodeSchema).min(1),
   exhibits: z.array(ExhibitDefinitionSchema).min(1),
   calculations: z.array(CalculationDefinitionSchema).default([]),
+  synthesis: z.object({
+    responseCycle: GeneratedResponseDefinitionSchema,
+  }).optional(),
   frameworkRubric: FrameworkRubricSchema,
   recommendation: RecommendationRubricSchema,
   efficientPaths: z
@@ -354,6 +378,29 @@ const CaseDefinitionBaseSchema = z.object({
 export const CaseDefinitionSchema = CaseDefinitionBaseSchema.superRefine(
   (definition, context) => {
     const factIds = new Set(definition.facts.map((fact) => fact.id));
+
+    if (definition.completeLearningLoop) {
+      const missing = [
+        !definition.opening && "opening",
+        !definition.hypothesisPractice && "hypothesisPractice",
+        !definition.synthesis && "synthesis",
+        !definition.recommendation.responseCycle && "recommendation.responseCycle",
+        definition.exhibits.some(({ interpretation }) => !interpretation) && "exhibits.interpretation",
+        definition.calculations.some(({ responseCycle }) => !responseCycle) && "calculations.responseCycle",
+      ].filter(Boolean) as string[];
+      missing.forEach((path) => context.addIssue({
+        code: "custom",
+        message: `V2 case requires ${path}`,
+        path: path.split("."),
+      }));
+      if (definition.hypothesisPractice && definition.hypothesisPractice.options.length < 2) {
+        context.addIssue({
+          code: "custom",
+          message: "V2 case requires at least two defensible hypotheses",
+          path: ["hypothesisPractice", "options"],
+        });
+      }
+    }
 
     if (definition.hypothesisPractice) {
       if (definition.version < 2) {
@@ -456,6 +503,14 @@ const HypothesisEvidenceSchema = z.object({
   authoredComparisonViewed: z.literal(true),
 });
 
+const GeneratedCaseEvidenceSchema = z.object({
+  eventSchemaVersion: z.literal(2),
+  responses: CommittedResponseChainSchema,
+  rubricOutcomes: z.array(RubricOutcomeSchema),
+  diagnostics: z.array(DiagnosticOutcomeSchema),
+  authoredComparisonViewed: z.literal(true),
+});
+
 const HypothesisFormedEventSchema = TimedEventSchema.extend({
   type: z.literal("hypothesis_formed"),
   hypothesisId: IdentifierSchema,
@@ -529,12 +584,30 @@ export const CaseEventSchema = z.union([
     type: z.literal("calculation_submitted"),
     taskId: IdentifierSchema,
     answer: z.number(),
+    unit: z.string().min(1),
+  }).and(GeneratedCaseEvidenceSchema),
+  TimedEventSchema.extend({
+    type: z.literal("calculation_submitted"),
+    taskId: IdentifierSchema,
+    answer: z.number(),
   }),
   TimedEventSchema.extend({
     type: z.literal("synthesis_submitted"),
     evidenceIds: z.array(IdentifierSchema).min(1),
     nextStepNodeId: IdentifierSchema,
+  }).and(GeneratedCaseEvidenceSchema),
+  TimedEventSchema.extend({
+    type: z.literal("synthesis_submitted"),
+    evidenceIds: z.array(IdentifierSchema).min(1),
+    nextStepNodeId: IdentifierSchema,
   }),
+  TimedEventSchema.extend({
+    type: z.literal("recommendation_submitted"),
+    decisionId: IdentifierSchema,
+    evidenceIds: z.array(IdentifierSchema).min(1).max(3),
+    riskId: IdentifierSchema,
+    nextStepId: IdentifierSchema,
+  }).and(GeneratedCaseEvidenceSchema),
   TimedEventSchema.extend({
     type: z.literal("recommendation_submitted"),
     decisionId: IdentifierSchema,

@@ -21,6 +21,7 @@ const review: LearnerCaseReview = {
   },
   exhibitInterpretations: [],
   hypotheses: [],
+  generatedResponses: [],
   nodes: [],
   events: [],
   efficientPath: { label: "Direct path", nodeIds: [] },
@@ -48,6 +49,7 @@ describe("ReviewSession framework recovery", () => {
     window.sessionStorage.setItem(
       "casework:guest-session:alpinefit-profitability",
       JSON.stringify({
+        contentVersion: 2,
         events: [frameworkEvent],
         clarificationComplete: true,
         clarificationDraftIds: [],
@@ -79,6 +81,9 @@ describe("ReviewSession framework recovery", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const request = fetchMock.mock.calls[0][1] as RequestInit;
-    expect(JSON.parse(String(request.body))).toEqual({ events: [frameworkEvent] });
+    expect(JSON.parse(String(request.body))).toEqual({
+      events: [frameworkEvent],
+      contentVersion: 2,
+    });
   });
 });

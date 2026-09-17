@@ -415,6 +415,31 @@ npm run build
   authored comparisons and structured self-assessment for generated work unless
   the owner explicitly chooses otherwise during product decisions.
 
+### Product audit Phase 1 — complete
+
+- Audited every Learn lesson, all 50 drills, the full-case workspace, scoring,
+  replay, Progress, guest persistence, Supabase persistence, and all six hidden
+  case definitions.
+- Saved the evidence and `keep` / `adapt` / `replace` / `add` matrix in
+  `CURRENT_STATE_GAP_MATRIX.md`.
+- Confirmed all six cases are internally coherent and all four authored
+  calculations are correct. Existing alternate efficient paths are generally
+  permutations of the same required analysis rather than materially different
+  hypotheses.
+- Confirmed the largest learning gap is choice-first recognition. Structure and
+  numeric calculation provide partial generation; prioritization, exhibit
+  interpretation, synthesis, clarification, and recommendation remain heavily
+  authored-choice driven.
+- Found one additional product gap: the case scorer supports
+  `exhibit_insight_submitted`, but the full-case UI never emits that event, so a
+  normal learner cannot earn the case exhibit score.
+- Recorded compatibility constraints for the next plan: the Supabase schema
+  accepts only the existing five progress skills, case attempts do not store a
+  content version, signed-in historical replay does not load saved case events,
+  and changed rubrics should not silently overwrite the meaning of V1 scores.
+- Fresh Phase 1 verification: lint passed; typecheck passed; 26 test files / 101
+  tests passed; production build passed; all 13 Playwright journeys passed.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -429,10 +454,8 @@ npm run build
 
 ## Next Action
 
-Do not redo Tasks 1–16 or the Supabase/Vercel setup. Resume from Phase 1 of
-`PRODUCT_AUDIT_PLANNING_PLAN.md`: audit the shipped source, all hidden case
-definitions, current drill/Learn behavior, scoring, Progress, and persistence;
-then produce the `keep` / `adapt` / `replace` / `add` current-state gap matrix.
-After that audit, review the eight Phase 2 product decisions with the owner
-before drafting the new implementation plan. Do not implement product changes
-until that implementation plan is written and approved.
+Do not redo Tasks 1–16, deployment setup, or the Phase 1 audit. Resume with
+Phase 2 of `PRODUCT_AUDIT_PLANNING_PLAN.md`: review the eight owner decisions
+listed in `CURRENT_STATE_GAP_MATRIX.md`, record the answers in a decision
+ledger, and only then draft the new implementation plan. Do not implement
+product changes until that implementation plan is written and approved.

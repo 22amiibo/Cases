@@ -332,8 +332,7 @@ npm run build
   retained while pre-completion projections continue to hide causal/scoring data.
 - Final verification: 24 test files / 97 tests pass; lint, typecheck, production
   build, and `git diff --check` pass; all 7 Playwright journeys pass.
-- Final plan commit: `content: complete six-case MVP library` (commit ID recorded
-  immediately after creation).
+- Final plan commit: `4ffa54f content: complete six-case MVP library`.
 
 ## Decisions and Notes
 

@@ -10,6 +10,12 @@ import { RecommendationBuilder } from "@/components/recommendation/Recommendatio
 import type { RevealedFact } from "@/core/case-engine";
 import { createCaseAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
+import type { CaseAttempt } from "@/data/repository";
+import {
+  clearPendingAttempt,
+  loadPendingAttempt,
+  savePendingAttempt,
+} from "@/data/pending-attempts";
 import type {
   LearnerCaseDefinition,
   LearnerSessionView,
@@ -38,6 +44,26 @@ function collectConceptIds(branches: FrameworkBranch[]): string[] {
 
 function caseStorageKey(caseId: string) {
   return `casework:guest-session:${caseId}`;
+}
+
+function pendingCaseKey(caseId: string) {
+  return `case:${caseId}`;
+}
+
+function restorePendingCaseAttempt(caseId: string): CaseAttempt | null {
+  const pending = loadPendingAttempt<CaseAttempt>(
+    window.sessionStorage,
+    pendingCaseKey(caseId),
+  );
+  if (
+    !pending ||
+    pending.caseId !== caseId ||
+    !Array.isArray(pending.events) ||
+    pending.events.some((event) => !CaseEventSchema.safeParse(event).success)
+  ) {
+    return null;
+  }
+  return pending;
 }
 
 function restoreWorkspace(
@@ -104,7 +130,15 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const startedAt = useRef<number | null>(null);
   const initialEvents = useRef(workspace.events);
   const latestRequest = useRef(0);
-  const caseAttemptId = useRef<string | null>(null);
+  const [pendingCaseAttempt] = useState(() =>
+    restorePendingCaseAttempt(caseDefinition.id),
+  );
+  const caseAttemptId = useRef<string | null>(
+    pendingCaseAttempt?.attemptId ?? null,
+  );
+  const [recoveryStatus, setRecoveryStatus] = useState<
+    "idle" | "saving" | "error"
+  >("idle");
   const [view, setView] = useState<LearnerSessionView | null>(null);
   const [synthesisEvidenceIds, setSynthesisEvidenceIds] = useState<string[]>([]);
   const [nextStepNodeId, setNextStepNodeId] = useState("");
@@ -199,6 +233,32 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
   const availableCalculations = view?.calculations ?? [];
 
+  async function retryPendingCase() {
+    if (!pendingCaseAttempt || recoveryStatus === "saving") return;
+    setRecoveryStatus("saving");
+    try {
+      const practiceSession = await getBrowserPracticeSession();
+      const restoredAttempt = {
+        ...pendingCaseAttempt,
+        userId: practiceSession.userId,
+      };
+      await practiceSession.repository.saveCaseAttempt(restoredAttempt);
+      const completedView = await loadView(restoredAttempt.events, false);
+      clearPendingAttempt(
+        window.sessionStorage,
+        pendingCaseKey(caseDefinition.id),
+      );
+      setWorkspace((current) => ({
+        ...current,
+        events: restoredAttempt.events,
+      }));
+      setView(completedView);
+      router.push(`/cases/${caseDefinition.id}/review`);
+    } catch {
+      setRecoveryStatus("error");
+    }
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -218,6 +278,26 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
       <div className={styles.workspace}>
         <section className={styles.controls} aria-label="Case controls">
+          {pendingCaseAttempt && (
+            <StepCard eyebrow="Save pending" title="Finish saving your case">
+              <p>
+                Your completed case is still in this browser and can be saved
+                without submitting a second attempt.
+              </p>
+              {recoveryStatus === "error" && (
+                <p role="alert">The completed case still could not be saved.</p>
+              )}
+              <button
+                type="button"
+                disabled={recoveryStatus === "saving"}
+                onClick={() => void retryPendingCase()}
+              >
+                {recoveryStatus === "saving"
+                  ? "Saving completed case"
+                  : "Retry saving completed case"}
+              </button>
+            </StepCard>
+          )}
           {!hasFramework && !clarificationComplete && (
             <ClarificationStep
               caseDefinition={caseDefinition}
@@ -335,7 +415,9 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
             </>
           )}
 
-          {view?.currentStage === "recommend" && view.recommendation && (
+          {!pendingCaseAttempt &&
+            view?.currentStage === "recommend" &&
+            view.recommendation && (
             <RecommendationBuilder
               recommendation={view.recommendation}
               facts={facts}
@@ -352,15 +434,23 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 }
                 const practiceSession = await getBrowserPracticeSession();
                 caseAttemptId.current ??= crypto.randomUUID();
-                await practiceSession.repository.saveCaseAttempt(
-                  createCaseAttempt({
+                const attempt = createCaseAttempt({
                     attemptId: caseAttemptId.current,
                     userId: practiceSession.userId,
                     caseId: caseDefinition.id,
                     review: completedView.review,
                     events: nextEvents,
                     completedAt: new Date().toISOString(),
-                  }),
+                  });
+                savePendingAttempt(
+                  window.sessionStorage,
+                  pendingCaseKey(caseDefinition.id),
+                  attempt,
+                );
+                await practiceSession.repository.saveCaseAttempt(attempt);
+                clearPendingAttempt(
+                  window.sessionStorage,
+                  pendingCaseKey(caseDefinition.id),
                 );
                 setWorkspace((current) => ({ ...current, events: nextEvents }));
                 setView(completedView);

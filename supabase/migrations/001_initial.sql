@@ -2,13 +2,16 @@ create extension if not exists pgcrypto;
 
 create or replace function public.is_valid_skill_scores(scores jsonb)
 returns boolean
-language sql
+language plpgsql
 immutable
 set search_path = ''
 as $$
-  select
-    jsonb_typeof(scores) = 'object'
-    and not exists (
+begin
+  if jsonb_typeof(scores) is distinct from 'object' then
+    return false;
+  end if;
+
+  return not exists (
       select 1
       from (
         select
@@ -28,6 +31,7 @@ as $$
         or value_type <> 'number'
         or score_value < 0 or score_value > 100
     );
+end;
 $$;
 
 create table public.profiles (

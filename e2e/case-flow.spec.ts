@@ -156,9 +156,12 @@ test("guest can complete AlpineFit and review the case replay", async ({
         skillScores: Record<string, number>;
       }>;
     };
-    return history.caseAttempts[0] ?? null;
+    return {
+      attempt: history.caseAttempts[0] ?? null,
+      attemptCount: history.caseAttempts.length,
+    };
   });
-  expect(savedAttempt).toMatchObject({
+  expect(savedAttempt?.attempt).toMatchObject({
     caseId: "alpinefit-profitability",
     skillScores: {
       structure: expect.any(Number),
@@ -168,5 +171,6 @@ test("guest can complete AlpineFit and review the case replay", async ({
       synthesis: expect.any(Number),
     },
   });
-  expect(savedAttempt?.events).toHaveLength(10);
+  expect(savedAttempt?.attempt?.events).toHaveLength(10);
+  expect(savedAttempt?.attemptCount).toBe(1);
 });

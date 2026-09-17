@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import type { DrillDefinition, FrameworkSubmission } from "@/core/schema";
 import {
   evaluateDrill,
@@ -13,6 +13,11 @@ import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import { createDrillAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { PracticeRepository } from "@/data/repository";
+import {
+  clearPendingAttempt,
+  loadPendingAttempt,
+  savePendingAttempt,
+} from "@/data/pending-attempts";
 import styles from "./DrillSession.module.css";
 
 type DrillSessionProps = {
@@ -26,25 +31,57 @@ type DrillSessionProps = {
 type PendingDrillSave = {
   attemptId: string;
   completedAt: string;
+  definitionId: string;
   result: DrillResult;
 };
+
+function pendingDrillKey(definitionId: string) {
+  return `drill:${definitionId}`;
+}
 
 function formatFeedback(code: string) {
   return code.replaceAll("_", " ");
 }
 
 export function DrillSession({
+  ...props
+}: DrillSessionProps) {
+  const clientReady = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+
+  if (!clientReady) return null;
+  return <HydratedDrillSession {...props} />;
+}
+
+function HydratedDrillSession({
   definitions,
   repository,
   userId,
   now = () => new Date(),
   createAttemptId = () => crypto.randomUUID(),
 }: DrillSessionProps) {
-  const [index, setIndex] = useState(0);
+  const [restoredSave] = useState(() => {
+    for (const [definitionIndex, candidate] of definitions.entries()) {
+      const pending = loadPendingAttempt<PendingDrillSave>(
+        window.sessionStorage,
+        pendingDrillKey(candidate.id),
+      );
+      if (pending?.definitionId === candidate.id) {
+        return { definitionIndex, pending };
+      }
+    }
+    return null;
+  });
+  const [index, setIndex] = useState(restoredSave?.definitionIndex ?? 0);
   const [result, setResult] = useState<DrillResult | null>(null);
-  const [pendingSave, setPendingSave] = useState<PendingDrillSave | null>(null);
+  const [pendingSave, setPendingSave] = useState<PendingDrillSave | null>(
+    restoredSave?.pending ?? null,
+  );
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">(
-    "idle",
+    restoredSave ? "error" : "idle",
   );
   const definition = definitions[index];
 
@@ -53,15 +90,30 @@ export function DrillSession({
     const nextSave = {
       attemptId: createAttemptId(),
       completedAt: now().toISOString(),
+      definitionId: definition.id,
       result: evaluateDrill(definition, submission),
     };
-    setPendingSave(nextSave);
-    await persist(nextSave);
+    try {
+      savePendingAttempt(
+        window.sessionStorage,
+        pendingDrillKey(definition.id),
+        nextSave,
+      );
+      setPendingSave(nextSave);
+      await persist(nextSave);
+    } catch {
+      setPendingSave(nextSave);
+      setSaveStatus("error");
+    }
   }
 
   async function persist(save: PendingDrillSave) {
     setSaveStatus("saving");
     try {
+      const savedDefinition = definitions.find(
+        (candidate) => candidate.id === save.definitionId,
+      );
+      if (!savedDefinition) throw new Error("Drill definition is unavailable");
       const practiceSession =
         repository && userId
           ? { repository, userId }
@@ -70,10 +122,14 @@ export function DrillSession({
         createDrillAttempt(
           save.attemptId,
           practiceSession.userId,
-          definition,
+          savedDefinition,
           save.result,
           save.completedAt,
         ),
+      );
+      clearPendingAttempt(
+        window.sessionStorage,
+        pendingDrillKey(save.definitionId),
       );
       setResult(save.result);
       setPendingSave(null);
@@ -84,6 +140,12 @@ export function DrillSession({
   }
 
   function next() {
+    if (pendingSave) {
+      clearPendingAttempt(
+        window.sessionStorage,
+        pendingDrillKey(pendingSave.definitionId),
+      );
+    }
     setIndex((current) => (current + 1) % definitions.length);
     setResult(null);
     setPendingSave(null);

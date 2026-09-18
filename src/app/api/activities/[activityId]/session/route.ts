@@ -1,3 +1,4 @@
+import { validateCourseContext } from "@/core/course-progress";
 import { NextResponse } from "next/server";
 import { getActivityDefinition } from "@/content/activities";
 import { ActivityEventSchema, replayActivityEvents } from "@/core/activity";
@@ -9,7 +10,7 @@ export async function POST(
 ) {
   const { activityId } = await params;
   try {
-    const body = await request.json() as { contentVersion?: unknown; events?: unknown };
+    const body = await request.json() as { contentVersion?: unknown; events?: unknown; courseContext?: unknown };
     if (!Number.isInteger(body.contentVersion) || Number(body.contentVersion) < 1) {
       return NextResponse.json({ error: "Invalid content version" }, { status: 400 });
     }
@@ -17,6 +18,7 @@ export async function POST(
     if (!definition) {
       return NextResponse.json({ error: "Activity version not found" }, { status: 404 });
     }
+    validateCourseContext(body.courseContext, { type: "activity", id: activityId, contentVersion: definition.contentVersion });
     const parsed = ActivityEventSchema.array().safeParse(body.events);
     if (!parsed.success) throw new Error("Invalid activity history");
     return NextResponse.json(projectLearnerActivity(

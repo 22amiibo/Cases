@@ -237,3 +237,10 @@ describe("case session projection", () => {
     }
   });
 });
+
+it("rejects a schema-valid course context with the wrong step or case mode", async () => {
+  for (const [step, mode] of [["clarifying", "practice"], ["case", "interview"]]) {
+    const response = await POST(new Request("http://localhost/api/cases/alpinefit-profitability/session", { method: "POST", body: JSON.stringify({ contentVersion: 2, mode, events: [], courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: step } }) }), { params: Promise.resolve({ caseId: "alpinefit-profitability" }) });
+    expect(response.status).toBe(400);
+  }
+});

@@ -34,6 +34,7 @@ type EvidencePanelProps = {
     >,
   ) => Promise<void>;
   caseMode?: CaseMode;
+  storageScope?: string;
 };
 
 export function EvidencePanel({
@@ -44,6 +45,7 @@ export function EvidencePanel({
   onCommitResponse,
   onSubmitInterpretation,
   caseMode = "practice",
+  storageScope = "",
 }: EvidencePanelProps) {
   return (
     <section className={styles.panel} aria-labelledby="evidence-title">
@@ -78,6 +80,7 @@ export function EvidencePanel({
                   onCommitResponse={onCommitResponse}
                   onSubmitInterpretation={onSubmitInterpretation}
                   caseMode={caseMode}
+                  storageScope={storageScope}
                   caseId={caseId}
                 />
               ) : null)}
@@ -95,6 +98,7 @@ function ExhibitInterpretationPractice({
   onCommitResponse,
   onSubmitInterpretation,
   caseMode,
+  storageScope,
 }: {
   caseId: string;
   exhibit: LearnerExhibitDefinition;
@@ -104,11 +108,12 @@ function ExhibitInterpretationPractice({
     EvidencePanelProps["onSubmitInterpretation"]
   >;
   caseMode: CaseMode;
+  storageScope: string;
 }) {
   const legacyKey = `casework:exhibit-cycle:${exhibit.id}`;
-  const cycleStorageKey = caseMode === "practice"
+  const cycleStorageKey = (caseMode === "practice"
     ? legacyKey
-    : `${legacyKey}:${caseId}:${caseMode}`;
+    : `${legacyKey}:${caseId}:${caseMode}`) + storageScope;
   const optionsStorageKey = `${cycleStorageKey}:insights`;
   const [insightOptions, setInsightOptions] = useState<
     Array<{ id: string; label: string }>

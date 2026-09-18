@@ -39,6 +39,7 @@ export function clearCaseCycleStorage(
   caseId: string,
   mode: CaseMode = "practice",
   exhibitIds: string[] = [],
+  storageScope = "",
 ) {
   const casePrefix = `casework:guest-session:${caseId}:cycle:`;
   const isInterviewKey = (key: string) => /:interview(?:$|:)/.test(key);
@@ -52,7 +53,8 @@ export function clearCaseCycleStorage(
     const exhibitMatches = key && (mode === "interview"
       ? key.startsWith(`casework:exhibit-cycle:`) && key.includes(`:${caseId}:interview`)
       : !isInterviewKey(key) && [...exhibitKeys].some((base) => key === base || key.startsWith(`${base}:`)));
-    if (key && (cycleMatches || exhibitMatches)) {
+    const scopeMatches = key && (storageScope ? key.includes(storageScope) : !key.includes(":course:"));
+    if (key && scopeMatches && (cycleMatches || exhibitMatches)) {
       keys.push(key);
     }
   }
@@ -63,6 +65,7 @@ export function CaseGeneratedStep({
   caseId,
   contentVersion,
   caseMode = "practice",
+  storageScope = "",
   kind,
   itemId,
   prompt,
@@ -77,6 +80,7 @@ export function CaseGeneratedStep({
   caseId: string;
   contentVersion: number;
   caseMode?: CaseMode;
+  storageScope?: string;
   kind: CaseCycleKind;
   itemId?: string;
   prompt: LearnerLearningCyclePrompt;
@@ -88,7 +92,7 @@ export function CaseGeneratedStep({
   onEvent: (event: CaseEvent) => Promise<void>;
   onQuantitativeFeedback?: (feedback: QuantitativeFeedback) => void;
 }) {
-  const key = storageKey(caseId, caseMode, kind, itemId);
+  const key = storageKey(caseId, caseMode, kind, itemId) + storageScope;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(window.sessionStorage.getItem(key), prompt.interactionId);
     return restored?.phase === "complete" ? restored : null;

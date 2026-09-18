@@ -41,3 +41,7 @@ describe("Activity page", () => {
     })).rejects.toThrow();
   });
 });
+
+it("rejects a real course step bound to another activity", async () => {
+  await expect(ActivityPage({ params: Promise.resolve({ activityId: "paypilot-clarifying-v3" }), searchParams: Promise.resolve({ version: "1", course: "profitability-v3", courseVersion: "1", step: "clarifying" }) })).rejects.toThrow();
+});

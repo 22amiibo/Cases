@@ -339,7 +339,7 @@ describe("MemoryPracticeRepository", () => {
       courseContext: {
         courseId: "profitability-v3",
         courseVersion: 1,
-        courseStepId: "alpinefit",
+        courseStepId: "case",
       },
       events: [],
     };
@@ -349,23 +349,23 @@ describe("MemoryPracticeRepository", () => {
       courseVersion: 1,
       startedAt: "2026-09-18T12:00:00.000Z",
       lastActivityAt: "2026-09-18T12:10:00.000Z",
-      lastStepId: "profit-basics",
+      lastStepId: "overview",
     });
     await repository.recordLessonViewed({
       eventType: "lesson_viewed",
       userId: "guest-1",
       courseId: "profitability-v3",
       courseVersion: 1,
-      courseStepId: "profit-basics",
-      lessonId: "profitability-basics",
+      courseStepId: "overview",
+      lessonId: "profitability-overview-v3",
       lessonVersion: 1,
       occurredAt: "2026-09-18T12:10:00.000Z",
     });
     await repository.saveV3CaseAttempt(caseAttempt);
 
     await expect(repository.listCourseEvidence("guest-1")).resolves.toMatchObject({
-      enrollments: [{ lastStepId: "profit-basics" }],
-      lessonEvents: [{ courseStepId: "profit-basics" }],
+      enrollments: [{ lastStepId: "overview" }],
+      lessonEvents: [{ courseStepId: "overview" }],
       caseAttempts: [{ attemptId: "case-v3-1" }],
     });
     await expect(repository.listCourseEvidence("other")).resolves.toEqual({

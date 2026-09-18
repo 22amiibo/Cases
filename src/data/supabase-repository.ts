@@ -1,3 +1,4 @@
+import { validateCourseContext, validateEnrollment } from "@/core/course-progress";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { ActivityAttemptSchema, type ActivityAttempt } from "@/core/activity";
@@ -508,6 +509,8 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
 
   async saveActivityAttempt(attempt: ActivityAttempt) {
     const parsed = ActivityAttemptSchema.parse(attempt);
+    validateCourseContext(parsed.courseContext, { type: "activity", id: parsed.activityId, contentVersion: parsed.contentVersion });
+    await this.requireCourseEnrollment(parsed);
     await this.database.insertActivityAttempt({
       id: parsed.attemptId,
       user_id: parsed.userId,
@@ -543,6 +546,8 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
 
   async saveV3CaseAttempt(attempt: V3CaseAttempt) {
     const parsed = V3CaseAttemptSchema.parse(attempt);
+    validateCourseContext(parsed.courseContext, { type: "case", id: parsed.caseId, contentVersion: parsed.contentVersion, mode: parsed.caseMode });
+    await this.requireCourseEnrollment(parsed);
     await this.database.insertV3CaseAttempt({
       id: parsed.attemptId,
       user_id: parsed.userId,
@@ -566,11 +571,17 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
   }
 
   async enroll(enrollment: CourseEnrollment) {
-    await this.database.upsertCourseEnrollment(CourseEnrollmentSchema.parse(enrollment));
+    const parsed = CourseEnrollmentSchema.parse(enrollment);
+    const rows = await this.database.selectCourseEnrollments(parsed.userId);
+    validateEnrollment(parsed, rows.some(value => { const row = value as Record<string, unknown>; return row.user_id === parsed.userId && row.course_id === parsed.courseId && row.course_version === parsed.courseVersion; }));
+    await this.database.upsertCourseEnrollment(parsed);
   }
 
   async recordLessonViewed(event: CourseStepEvent) {
-    await this.database.insertCourseStepEvent(CourseStepEventSchema.parse(event));
+    const parsed = CourseStepEventSchema.parse(event);
+    validateCourseContext(parsed, { type: "lesson", id: parsed.lessonId, contentVersion: parsed.lessonVersion });
+    await this.requireCourseEnrollment({ userId: parsed.userId, courseContext: parsed });
+    await this.database.insertCourseStepEvent(parsed);
   }
 
   async listCourseEvidence(userId: string) {
@@ -603,6 +614,13 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       row.user_id === userId ? [this.v3CaseAttemptFromRow(row)] : [],
     ));
     return { enrollments, lessonEvents, activityAttempts, caseAttempts };
+  }
+
+  private async requireCourseEnrollment(attempt: { userId: string; courseContext: { courseId: string; courseVersion: number } | null }) {
+    const context = attempt.courseContext;
+    if (!context) return;
+    const rows = await this.database.selectCourseEnrollments(attempt.userId);
+    if (!rows.some(value => { const row = value as Record<string, unknown>; return row.user_id === attempt.userId && row.course_id === context.courseId && row.course_version === context.courseVersion; })) throw new Error("Course enrollment not found");
   }
 
   private async activityAttemptFromRow(row: ActivityAttemptRow) {

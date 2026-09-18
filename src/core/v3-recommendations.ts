@@ -1,3 +1,5 @@
+import { courseRunSuffix, validateCourseContext } from "./course-progress";
+import type { CourseContext } from "./activity";
 import { ActivityEventSchema } from "./activity";
 import { CaseEventSchema } from "./schema";
 import type { ProgressResource } from "./v3-progress";
@@ -40,21 +42,25 @@ export function selectV3Recommendation({ activities, attempts, skills, runs = []
   const activity = active.find(a => !completed.has(a.id));
   return activity ? recommendation(activity, "unpracticed", `You have not tried this activity yet. Start with a short ${activity.estimatedMinutes}-minute practice.`) : null;
 }
-export async function findRecoverableRuns(entries: [string, string][], resources: ProgressResource[], validate: (request: { endpoint: string; body: { contentVersion: number; events: unknown[]; mode?: "practice" | "interview" } }) => Promise<boolean>): Promise<RecoverableRun[]> {
+export async function findRecoverableRuns(entries: [string, string][], resources: ProgressResource[], validate: (request: { endpoint: string; body: { contentVersion: number; events: unknown[]; mode?: "practice" | "interview"; courseContext?: CourseContext | null } }) => Promise<boolean>): Promise<RecoverableRun[]> {
   const runs: RecoverableRun[] = [];
   for (const [key, serialized] of entries) {
     try {
       const value = JSON.parse(serialized);
       if (!value || typeof value !== "object") continue;
-      const activity = /^casework:v3-activity:([^:]+):(\d+)$/.exec(key);
-      const caseRun = /^casework:guest-session:([^:]+)(?::(interview))?$/.exec(key);
+      const baseKey = key.split(":course:")[0];
+      const activity = /^casework:v3-activity:([^:]+):(\d+)$/.exec(baseKey);
+      const caseRun = /^casework:guest-session:([^:]+)(?::(interview))?$/.exec(baseKey);
       const resource = resources.find(r => r.id === (activity?.[1] ?? caseRun?.[1]) && r.kind === (activity ? "activity" : "case") && r.contentVersion === (activity ? Number(activity[2]) : value.contentVersion ?? 1));
       if (!resource || resource.status !== "active") continue;
+      const courseContext = validateCourseContext(value.courseContext, { type: activity ? "activity" : "case", id: resource.id, contentVersion: resource.contentVersion, mode: caseRun?.[2] ?? "practice" });
+      if (baseKey + courseRunSuffix(courseContext) !== key) continue;
+      const courseQuery = courseContext ? `&course=${encodeURIComponent(courseContext.courseId)}&courseVersion=${courseContext.courseVersion}&step=${encodeURIComponent(courseContext.courseStepId)}` : "";
       if (activity) {
         const events = ActivityEventSchema.array().safeParse(value.events);
         if (!events.success || events.data.length === 0 || events.data[0].type !== "activity_started" || events.data.some(e => e.type === "activity_completed") || value.completedAt || typeof value.attemptId !== "string" || !Number.isFinite(Date.parse(value.startedAt))) continue;
-        if (!await validate({ endpoint: `/api/activities/${encodeURIComponent(resource.id)}/session`, body: { contentVersion: resource.contentVersion, events: events.data } })) continue;
-        runs.push({ title: resource.title, href: activityHref(resource), updatedAt: new Date(Date.parse(value.startedAt) + Math.max(...events.data.map(e => e.atMs))).toISOString() });
+        if (!await validate({ endpoint: `/api/activities/${encodeURIComponent(resource.id)}/session`, body: { contentVersion: resource.contentVersion, events: events.data, ...(courseContext ? { courseContext } : {}) } })) continue;
+        runs.push({ title: resource.title, href: activityHref(resource) + courseQuery, updatedAt: new Date(Date.parse(value.startedAt) + Math.max(...events.data.map(e => e.atMs))).toISOString() });
       } else if (caseRun) {
         const mode = caseRun[2] === "interview" ? "interview" : "practice";
         if (!(resource.supportedModes ?? ["practice"]).includes(mode)) continue;
@@ -62,8 +68,8 @@ export async function findRecoverableRuns(entries: [string, string][], resources
         const drafts = value.clarificationDraftIds;
         if (!events.success || events.data.some(e => e.type === "recommendation_submitted") || !Number.isFinite(value.runStartedAtMs) || (drafts !== undefined && (!Array.isArray(drafts) || drafts.some(id => typeof id !== "string")))) continue;
         if (!events.data.length && !drafts?.length && value.clarificationComplete !== true) continue;
-        if (!await validate({ endpoint: `/api/cases/${encodeURIComponent(resource.id)}/session`, body: { contentVersion: resource.contentVersion, mode, events: events.data } })) continue;
-        runs.push({ title: resource.title, href: `/cases/${encodeURIComponent(resource.id)}?version=${resource.contentVersion}&mode=${caseRun[2] ?? "practice"}`, updatedAt: new Date(value.runStartedAtMs + Math.max(0, ...events.data.map(e => e.atMs))).toISOString() });
+        if (!await validate({ endpoint: `/api/cases/${encodeURIComponent(resource.id)}/session`, body: { contentVersion: resource.contentVersion, mode, events: events.data, ...(courseContext ? { courseContext } : {}) } })) continue;
+        runs.push({ title: resource.title, href: `/cases/${encodeURIComponent(resource.id)}?version=${resource.contentVersion}&mode=${caseRun[2] ?? "practice"}${courseQuery}`, updatedAt: new Date(value.runStartedAtMs + Math.max(0, ...events.data.map(e => e.atMs))).toISOString() });
       }
     } catch { /* A damaged local run must not hide saved progress. */ }
   }

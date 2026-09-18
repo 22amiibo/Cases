@@ -32,15 +32,17 @@ export async function completeAlpineFitV2(
     calculationRetry = false,
     saveRecovery = false,
     interview = false,
+    startUrl,
   }: {
     refresh?: boolean;
     recommendationRetry?: boolean;
     calculationRetry?: boolean;
     saveRecovery?: boolean;
     interview?: boolean;
+    startUrl?: string;
   } = {},
 ) {
-  await page.goto(`/cases/alpinefit-profitability${interview ? "?mode=interview" : ""}`);
+  await page.goto(startUrl ?? `/cases/alpinefit-profitability${interview ? "?mode=interview" : ""}`);
   await expect(page.getByText("six-point decline", { exact: false })).toHaveCount(0);
   await expect(page.getByLabel("Which performance metric should we explain?")).toHaveCount(0);
   await completeGeneratedResponse(

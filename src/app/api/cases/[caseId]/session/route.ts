@@ -1,3 +1,4 @@
+import { validateCourseContext } from "@/core/course-progress";
 import { NextResponse } from "next/server";
 import { getCaseDefinition } from "@/content/cases";
 import { getCaseMetadata } from "@/content/cases/metadata";
@@ -26,7 +27,7 @@ export async function POST(
   { params }: { params: Promise<{ caseId: string }> },
 ) {
   const { caseId } = await params;
-  let body: { events?: unknown[]; contentVersion?: unknown; mode?: unknown };
+  let body: { events?: unknown[]; contentVersion?: unknown; mode?: unknown; courseContext?: unknown };
   try {
     body = (await request.json()) as { events?: unknown[]; contentVersion?: unknown };
   } catch {
@@ -63,6 +64,8 @@ export async function POST(
   )) {
     return NextResponse.json({ error: "Case mode not supported" }, { status: 400 });
   }
+  try { validateCourseContext(body.courseContext, { type: "case", id: caseId, contentVersion: caseDefinition.version, mode: parsedMode.data }); }
+  catch { return NextResponse.json({ error: "Invalid course context" }, { status: 400 }); }
   const runContext = { mode: parsedMode.data, contentVersion: caseDefinition.version } as const;
   const projectPrompt = (cycle: Parameters<typeof projectLearningCyclePrompt>[0]) => {
     const prompt = projectLearningCyclePrompt(cycle);

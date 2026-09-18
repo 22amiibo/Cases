@@ -1,9 +1,9 @@
 import { createVersionedRegistry } from "@/content/versioned-registry";
-import { CourseDefinitionSchema, type CourseDefinition } from "@/core/course";
+import { CourseDefinitionSchema } from "@/core/course";
 import { getActivityDefinition } from "@/content/activities";
 import { getCaseDefinition } from "@/content/cases";
 import { getCaseMetadata } from "@/content/cases/metadata";
-import { getLessonDefinition } from "@/content/lessons";
+import { getLessonDefinition } from "@/content/lessons/index";
 
 export type CourseResourceResolvers = {
   getLesson(id: string, contentVersion: number): unknown;
@@ -34,7 +34,7 @@ export function createCourseRegistry(
         if (!activity) {
           throw new Error(`Course activity not found: ${resource.id}:${resource.contentVersion}`);
         }
-        if (activity.status !== "active") {
+        if (activity.status !== "active" && !(course.status === "retired" && activity.status === "retired")) {
           throw new Error(
             activity.status === "retired"
               ? `Course activity is retired: ${resource.id}:${resource.contentVersion}`
@@ -65,21 +65,9 @@ export function createCourseRegistry(
   return registry;
 }
 
-export const courseDefinitions: CourseDefinition[] = [];
-export const activeCourseVersions = Object.freeze({}) as Readonly<Record<string, number>>;
-const courseRegistry = createCourseRegistry(
-  courseDefinitions,
-  activeCourseVersions,
-  {
-    getLesson: getLessonDefinition,
-    getActivity: getActivityDefinition,
-    getCase: getCaseDefinition,
-    getCaseMetadata,
-  },
-);
-
-export function getCourseDefinition(id: string, contentVersion?: number) {
-  return contentVersion === undefined
-    ? courseRegistry.getActive(id)
-    : courseRegistry.get(id, contentVersion);
-}
+export { courseDefinitions, activeCourseVersions, getCourseDefinition } from "./catalog";
+import { courseDefinitions, activeCourseVersions } from "./catalog";
+createCourseRegistry(courseDefinitions, activeCourseVersions, {
+  getLesson: getLessonDefinition, getActivity: getActivityDefinition,
+  getCase: getCaseDefinition, getCaseMetadata,
+});

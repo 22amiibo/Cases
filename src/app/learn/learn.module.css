@@ -210,3 +210,24 @@
     margin-top: 38px;
   }
 }
+
+.course {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 850px;
+  padding-block: 48px;
+}
+
+.course h1 {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.course ol {
+  display: grid;
+  gap: 16px;
+  padding-left: 24px;
+}
+
+.course .lesson {
+  min-height: auto;
+  gap: 20px;
+}

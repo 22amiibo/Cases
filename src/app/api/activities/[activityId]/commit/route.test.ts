@@ -39,3 +39,8 @@ describe("V3 activity commit", () => {
     expect(response.status).toBe(400);
   });
 });
+
+it("rejects schema-valid course context for a different exact resource", async () => {
+  const response = await POST(new Request("http://localhost/commit", { method: "POST", body: JSON.stringify({ contentVersion: 1, events: [], event: { eventId: "s", type: "activity_started", atMs: 0 }, courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: "clarifying" } }) }), { params: Promise.resolve({ activityId: "v3-private-test" }) });
+  expect(response.status).toBe(400);
+});

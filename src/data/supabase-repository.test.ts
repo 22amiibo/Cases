@@ -611,3 +611,24 @@ describe("SupabasePracticeRepository", () => {
     }));
   });
 });
+
+it("continues an exact enrolled course across repository instances and devices", async () => {
+  const { deriveCourseProgress } = await import("@/core/course-progress");
+  const { profitabilityCourse } = await import("@/content/courses/profitability-v3");
+  const enrollments: Record<string, unknown>[] = [];
+  const lessonEvents: Record<string, unknown>[] = [];
+  const database = client({
+    upsertCourseEnrollment: async e => { enrollments.push({ user_id: e.userId, course_id: e.courseId, course_version: e.courseVersion, started_at: e.startedAt, last_activity_at: e.lastActivityAt, last_step_id: e.lastStepId }); },
+    selectCourseEnrollments: async () => enrollments,
+    insertCourseStepEvent: async e => { lessonEvents.push({ event_type: e.eventType, user_id: e.userId, course_id: e.courseId, course_version: e.courseVersion, course_step_id: e.courseStepId, lesson_id: e.lessonId, lesson_version: e.lessonVersion, occurred_at: e.occurredAt }); },
+    selectCourseStepEvents: async () => lessonEvents,
+  });
+  const first = new SupabasePracticeRepository(database);
+  await first.enroll({ userId: "user-1", courseId: "profitability-v3", courseVersion: 1, startedAt: "2026-09-01T00:00:00Z", lastActivityAt: "2026-09-01T00:00:00Z", lastStepId: "overview" });
+  await first.recordLessonViewed({ eventType: "lesson_viewed", userId: "user-1", courseId: "profitability-v3", courseVersion: 1, courseStepId: "overview", lessonId: "profitability-overview-v3", lessonVersion: 1, occurredAt: "2026-09-01T00:00:00Z" });
+  const second = new SupabasePracticeRepository(database);
+  const evidence = await second.listCourseEvidence("user-1");
+  expect(deriveCourseProgress(profitabilityCourse, evidence, "user-1").nextStep?.id).toBe("drivers");
+  expect(deriveCourseProgress(profitabilityCourse, evidence, "other").completedStepIds).toEqual([]);
+  await expect(second.saveV3CaseAttempt({ ...v3CaseAttempt, courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: "case" } })).rejects.toThrow();
+});

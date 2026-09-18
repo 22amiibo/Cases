@@ -1,3 +1,4 @@
+import { validateCourseContext, validateEnrollment } from "@/core/course-progress";
 import { z } from "zod";
 import {
   CaseEventSchema,
@@ -273,6 +274,8 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
 
   async saveActivityAttempt(attempt: z.infer<typeof ActivityAttemptSchema>) {
     const parsed = ActivityAttemptSchema.parse(attempt);
+    validateCourseContext(parsed.courseContext, { type: "activity", id: parsed.activityId, contentVersion: parsed.contentVersion });
+    this.requireCourseEnrollment(parsed);
     this.saveImmutable(this.history.activityAttempts, parsed);
   }
 
@@ -290,6 +293,8 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
 
   async saveV3CaseAttempt(attempt: V3CaseAttempt) {
     const parsed = V3CaseAttemptSchema.parse(attempt);
+    validateCourseContext(parsed.courseContext, { type: "case", id: parsed.caseId, contentVersion: parsed.contentVersion, mode: parsed.caseMode });
+    this.requireCourseEnrollment(parsed);
     this.saveImmutable(this.history.v3CaseAttempts, parsed);
   }
 
@@ -300,6 +305,7 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
       candidate.courseId === parsed.courseId &&
       candidate.courseVersion === parsed.courseVersion,
     );
+    validateEnrollment(parsed, index >= 0);
     if (index < 0) this.history.courseEnrollments.push(parsed);
     else this.history.courseEnrollments[index] = parsed;
     this.persist();
@@ -307,6 +313,7 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
 
   async recordLessonViewed(event: CourseStepEvent) {
     const parsed = CourseStepEventSchema.parse(event);
+    validateCourseContext(parsed, { type: "lesson", id: parsed.lessonId, contentVersion: parsed.lessonVersion });
     const enrolled = this.history.courseEnrollments.some((candidate) =>
       candidate.userId === parsed.userId &&
       candidate.courseId === parsed.courseId &&
@@ -334,6 +341,11 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
       activityAttempts: await this.listActivityAttempts(userId),
       caseAttempts: this.history.v3CaseAttempts.filter((item) => item.userId === userId),
     };
+  }
+
+  private requireCourseEnrollment(attempt: { userId: string; courseContext: { courseId: string; courseVersion: number } | null }) {
+    const context = attempt.courseContext;
+    if (context && !this.history.courseEnrollments.some(e => e.userId === attempt.userId && e.courseId === context.courseId && e.courseVersion === context.courseVersion)) throw new Error("Course enrollment not found");
   }
 
   private saveImmutable<T extends { attemptId: string }>(items: T[], item: T) {

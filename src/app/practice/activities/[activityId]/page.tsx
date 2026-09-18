@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { ActivityShell } from "@/components/activity/ActivityShell";
 import { activeActivityDefinitions, getActivityDefinition } from "@/content/activities";
 import { getCaseDefinition } from "@/content/cases";
-import { CourseContextSchema } from "@/core/activity";
+import { courseContextFromQuery, courseRunSuffix } from "@/core/course-progress";
 import { projectLearnerActivity } from "@/core/activity-projection";
 
 type Query = Record<string, string | string[] | undefined>;
@@ -19,18 +19,9 @@ export default async function ActivityPage({
   if (Array.isArray(query.version)) notFound();
   const contentVersion = Number(query.version);
   if (!Number.isInteger(contentVersion) || contentVersion < 1) notFound();
-  const courseValues = [query.course, query.courseVersion, query.step];
-  if (courseValues.some(Array.isArray)) notFound();
-  const hasCourseContext = courseValues.some((value) => value !== undefined);
-  const parsedCourseContext = hasCourseContext
-    ? CourseContextSchema.safeParse({
-        courseId: query.course,
-        courseVersion: Number(query.courseVersion),
-        courseStepId: query.step,
-      })
-    : null;
-  if (parsedCourseContext && !parsedCourseContext.success) notFound();
-  const courseContext = parsedCourseContext?.data ?? null;
+  let courseContext;
+  try { courseContext = courseContextFromQuery(query, { type: "activity", id: activityId, contentVersion }); }
+  catch { notFound(); }
   const definition = getActivityDefinition(activityId, contentVersion);
   if (!definition) notFound();
   const labActivities = activeActivityDefinitions.filter(({ labId }) => labId === definition.labId);
@@ -59,6 +50,7 @@ export default async function ActivityPage({
     };
   }
   return <main><ActivityShell
+    key={`${activityId}:${contentVersion}${courseRunSuffix(courseContext)}`}
     initial={projectLearnerActivity(definition)}
     courseContext={courseContext}
     exhibit={exhibit}

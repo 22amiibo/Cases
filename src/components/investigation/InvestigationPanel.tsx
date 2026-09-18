@@ -1,5 +1,7 @@
 "use client";
 
+import type { CourseContext } from "@/core/activity";
+import { courseRunSuffix, courseHref, validateCourseContext } from "@/core/course-progress";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -48,6 +50,7 @@ import styles from "./InvestigationPanel.module.css";
 
 type InvestigationPanelProps = {
   caseDefinition: LearnerCaseDefinition;
+  courseContext?: CourseContext | null;
 };
 
 function caseStorageKey(caseId: string, mode: LearnerCaseDefinition["caseMode"]) {
@@ -63,10 +66,11 @@ function pendingCaseKey(caseId: string, mode: LearnerCaseDefinition["caseMode"])
 function restorePendingCaseAttempt(
   caseId: string,
   mode: LearnerCaseDefinition["caseMode"],
+  suffix = "",
 ): CaseAttempt | null {
   const pending = loadPendingAttempt<CaseAttempt>(
     window.sessionStorage,
-    pendingCaseKey(caseId, mode),
+    pendingCaseKey(caseId, mode) + suffix,
   );
   if (
     !pending ||
@@ -153,6 +157,7 @@ function evidenceLabel(id: string) {
 function createV3CaseAttempt(
   attempt: CaseAttempt,
   caseMode: LearnerCaseDefinition["caseMode"],
+  courseContext: CourseContext | null,
 ): V3CaseAttempt {
   const diagnostics = attempt.diagnostics ?? [];
   return {
@@ -174,12 +179,12 @@ function createV3CaseAttempt(
       source,
       severity,
     })),
-    courseContext: null,
+    courseContext,
     events: attempt.events,
   };
 }
 
-export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
+export function InvestigationPanel({ caseDefinition, courseContext = null }: InvestigationPanelProps) {
   const clientReady = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -188,12 +193,13 @@ export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) 
 
   if (!clientReady) return null;
 
-  return <HydratedInvestigationPanel caseDefinition={caseDefinition} />;
+  return <HydratedInvestigationPanel caseDefinition={caseDefinition} courseContext={courseContext} />;
 }
 
-function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
+function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: InvestigationPanelProps) {
   const router = useRouter();
-  const storageKey = caseStorageKey(caseDefinition.id, caseDefinition.caseMode);
+  const storageScope = courseRunSuffix(courseContext);
+  const storageKey = caseStorageKey(caseDefinition.id, caseDefinition.caseMode) + storageScope;
   const [restoredWorkspace] = useState(() =>
     restoreWorkspace(window.sessionStorage.getItem(storageKey), caseDefinition.version),
   );
@@ -212,7 +218,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const initialEvents = useRef(workspace.events);
   const latestRequest = useRef(0);
   const [pendingCaseAttempt, setPendingCaseAttempt] = useState(() =>
-    restorePendingCaseAttempt(caseDefinition.id, caseDefinition.caseMode),
+    restorePendingCaseAttempt(caseDefinition.id, caseDefinition.caseMode, storageScope),
   );
   const caseAttemptId = useRef<string | null>(
     pendingCaseAttempt?.attemptId ?? null,
@@ -250,6 +256,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           events: nextEvents,
           contentVersion: caseDefinition.version,
           mode: caseDefinition.caseMode,
+          courseContext,
         }),
       });
       if (!response.ok) throw new Error("Unable to load case session");
@@ -279,6 +286,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         contentVersion: caseDefinition.version,
         runStartedAtMs: workspace.runStartedAtMs,
         mode: caseDefinition.caseMode,
+        courseContext,
       }),
     })
       .then((response) => {
@@ -299,7 +307,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     return () => {
       active = false;
     };
-  }, [caseDefinition.caseMode, caseDefinition.id, caseDefinition.version, sessionExpired, workspace.runStartedAtMs]);
+  }, [caseDefinition.caseMode, caseDefinition.id, caseDefinition.version, courseContext, sessionExpired, workspace.runStartedAtMs]);
 
   useEffect(() => {
     if (sessionExpired) return;
@@ -308,12 +316,13 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       JSON.stringify({
         contentVersion: caseDefinition.version,
         runStartedAtMs: workspace.runStartedAtMs,
+        courseContext,
         events,
         clarificationComplete,
         clarificationDraftIds,
       }),
     );
-  }, [caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey, workspace.runStartedAtMs]);
+  }, [courseContext, caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey, workspace.runStartedAtMs]);
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
@@ -343,7 +352,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     const practiceSession = await getBrowserPracticeSession();
     const attempt = getOrCreatePendingAttempt(
       window.sessionStorage,
-      pendingCaseKey(caseDefinition.id, caseDefinition.caseMode),
+      pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope,
       () => {
         const attemptId = caseAttemptId.current ??= crypto.randomUUID();
         return createCaseAttempt({
@@ -360,7 +369,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     );
     setPendingCaseAttempt(attempt);
     await saveAttempt(practiceSession.repository, attempt);
-    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode));
+    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope);
     setPendingCaseAttempt(null);
     setWorkspace((current) => ({ ...current, events: nextEvents }));
     setReviewAttemptId(attempt.attemptId);
@@ -376,7 +385,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   ) {
     if (caseDefinition.id === "alpinefit-profitability" && caseDefinition.version === 2) {
       await (repository as typeof repository & V3CaseAttemptRepository)
-        .saveV3CaseAttempt(createV3CaseAttempt(attempt, caseDefinition.caseMode));
+        .saveV3CaseAttempt(createV3CaseAttempt(attempt, caseDefinition.caseMode, validateCourseContext(courseContext, { type: "case", id: attempt.caseId, contentVersion: attempt.contentVersion!, mode: caseDefinition.caseMode })));
       return;
     }
     await repository.saveCaseAttempt(attempt);
@@ -444,6 +453,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           contentVersion: caseDefinition.version,
           events,
           mode: caseDefinition.caseMode,
+          courseContext,
           response,
         }),
       },
@@ -469,6 +479,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         contentVersion: caseDefinition.version,
         events,
         mode: caseDefinition.caseMode,
+        courseContext,
         phase,
         response,
       }),
@@ -488,6 +499,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         contentVersion: caseDefinition.version,
         events,
         mode: caseDefinition.caseMode,
+        courseContext,
         ...completion,
         atMs: timestamp(),
       }),
@@ -495,7 +507,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     if (!result.ok) throw new Error("Unable to complete hypothesis");
     const payload = (await result.json()) as { event: CaseEvent };
     await record(payload.event);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
   }
 
   const availableCalculations = view?.calculations ?? [];
@@ -509,7 +521,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       const completedView = await loadView(pendingCaseAttempt.events, false);
       clearPendingAttempt(
         window.sessionStorage,
-        pendingCaseKey(caseDefinition.id, caseDefinition.caseMode),
+        pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope,
       );
       setWorkspace((current) => ({
         ...current,
@@ -530,12 +542,13 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     window.sessionStorage.removeItem(storageKey);
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
     window.sessionStorage.removeItem(calculationFeedbackKey);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
     clearCaseCycleStorage(
       window.sessionStorage,
       caseDefinition.id,
       caseDefinition.caseMode,
       caseDefinition.exhibitIds,
+      storageScope,
     );
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
     elapsedOffset.current = 0;
@@ -634,6 +647,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               caseId={caseDefinition.id}
               contentVersion={caseDefinition.version}
               caseMode={caseDefinition.caseMode}
+              storageScope={storageScope}
               kind="opening"
               prompt={caseDefinition.openingPrompt}
               events={events}
@@ -700,6 +714,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   practice={view.hypothesis}
                   facts={facts}
                   caseMode={caseDefinition.caseMode}
+                  storageScope={storageScope}
                   onCommit={commitHypothesisResponse}
                   onComplete={completeHypothesis}
                 />
@@ -747,6 +762,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   caseId={caseDefinition.id}
                   contentVersion={caseDefinition.version}
                   caseMode={caseDefinition.caseMode}
+                  storageScope={storageScope}
                   kind="calculation"
                   itemId={calculation.id}
                   prompt={calculation.responsePrompt}
@@ -779,6 +795,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   caseId={caseDefinition.id}
                   contentVersion={caseDefinition.version}
                   caseMode={caseDefinition.caseMode}
+                  storageScope={storageScope}
                   kind="synthesis"
                   prompt={view.synthesis.prompt}
                   events={events}
@@ -814,6 +831,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               caseId={caseDefinition.id}
               contentVersion={caseDefinition.version}
               caseMode={caseDefinition.caseMode}
+              storageScope={storageScope}
               kind="recommendation"
               prompt={view.recommendationPrompt}
               events={events}
@@ -866,6 +884,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
           <EvidencePanel
             caseId={caseDefinition.id}
             caseMode={caseDefinition.caseMode}
+            storageScope={storageScope}
             facts={facts}
             exhibits={view?.exhibits ?? []}
             interpretedExhibitIds={view?.interpretedExhibitIds ?? []}
@@ -879,6 +898,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               });
             }}
           />
+          {courseContext && <Link href={courseHref({ id: courseContext.courseId, contentVersion: courseContext.courseVersion })}>Return to course</Link>}
           <Scratchpad storageKey={`${storageKey}:scratchpad`} />
         </div>
       </div>

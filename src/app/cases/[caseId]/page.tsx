@@ -1,3 +1,4 @@
+import { courseContextFromQuery, courseRunSuffix } from "@/core/course-progress";
 import { notFound } from "next/navigation";
 import { caseDefinitions, getCaseDefinition } from "@/content/cases";
 import { getCaseMetadata } from "@/content/cases/metadata";
@@ -14,10 +15,11 @@ export default async function CasePage({
   searchParams,
 }: {
   params: Promise<{ caseId: string }>;
-  searchParams: Promise<{ version?: string | string[]; mode?: string | string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { caseId } = await params;
   const query = await searchParams;
+  if (Array.isArray(query.version) || Array.isArray(query.mode)) notFound();
   const rawVersion = query.version;
   const versionValue = Array.isArray(rawVersion) ? rawVersion[0] : rawVersion;
   const contentVersion = versionValue === undefined ? undefined : Number(versionValue);
@@ -31,8 +33,11 @@ export default async function CasePage({
     mode.data === "interview" && !getCaseMetadata(caseId, caseDefinition.version)?.supportedModes.includes("interview")
   )) notFound();
 
+  let courseContext;
+  try { courseContext = courseContextFromQuery(query, { type: "case", id: caseId, contentVersion: caseDefinition.version, mode: mode.data }); }
+  catch { notFound(); }
   return (
-    <InvestigationPanel caseDefinition={toLearnerCaseDefinition(caseDefinition, {
+    <InvestigationPanel key={`${caseId}:${caseDefinition.version}:${mode.data}${courseRunSuffix(courseContext)}`} courseContext={courseContext} caseDefinition={toLearnerCaseDefinition(caseDefinition, {
       mode: mode.data,
       contentVersion: caseDefinition.version,
     })} />

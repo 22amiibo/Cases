@@ -118,3 +118,9 @@ describe("createCourseRegistry", () => {
     expect(registry.get("profitability-v3", 3)?.title).toBe("Profitability");
   });
 });
+
+it("preserves exact retired course history even when an activity is retired", () => {
+  const registry = createCourseRegistry([validCourse({ status: "retired" })], {}, { ...resources, getActivity: () => ({ status: "retired" as const }) });
+  expect(registry.get("profitability-v3", 3)?.status).toBe("retired");
+  expect(registry.getActive("profitability-v3")).toBeUndefined();
+});

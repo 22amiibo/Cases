@@ -41,3 +41,11 @@ it("ignores completed, corrupted, unavailable, and nested storage entries", asyn
     [["casework:guest-session:alpinefit-profitability:cycle:opening", "{}"]],
   ] as [string, string][][]) expect(await recover(entries)).toEqual([]);
 });
+it("restores exact course activity and capstone context without borrowing standalone runs", async () => {
+  const courseContext = { courseId: "profitability-v3", courseVersion: 1, courseStepId: "clarifying" };
+  const suffix = ":course:profitability-v3:1:clarifying";
+  expect((await recover([[key + suffix, JSON.stringify({ ...stored, courseContext })]]))[0]?.href).toBe("/practice/activities/alpinefit-clarifying-v3?version=1&course=profitability-v3&courseVersion=1&step=clarifying");
+  expect(await recover([[key + suffix, JSON.stringify(stored)]])).toEqual([]);
+  const run = { contentVersion: 2, runStartedAtMs: 1, events: [], clarificationDraftIds: ["objective"], courseContext: { ...courseContext, courseStepId: "case" } };
+  expect((await recover([["casework:guest-session:alpinefit-profitability:course:profitability-v3:1:case", JSON.stringify(run)]]))[0]?.href).toBe("/cases/alpinefit-profitability?version=2&mode=practice&course=profitability-v3&courseVersion=1&step=case");
+});

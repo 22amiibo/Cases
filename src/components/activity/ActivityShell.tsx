@@ -1,5 +1,6 @@
 "use client";
 
+import { courseRunSuffix, courseHref } from "@/core/course-progress";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ActivityEvent, CourseContext } from "@/core/activity";
@@ -29,6 +30,7 @@ type StoredRun = {
   startedAt: string;
   completedAt?: string;
   events: ActivityEvent[];
+  courseContext?: CourseContext | null;
 };
 
 function readRun(key: string): StoredRun | null {
@@ -65,7 +67,7 @@ export function ActivityShell({
   now?: () => Date;
 }) {
   const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
-  const storageKey = `casework:v3-activity:${initial.id}:${initial.contentVersion}`;
+  const storageKey = `casework:v3-activity:${initial.id}:${initial.contentVersion}${courseRunSuffix(courseContext)}`;
   const [restored] = useState(() => readRun(storageKey));
   const [attemptId] = useState(() => restored?.attemptId ?? createId());
   const [startedAt] = useState(() => restored?.startedAt ?? now().toISOString());
@@ -85,15 +87,16 @@ export function ActivityShell({
       startedAt,
       ...(completedAt ? { completedAt } : {}),
       events,
+      courseContext,
     } satisfies StoredRun));
-  }, [attemptId, completedAt, events, startedAt, storageKey]);
+  }, [attemptId, completedAt, events, startedAt, storageKey, courseContext]);
 
   useEffect(() => {
     if (events.length === 0) return;
     void fetch(`/api/activities/${initial.id}/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentVersion: initial.contentVersion, events }),
+      body: JSON.stringify({ contentVersion: initial.contentVersion, events, courseContext }),
     }).then(async (response) => {
       if (!response.ok) throw new Error("Unable to restore activity");
       setView(await response.json() as LearnerActivity);
@@ -214,7 +217,7 @@ export function ActivityShell({
     <section className={styles.shell}>
       <div className={styles.activityNav}>
         <p className={styles.eyebrow}>{initial.labId} · {initial.estimatedMinutes} min</p>
-        <Link href={`/practice/${initial.labId}`}>Exit Activity</Link>
+        <Link href={courseContext ? courseHref({ id: courseContext.courseId, contentVersion: courseContext.courseVersion }) : `/practice/${initial.labId}`}>Exit Activity</Link>
       </div>
       {events.length > 0 && view.phase !== "complete" && <p className={styles.exitNote}>Committed steps are saved in this browser when you exit.</p>}
       <h1>{initial.title}</h1>
@@ -281,6 +284,7 @@ export function ActivityShell({
               <Link href={`/practice/activities/${initial.id}?version=${initial.contentVersion}`}>Practice Again</Link>
               {nextActivityHref && <Link href={nextActivityHref}>Next Exercise</Link>}
               <Link href="/practice">Return to Practice</Link>
+              {courseContext && <Link href={courseHref({ id: courseContext.courseId, contentVersion: courseContext.courseVersion })}>Continue course</Link>}
             </div>
           )}
         </div>

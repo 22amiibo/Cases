@@ -1,5 +1,6 @@
 "use client";
 
+import { courseHref } from "@/core/course-progress";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
@@ -393,7 +394,7 @@ export function ReviewSession({
     };
   }, [attemptId, caseId]);
 
-  if (review) return <CaseReplay review={review} />;
+  if (review) return <>{historicalAttempt && "courseContext" in historicalAttempt && historicalAttempt.courseContext && <Link href={courseHref({ id: historicalAttempt.courseContext.courseId, contentVersion: historicalAttempt.courseContext.courseVersion })}>Continue course</Link>}<CaseReplay review={review} /></>;
 
   if (status === "unavailable" && historicalAttempt) {
     return (

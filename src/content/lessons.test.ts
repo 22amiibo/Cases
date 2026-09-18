@@ -103,3 +103,8 @@ describe("lesson content", () => {
     });
   });
 });
+
+it("publishes the two exact V3 Profitability lessons", () => {
+  expect(getLessonDefinition("profitability-overview-v3", 1)?.practice).toEqual({ activityId: "alpinefit-clarifying-v3", contentVersion: 1 });
+  expect(getLessonDefinition("profitability-drivers-v3", 1)?.practice).toEqual({ activityId: "alpinefit-brainstorming-v3", contentVersion: 1 });
+});

@@ -45,3 +45,8 @@ describe("V3 activity completion", () => {
     expect(response.status).toBe(400);
   });
 });
+
+it("rejects completed activity evidence attributed to a different course resource", async () => {
+  const response = await POST(new Request("http://localhost/complete", { method: "POST", body: JSON.stringify({ contentVersion: 1, events, courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: "clarifying" } }) }), { params: Promise.resolve({ activityId: "v3-private-test" }) });
+  expect(response.status).toBe(400);
+});

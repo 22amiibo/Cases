@@ -21,11 +21,12 @@ export function clearHypothesisPracticeStorage(
   storage: Pick<Storage, "removeItem">,
   caseId: string,
   mode: CaseMode = "practice",
+  storageScope = "",
 ) {
-  storage.removeItem(hypothesisStorageKey(caseId, mode, "initial"));
-  storage.removeItem(hypothesisStorageKey(caseId, mode, "update"));
-  storage.removeItem(`${hypothesisStorageKey(caseId, mode, "initial")}:options`);
-  storage.removeItem(`${hypothesisStorageKey(caseId, mode, "update")}:options`);
+  storage.removeItem((hypothesisStorageKey(caseId, mode, "initial") + storageScope));
+  storage.removeItem((hypothesisStorageKey(caseId, mode, "update") + storageScope));
+  storage.removeItem(`${(hypothesisStorageKey(caseId, mode, "initial") + storageScope)}:options`);
+  storage.removeItem(`${(hypothesisStorageKey(caseId, mode, "update") + storageScope)}:options`);
 }
 
 export type HypothesisCompletion = {
@@ -41,6 +42,7 @@ export function HypothesisStep({
   practice,
   facts,
   caseMode = "practice",
+  storageScope = "",
   onCommit,
   onComplete,
 }: {
@@ -48,13 +50,14 @@ export function HypothesisStep({
   practice: HypothesisPractice;
   facts: RevealedFact[];
   caseMode?: CaseMode;
+  storageScope?: string;
   onCommit: (phase: "initial" | "update", response: CommittedResponse) => Promise<{
     reveal: LearningCycleReveal;
     options: Array<{ id: string; label: string }>;
   }>;
   onComplete: (completion: HypothesisCompletion) => Promise<void>;
 }) {
-  const storageKey = hypothesisStorageKey(caseId, caseMode, practice.phase);
+  const storageKey = hypothesisStorageKey(caseId, caseMode, practice.phase) + storageScope;
   const optionsStorageKey = `${storageKey}:options`;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(

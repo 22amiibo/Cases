@@ -1,8 +1,8 @@
+import { validateCourseContext } from "@/core/course-progress";
 import { NextResponse } from "next/server";
 import { getActivityDefinition } from "@/content/activities";
 import {
   ActivityEventSchema,
-  CourseContextSchema,
   applyActivityEvent,
   replayActivityEvents,
 } from "@/core/activity";
@@ -22,9 +22,7 @@ export async function POST(
     if (!definition) {
       return NextResponse.json({ error: "Activity version not found" }, { status: 404 });
     }
-    if (body.courseContext !== undefined && body.courseContext !== null) {
-      CourseContextSchema.parse(body.courseContext);
-    }
+    validateCourseContext(body.courseContext, { type: "activity", id: activityId, contentVersion: definition.contentVersion });
     const events = ActivityEventSchema.array().parse(body.events);
     const event = ActivityEventSchema.parse(body.event);
     const state = applyActivityEvent(

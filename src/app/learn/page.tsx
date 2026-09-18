@@ -14,7 +14,7 @@ const sections: Array<{
   {
     kind: "skill",
     eyebrow: "Core moves",
-    title: "Six moves to practice deliberately",
+    title: "Core moves to practice deliberately",
     description:
       "Use these short modules before a drill or whenever a full case exposes a weak spot.",
   },
@@ -41,10 +41,12 @@ export default function LearnPage() {
         <p>Learn, then practice</p>
         <h1>Compact lessons for better case judgment</h1>
         <span>
-          Eleven practical ideas, each paired with a drill. Read one, use it
+          Practical ideas, each paired with focused practice. Read one, use it
           immediately, and return when you need a reset.
         </span>
       </section>
+
+      <section className={styles.intro}><h2>Profitability course</h2><p>Nine guided steps from profit drivers to the AlpineFit capstone.</p><Link href="/learn/courses/profitability-v3?version=1">Open Profitability course</Link></section>
 
       {sections.map((section) => (
         <section className={styles.lessonSection} key={section.kind}>
@@ -75,7 +77,7 @@ export default function LearnPage() {
                     <strong>In a case</strong>
                     {lesson.example}
                   </p>
-                  {lesson.kind === "skill" && lesson.practice ? (
+                  {lesson.kind === "skill" && lesson.practice && "drillId" in lesson.practice ? (
                     <details className={styles.embeddedPractice}>
                       <summary>Open exact V2 practice</summary>
                       <EmbeddedV2Practice {...lesson.practice} />
@@ -85,7 +87,7 @@ export default function LearnPage() {
                     </details>
                   ) : (
                     <Link className={styles.practiceLink} href={lesson.drillRoute}>
-                      Practice this pattern <span aria-hidden="true">→</span>
+                      {lesson.kind === "pattern" ? "Practice this pattern" : "Practice this skill"} <span aria-hidden="true">→</span>
                     </Link>
                   )}
                 </article>

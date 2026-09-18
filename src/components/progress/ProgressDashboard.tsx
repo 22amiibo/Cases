@@ -1,5 +1,7 @@
 "use client";
 
+import { currentCourseStep } from "@/core/course-progress";
+import { courseDefinitions } from "@/content/courses/catalog";
 import Link from "next/link";
 import { buildProgressDashboard, buildRecommendedSession } from "@/core/progress-dashboard";
 import { buildAchievements } from "@/core/progress-achievements";
@@ -28,7 +30,7 @@ export function ProgressDashboard({ resources, activities, courseStep = null }: 
   const recent = history.slice(0, 6);
   const skills = buildV3Progress(activityAttempts, v3CaseAttempts);
   const runs = progress.recoverableRuns ?? [];
-  const coaching = selectV3Recommendation({ activities, attempts: activityAttempts, skills, runs, courseStep });
+  const coaching = selectV3Recommendation({ activities, attempts: activityAttempts, skills, runs, courseStep: courseStep ?? (progress.courseEvidence && progress.userId ? currentCourseStep(courseDefinitions, progress.courseEvidence, progress.userId) : null) });
   const primary = coaching;
   const quick = [...activities].sort((a, b) => a.estimatedMinutes - b.estimatedMinutes || a.id.localeCompare(b.id)).slice(0, 3);
   const achievements = buildAchievements(progress.history, activityAttempts, v3CaseAttempts);

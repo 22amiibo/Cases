@@ -1,3 +1,5 @@
+import overviewV3 from "./profitability-overview-v3.json";
+import driversV3 from "./profitability-drivers-v3.json";
 import lessonContent from "../lessons.json";
 import clarificationV2Content from "./clarification-v2.json";
 import { createVersionedRegistry } from "../versioned-registry";
@@ -12,7 +14,7 @@ export type LessonDefinition = {
   skillId: string;
   drillRoute: string;
   contentVersion?: number;
-  practice?: { drillId: string; contentVersion: 2 };
+  practice?: { drillId: string; contentVersion: 2 } | { activityId: string; contentVersion: number };
 };
 
 const legacyLessons = lessonContent as LessonDefinition[];
@@ -48,6 +50,8 @@ const v2Lessons = legacyLessons.map((lesson): LessonDefinition => {
 
 export const lessonDefinitions = [
   ...v2Lessons,
+  overviewV3 as LessonDefinition,
+  driversV3 as LessonDefinition,
   clarificationV2Content as LessonDefinition,
 ];
 export const activeLessonVersions = Object.freeze(

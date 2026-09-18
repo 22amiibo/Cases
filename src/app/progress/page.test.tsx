@@ -122,3 +122,13 @@ it.each(["v1", "v2"])("uses an active unpracticed lab for the primary action wit
   expect(primary.getByRole("link")).toHaveAttribute("href", "/practice/activities/alpinefit-clarifying-v3?version=1");
   expect(primary.getByText(/You have not tried this activity yet/)).toBeVisible();
 });
+it("derives the current course recommendation from persisted lesson evidence", () => {
+  usePracticeProgress.mockReturnValue({ status: "ready", userId: "user-1", history: [], activityAttempts: [], v3CaseAttempts: [], recoverableRuns: [], retry: vi.fn(), courseEvidence: {
+    enrollments: [{ userId: "user-1", courseId: "profitability-v3", courseVersion: 1, startedAt: "2026-09-01T00:00:00Z", lastActivityAt: "2026-09-01T00:00:00Z", lastStepId: "overview" }],
+    lessonEvents: [{ eventType: "lesson_viewed", userId: "user-1", courseId: "profitability-v3", courseVersion: 1, courseStepId: "overview", lessonId: "profitability-overview-v3", lessonVersion: 1, occurredAt: "2026-09-01T00:00:00Z" }], activityAttempts: [], caseAttempts: [],
+  } });
+  render(<ProgressPage />);
+  const region = within(screen.getByRole("region", { name: "Recommended next" }));
+  expect(region.getByRole("link")).toHaveAttribute("href", "/learn/lessons/profitability-drivers-v3?version=1&course=profitability-v3&courseVersion=1&step=drivers");
+  expect(region.getByText(/Continue Profitability: 1 of 9/)).toBeVisible();
+});

@@ -1,0 +1,14 @@
+{
+  "id": "profitability-drivers-v3", "contentVersion": 1, "kind": "skill",
+  "title": "Revenue and cost drivers", "skillId": "structure",
+  "summary": "Translate a profit change into price, volume, fixed cost, and variable cost explanations.",
+  "principles": [
+    "Revenue equals price times volume for a single offering. With multiple offerings, calculate each segment separately so mix changes do not hide the cause.",
+    "Fixed costs stay broadly constant within a relevant capacity range. Variable costs change with activity: variable cost per unit times volume.",
+    "Profit equals price times volume minus variable cost per unit times volume minus fixed costs. More volume helps only when incremental revenue exceeds incremental cost.",
+    "Brainstorm distinct explanations across the equation, then choose evidence that can separate them. Check whether a cost is fixed over this time horizon rather than assuming its label."
+  ],
+  "example": "A gym can gain members and lose profit if discounts lower average revenue, service cost per member rises, or new locations add fixed rent. Segment the change before choosing pricing, growth, or cost actions.",
+  "practice": { "activityId": "alpinefit-brainstorming-v3", "contentVersion": 1 },
+  "drillRoute": "/practice/activities/alpinefit-brainstorming-v3?version=1"
+}

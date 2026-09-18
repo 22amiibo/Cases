@@ -1,0 +1,13 @@
+{
+  "id": "profitability-overview-v3", "contentVersion": 1, "kind": "skill",
+  "title": "How profitability cases work", "skillId": "clarification",
+  "summary": "Explain a change in profit, then choose an action that addresses its cause.",
+  "principles": [
+    "Clarify the decision, profit measure, comparison period, and scope before proposing a solution.",
+    "Profit equals revenue minus costs. Separate what changed from why it changed, and compare useful segments.",
+    "Use evidence to prioritize a hypothesis; update it when facts disagree. Finish with a recommendation, a risk, and the next test."
+  ],
+  "example": "AlpineFit reports weaker profit. First clarify whether the goal is explaining the decline or restoring a specific profit target, and over what period. Do not assume that growing membership solves the problem.",
+  "practice": { "activityId": "alpinefit-clarifying-v3", "contentVersion": 1 },
+  "drillRoute": "/practice/activities/alpinefit-clarifying-v3?version=1"
+}

@@ -27,3 +27,8 @@ describe("V3 activity session", () => {
     expect(response.status).toBe(404);
   });
 });
+
+it("rejects complete but mismatched exact course context before restoring events", async () => {
+  const response = await POST(new Request("http://localhost/session", { method: "POST", body: JSON.stringify({ contentVersion: 1, events: [], courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: "clarifying" } }) }), { params: Promise.resolve({ activityId: "v3-private-test" }) });
+  expect(response.status).toBe(400);
+});

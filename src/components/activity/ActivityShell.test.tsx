@@ -49,6 +49,7 @@ describe("ActivityShell", () => {
       userId="guest-1"
       createId={() => "stable-attempt-id"}
       now={() => new Date("2026-09-18T12:00:00.000Z")}
+      nextActivityHref="/practice/activities/paypilot-clarifying-v3?version=1"
     />);
 
     await user.click(screen.getByRole("button", { name: "Start activity" }));
@@ -62,17 +63,39 @@ describe("ActivityShell", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(screen.getByRole("button", { name: "Finish activity" }));
 
-    expect(await screen.findByRole("heading", { name: "Activity complete" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Your result" })).toBeVisible();
+    expect(screen.getByText("1 of 1 check")).toBeVisible();
     expect(saved).toHaveBeenCalledWith(expect.objectContaining({
       attemptId: "stable-attempt-id",
       userId: "guest-1",
       scoringVersion: "v3",
     }));
-    expect(await screen.findByRole("link", { name: "Review completed attempt" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Review Answers" })).toHaveAttribute(
       "href",
       "/practice/attempts/stable-attempt-id",
     );
+    expect(screen.getByRole("link", { name: "Practice Again" })).toHaveAttribute(
+      "href",
+      "/practice/activities/v3-private-test?version=1",
+    );
+    expect(screen.getByRole("link", { name: "Next Exercise" })).toHaveAttribute(
+      "href",
+      "/practice/activities/paypilot-clarifying-v3?version=1",
+    );
     expect(window.sessionStorage.getItem("casework:v3-activity:v3-private-test:1")).toBeNull();
+  });
+
+  it("offers an explicit exit while committed work remains resumable", async () => {
+    const user = userEvent.setup();
+    render(<ActivityShell initial={initial} repository={repository()} userId="guest-1" />);
+
+    expect(screen.getByRole("link", { name: "Exit Activity" })).toHaveAttribute("href", "/practice/clarifying");
+    await user.click(screen.getByRole("button", { name: "Start activity" }));
+    await user.click(screen.getByRole("radio", { name: "Ask for company history" }));
+    await user.click(screen.getByRole("button", { name: "Commit answer" }));
+
+    expect(screen.getByText("Committed steps are saved in this browser when you exit.")).toBeVisible();
+    expect(window.sessionStorage.getItem("casework:v3-activity:v3-private-test:1")).toContain("selection_committed");
   });
 
   it("keeps completed state until a failed save retry succeeds", async () => {

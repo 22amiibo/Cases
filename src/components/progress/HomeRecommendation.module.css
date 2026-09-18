@@ -12,7 +12,7 @@
 
 .recommendation > p {
   color: #f0bf96;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -20,7 +20,7 @@
 
 .recommendation h2 {
   margin-top: 14px;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: clamp(2rem, 4vw, 3.8rem);
   font-weight: 400;
   letter-spacing: -0.045em;

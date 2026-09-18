@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import type { InteractionCommit } from "./InteractionRenderer";
 
 type HypothesisInteraction = {
@@ -17,16 +18,28 @@ export function HypothesisSequence({
   interaction,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: HypothesisInteraction;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
   const [hypothesisId, setHypothesisId] = useState(interaction.currentHypothesisId ?? "");
   const [status, setStatus] = useState<"retain" | "revise" | "reject">("retain");
   const [cited, setCited] = useState(false);
-  const [rationale, setRationale] = useState("");
+  const [reasoning, setReasoning] = useState("");
   const initial = interaction.phase === "initial";
+  const reasoningOptions = {
+    supports: "The evidence supports the current hypothesis.",
+    contradicts: "The evidence contradicts the prior hypothesis.",
+    insufficient: "The evidence is not enough to change the hypothesis.",
+  } as const;
+  const hypotheses = useStableChoiceOrder(
+    interaction.hypotheses,
+    orderSeedKey,
+    `${interaction.interactionId}:${interaction.stepId}`,
+  );
 
   return (
     <fieldset>
@@ -40,15 +53,18 @@ export function HypothesisSequence({
       </select></label>}
       {(initial || status !== "reject") && <fieldset>
         <legend>{initial ? "Starting hypothesis" : "Current hypothesis"}</legend>
-        {interaction.hypotheses.map((hypothesis) => <label key={hypothesis.id}>
+        {hypotheses.map((hypothesis) => <label key={hypothesis.id}>
           <input type="radio" name="hypothesis" checked={hypothesisId === hypothesis.id} onChange={() => setHypothesisId(hypothesis.id)} />
           {hypothesis.label}
         </label>)}
       </fieldset>}
-      <label>Rationale<textarea value={rationale} onChange={(event) => setRationale(event.target.value)} rows={4} /></label>
+      {!initial && <label>Reasoning<select value={reasoning} onChange={(event) => setReasoning(event.target.value)}>
+        <option value="">Choose how the evidence changes the claim</option>
+        {Object.entries(reasoningOptions).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      </select></label>}
       <button
         type="button"
-        disabled={disabled || !rationale.trim() || (status !== "reject" && !hypothesisId)}
+        disabled={disabled || (!initial && !reasoning) || (status !== "reject" && !hypothesisId)}
         onClick={() => onCommit({
           type: "hypothesis_committed",
           interactionId: interaction.interactionId,
@@ -56,7 +72,9 @@ export function HypothesisSequence({
           status: initial ? "form" : status,
           hypothesisId: !initial && status === "reject" ? null : hypothesisId,
           evidenceIds: interaction.evidence && cited ? [interaction.evidence.evidenceId] : [],
-          rationale: rationale.trim(),
+          rationale: initial
+            ? "Starting hypothesis selected"
+            : reasoningOptions[reasoning as keyof typeof reasoningOptions],
         })}
       >{initial ? "Commit hypothesis" : "Commit update"}</button>
     </fieldset>

@@ -11,6 +11,7 @@ import {
   type LearningCycleState,
 } from "@/core/learning-cycle";
 import type { CommittedResponse } from "@/core/schema";
+import { diagnosticDefinitions } from "@/core/diagnostics";
 import styles from "./GeneratedResponseCycle.module.css";
 
 type GeneratedResponseCycleProps = {
@@ -25,10 +26,6 @@ type GeneratedResponseCycleProps = {
 
 function defaultResponseId() {
   return crypto.randomUUID();
-}
-
-function diagnosticLabel(code: string) {
-  return code.replaceAll("_", " ");
 }
 
 export function GeneratedResponseCycle({
@@ -250,14 +247,14 @@ export function GeneratedResponseCycle({
           </h2>
           <p className={styles.comparison}>{state.reveal.comparison.text}</p>
           <div className={styles.diagnostics}>
-            <h3>Your self-assessment signals</h3>
+            <h3>Your reflection</h3>
             <ul>
               {state.diagnostics
                 .filter(({ responseId }) => responseId === latestResponse.responseId)
                 .map((diagnostic) => (
                   <li key={`${diagnostic.responseId}-${diagnostic.code}`}>
-                    <strong>{diagnosticLabel(diagnostic.code)}</strong>
-                    <span>{diagnostic.severity} · self-assessed</span>
+                    <strong>{diagnosticDefinitions[diagnostic.code].explanation}</strong>
+                    <span>{diagnostic.severity} · your reflection</span>
                   </li>
                 ))}
             </ul>

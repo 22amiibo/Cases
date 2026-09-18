@@ -79,7 +79,7 @@ describe("GeneratedResponseCycle", () => {
     await user.click(screen.getByRole("button", { name: "View comparison" }));
 
     expect(await screen.findByText(reveal.comparison.text)).toBeVisible();
-    expect(screen.getByText(/comparison missed/i)).toBeVisible();
+    expect(screen.getByText("Use the comparison that best distinguishes the result.")).toBeVisible();
   });
 
   it("can require a response for mandatory case steps", () => {

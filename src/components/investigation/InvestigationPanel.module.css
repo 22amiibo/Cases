@@ -22,7 +22,7 @@
 
 .failureCard > span {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -30,7 +30,7 @@
 
 .failureCard h1 {
   margin-top: 16px;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: clamp(2.2rem, 6vw, 4.25rem);
   font-weight: 400;
   line-height: 0.98;
@@ -82,7 +82,7 @@
 
 .header a {
   color: #294c3b;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .headerActions {
@@ -102,7 +102,7 @@
 .stepCard > span,
 .interviewer span {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -127,7 +127,7 @@
   border-left: 3px solid #d28c5d;
   padding-left: 14px;
   color: #344238;
-  font-weight: 620;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -135,7 +135,7 @@
   display: block;
   margin-bottom: 4px;
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -207,7 +207,7 @@
 }
 
 .options label span {
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .options label small {

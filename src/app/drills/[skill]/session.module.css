@@ -15,7 +15,7 @@
   padding-bottom: 20px;
   border-bottom: 1px solid #aeb6ad;
   color: #5f6a63;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
 }
@@ -28,7 +28,7 @@
 .repPicker > p {
   margin-bottom: 12px;
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
 }
@@ -53,7 +53,7 @@
   display: block;
   margin-bottom: 5px;
   color: #69736c;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.66rem;
   text-transform: uppercase;
 }
@@ -77,7 +77,7 @@
 
 .legacy summary {
   cursor: pointer;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .legacy > p {

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ActivityAttemptRepository } from "@/data/v3-repository";
 import { ActivityAttemptReview } from "./ActivityAttemptReview";
@@ -13,6 +14,7 @@ function repository(attempt: Awaited<ReturnType<ActivityAttemptRepository["getAc
 
 describe("ActivityAttemptReview", () => {
   it("loads an owned exact-version attempt and its committed events", async () => {
+    const user = userEvent.setup();
     const attempt = {
       attemptId: "attempt-1",
       userId: "guest-1",
@@ -29,16 +31,24 @@ describe("ActivityAttemptReview", () => {
       events: [{ eventId: "start", type: "activity_started" as const, atMs: 0 }],
     };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      id: attempt.activityId,
-      contentVersion: 1,
-      title: "Clarifying",
-      phase: "complete",
-      takeaway: "Ask a useful question.",
-      feedback: { explanation: "Good choice." },
+      review: {
+        title: "Clarifying",
+        classification: "Strong",
+        performance: { earned: 1, total: 1, label: "1 of 1 check" },
+        strengths: ["You chose a decision-relevant question."],
+        improvements: [],
+        principle: "Clarify the decision first.",
+        nextAction: "Use the answer to focus the analysis.",
+        takeaway: "Ask a useful question.",
+        steps: [{ label: "Decision", learnerAnswer: "Clarify the objective", assessment: "Strong", strongAnswer: "Clarify the objective" }],
+      },
     }), { status: 200 })));
     render(<ActivityAttemptReview attemptId="attempt-1" repository={repository(attempt)} userId="guest-1" />);
     expect(await screen.findByRole("heading", { name: "Clarifying" })).toBeVisible();
-    expect(screen.getByText("activity started")).toBeVisible();
+    expect(screen.getByText("1 of 1 check")).toBeVisible();
+    await user.click(screen.getByText("Review answers"));
+    expect(screen.getByText("Clarify the objective")).toBeVisible();
+    expect(screen.queryByText("activity started")).not.toBeInTheDocument();
   });
 
   it("shows a safe unavailable state for missing ownership or content", async () => {

@@ -15,7 +15,7 @@
 
 .eyebrow {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -23,7 +23,7 @@
 
 .panel h2 {
   margin-top: 8px;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-weight: 400;
 }
 

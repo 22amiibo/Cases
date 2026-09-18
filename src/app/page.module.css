@@ -36,13 +36,13 @@
 
 .wordmark {
   font-size: 1.1rem;
-  font-weight: 760;
+  font-weight: 700;
   letter-spacing: -0.04em;
 }
 
 .status,
 .kicker {
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -64,7 +64,7 @@
 .hero h1 {
   max-width: 780px;
   font-size: clamp(2.6rem, 6vw, 5.4rem);
-  font-weight: 720;
+  font-weight: 700;
   line-height: 0.98;
   letter-spacing: -0.06em;
   text-wrap: balance;

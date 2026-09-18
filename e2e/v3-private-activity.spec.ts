@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test("private V3 activity commits, restores, retries, and completes", async ({ page }) => {
+  const hydrationErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    if (error.message.includes("Hydration failed")) hydrationErrors.push(error.message);
+  });
   await page.goto("/practice/activities/v3-private-test?version=1");
   await expect(page.getByText("Clarify the decision first.")).toHaveCount(0);
 
@@ -16,5 +20,6 @@ test("private V3 activity commits, restores, retries, and completes", async ({ p
   await page.getByRole("button", { name: "Commit answer" }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Finish activity" }).click();
-  await expect(page.getByRole("heading", { name: "Activity complete" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your result" })).toBeVisible();
+  expect(hydrationErrors).toEqual([]);
 });

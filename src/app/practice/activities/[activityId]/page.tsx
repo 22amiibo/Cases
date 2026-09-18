@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ActivityShell } from "@/components/activity/ActivityShell";
-import { getActivityDefinition } from "@/content/activities";
+import { activeActivityDefinitions, getActivityDefinition } from "@/content/activities";
 import { getCaseDefinition } from "@/content/cases";
 import { CourseContextSchema } from "@/core/activity";
 import { projectLearnerActivity } from "@/core/activity-projection";
@@ -33,6 +33,9 @@ export default async function ActivityPage({
   const courseContext = parsedCourseContext?.data ?? null;
   const definition = getActivityDefinition(activityId, contentVersion);
   if (!definition) notFound();
+  const labActivities = activeActivityDefinitions.filter(({ labId }) => labId === definition.labId);
+  const activityIndex = labActivities.findIndex(({ id }) => id === definition.id);
+  const nextActivity = labActivities[(activityIndex + 1) % labActivities.length];
   let exhibit;
   const interaction = definition.interaction;
   if (interaction.type === "exhibit_chain") {
@@ -59,5 +62,8 @@ export default async function ActivityPage({
     initial={projectLearnerActivity(definition)}
     courseContext={courseContext}
     exhibit={exhibit}
+    nextActivityHref={nextActivity && nextActivity.id !== definition.id
+      ? `/practice/activities/${nextActivity.id}?version=${nextActivity.contentVersion}`
+      : undefined}
   /></main>;
 }

@@ -55,7 +55,7 @@ test("structure V2 completes a generated response and framework checkpoint", asy
   await page.getByRole("button", { name: "Investigate Variable cost first" }).first().click();
   await page.getByLabel("Why investigate this area first?").first().fill("Variable costs grew faster than revenue.");
   await page.getByRole("button", { name: "Submit framework" }).first().press("Enter");
-  await expectAccessibleMobileCompletion(page, /strong structure · system/i);
+  await expectAccessibleMobileCompletion(page, /Your structure is distinct, testable, and prioritized/i);
 });
 
 test("prioritization V2 reveals choices only after commitment", async ({ page }) => {
@@ -71,7 +71,7 @@ test("prioritization V2 reveals choices only after commitment", async ({ page })
   )).toEqual(orderBeforeRefresh);
   await page.getByLabel("Break down operating costs").check();
   await page.getByRole("button", { name: "Check decision" }).press("Enter");
-  await expectAccessibleMobileCompletion(page, /strong priority · system/i);
+  await expectAccessibleMobileCompletion(page, /highest decision value/i);
 });
 
 test("quantitative V2 teaches after a wrong answer without revealing it early", async ({ page }) => {
@@ -85,7 +85,7 @@ test("quantitative V2 teaches after a wrong answer without revealing it early", 
   await expect(page.getByText("Your answer: 75,600 %")).toBeVisible();
   await expect(page.getByText(/Correct answer:/)).toContainText("756,000 $");
   await expect(page.getByText(/6 × 700 × \$15 × 12 = \$756,000 annually/)).toBeVisible();
-  await expectAccessibleMobileCompletion(page, /unit error · system/i);
+  await expectAccessibleMobileCompletion(page, /State the correct unit with your answer/i);
 });
 
 test("exhibit V2 reveals interpretation choices only after commitment", async ({ page }) => {
@@ -94,7 +94,7 @@ test("exhibit V2 reveals interpretation choices only after commitment", async ({
   await finishGeneratedCycle(page, "Labor is the outlier, likely driving margin pressure; isolate overtime next.");
   await page.getByLabel("Labor is the material cost outlier").check();
   await page.getByRole("button", { name: "Check decision" }).press("Enter");
-  await expectAccessibleMobileCompletion(page, /strong exhibit chain · system/i);
+  await expectAccessibleMobileCompletion(page, /connected observation, implication, and next action/i);
 });
 
 test("synthesis V2 selects decisive evidence and a next step after commitment", async ({ page }) => {
@@ -105,5 +105,5 @@ test("synthesis V2 selects decisive evidence and a next step after commitment", 
   await page.getByLabel("High-overtime clubs have higher turnover").check();
   await page.getByLabel("Highest-value next step").selectOption("staffing-pilot");
   await page.getByRole("button", { name: "Check synthesis" }).press("Enter");
-  await expectAccessibleMobileCompletion(page, /strong synthesis · system/i);
+  await expectAccessibleMobileCompletion(page, /synthesis leads with an answer and uses decisive evidence/i);
 });

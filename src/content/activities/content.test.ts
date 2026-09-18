@@ -31,17 +31,24 @@ function outcome(activityId: string, events: ReturnType<typeof event>[]) {
 }
 
 describe("V3 flagship activities", () => {
-  it("publishes exactly one active activity for each flagship lab", () => {
-    expect(activityDefinitions.map(({ labId }) => labId).sort()).toEqual([
-      "brainstorming",
-      "clarifying",
-      "exhibit",
-      "hypothesis",
-    ]);
-    expect(Object.keys(activeActivityVersions)).toHaveLength(4);
+  it("publishes three varied activities for each flagship lab", () => {
+    expect(Object.keys(activeActivityVersions)).toHaveLength(12);
+    for (const labId of ["brainstorming", "clarifying", "exhibit", "hypothesis"]) {
+      const activities = activityDefinitions.filter((activity) => activity.labId === labId);
+      expect(activities).toHaveLength(3);
+      expect(new Set(activities.flatMap(({ caseTypeIds }) => caseTypeIds)).size).toBeGreaterThan(1);
+      expect(new Set(activities.flatMap(({ industryIds }) => industryIds)).size).toBeGreaterThan(1);
+    }
   });
 
   it("keeps authored feedback and future evidence out of every pre-commit projection", () => {
+    for (const definition of activityDefinitions) {
+      const serialized = JSON.stringify(projectLearnerActivity(definition));
+      expect(serialized).not.toContain('"outcomeId"');
+      expect(serialized).not.toContain('"diagnosticCodes"');
+      expect(serialized).not.toContain('"redundantWithIds"');
+      expect(serialized).not.toContain('"contradictedHypothesisIds"');
+    }
     const hiddenByActivity = {
       "alpinefit-clarifying-v3": [
         "Operating margin is operating profit divided by revenue",

@@ -13,6 +13,7 @@ import {
   type LearningCycleState,
 } from "@/core/learning-cycle";
 import type { DiagnosticOutcome, FrameworkSubmission } from "@/core/schema";
+import { diagnosticDefinitions } from "@/core/diagnostics";
 import type { projectV2PracticeDrill, LearnerV2Checkpoint, QuantitativeFeedback, V2CheckpointSubmission } from "@/core/v2-drill";
 import { createV2DrillAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
@@ -242,9 +243,9 @@ function HydratedV2PracticeDrillSession({
         {status === "error" && <p role="alert">Your result was not saved. Try again.</p>}
         {diagnostics && (
           <div className={styles.result} aria-live="polite">
-            <p>System diagnostic</p>
+            <p>Coaching feedback</p>
             <h2>Practice complete</h2>
-            <ul>{diagnostics.map((item) => <li key={item.code}>{item.code.replaceAll("_", " ")} · {item.source}</li>)}</ul>
+            <ul>{diagnostics.map((item) => <li key={item.code}>{diagnosticDefinitions[item.code].explanation}</li>)}</ul>
             {quantitativeFeedback && <QuantitativeFeedbackPanel feedback={quantitativeFeedback} />}
           </div>
         )}

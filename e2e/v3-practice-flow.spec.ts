@@ -17,9 +17,12 @@ test("Practice discovers all flagship labs and reopens a completed attempt", asy
   await page.getByRole("button", { name: "Commit answer" }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Finish activity" }).click();
-  await page.getByRole("link", { name: "Review completed attempt" }).click();
+  await expect(page.getByRole("heading", { name: "Your result" })).toBeVisible();
+  await expect(page.getByText("1 of 1 check")).toBeVisible();
+  await page.getByRole("link", { name: "Review Answers" }).click();
 
   await expect(page.getByRole("heading", { name: "Choose the first AlpineFit question" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Committed timeline" })).toBeVisible();
-  await expect(page.getByText("activity completed")).toBeVisible();
+  await expect(page.getByText("1 of 1 check")).toBeVisible();
+  await page.locator("summary").filter({ hasText: "Review answers" }).click();
+  await expect(page.getByText("How is operating margin defined, and is the decline chain-wide?", { exact: true })).toBeVisible();
 });

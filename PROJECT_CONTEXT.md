@@ -72,6 +72,31 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 7 revision pass — awaiting owner replaytest
+
+- The owner recorded `revise and replaytest` after the first flagship-lab
+  playtest. Task 8 remains gated and has not started.
+- Each flagship lab now has three active exercises across profitability,
+  growth, and operations contexts. Answer choices use stable per-attempt
+  ordering, and Exhibit distractors require clearer separation of observation,
+  priority, implication, and next action.
+- Completion and historical review now lead with transparent performance,
+  coaching, a key principle, answer review, and Practice Again, Next Exercise,
+  and Return to Practice actions. Activities have an explicit resumable exit.
+- Unsupported free-text fields were removed from the affected activity and
+  legacy Learn flows. Hypothesis updates now use structured evidence reasoning;
+  existing generated-response work still receives authored comparison and
+  self-check.
+- Progress now uses learner-facing coaching language, Skills, Recommended Next,
+  Recent Activity, Case History, and derived training achievements. Existing
+  V1/V2 history renders even if additive V3 evidence is temporarily unavailable.
+- The site uses static system typography with standard weights. Browser checks
+  cover the application routes without counting Next.js development tooling.
+- Validation: 77 test files / 359 tests, all 46 Playwright journeys, lint,
+  typecheck, production build, and `git diff --check` pass.
+- Mandatory state: stop for owner replaytest. Only a recorded `proceed` decision
+  opens Tasks 8-12.
+
 ### Casework V3 Task 7: Practice routes — awaiting owner playtest
 
 - Added `/practice`, exact lab pages for the four active flagship skills,

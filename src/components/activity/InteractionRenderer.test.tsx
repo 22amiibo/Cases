@@ -4,6 +4,38 @@ import { describe, expect, it, vi } from "vitest";
 import { InteractionRenderer } from "./InteractionRenderer";
 
 describe("InteractionRenderer", () => {
+  it("keeps shuffled choices stable for one attempt", async () => {
+    const user = userEvent.setup();
+    window.sessionStorage.setItem("attempt-order", "attempt-seed");
+    const interaction = {
+      type: "single_select" as const,
+      interactionId: "choice-order",
+      prompt: "Choose",
+      options: [
+        { id: "correct", label: "Correct" },
+        { id: "near", label: "Near" },
+        { id: "weak", label: "Weak" },
+      ],
+    };
+    const { rerender } = render(<InteractionRenderer
+      interaction={interaction}
+      onCommit={vi.fn()}
+      disabled={false}
+      orderSeedKey="attempt-order"
+    />);
+    const firstOrder = screen.getAllByRole("radio").map((radio) => radio.parentElement?.textContent);
+    expect(firstOrder).toEqual(["Weak", "Correct", "Near"]);
+
+    await user.click(screen.getByRole("radio", { name: "Near" }));
+    rerender(<InteractionRenderer
+      interaction={interaction}
+      onCommit={vi.fn()}
+      disabled={false}
+      orderSeedKey="attempt-order"
+    />);
+
+    expect(screen.getAllByRole("radio").map((radio) => radio.parentElement?.textContent)).toEqual(firstOrder);
+  });
   it("commits native single and multi select controls", async () => {
     const user = userEvent.setup();
     const onCommit = vi.fn();
@@ -109,13 +141,43 @@ describe("InteractionRenderer", () => {
       currentHypothesisId: null,
     }} onCommit={onCommit} disabled={false} />);
     await user.click(screen.getByRole("radio", { name: "Labor" }));
-    await user.type(screen.getByLabelText("Rationale"), "Labor may have outgrown revenue.");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Commit hypothesis" }));
     expect(onCommit).toHaveBeenCalledWith(expect.objectContaining({
       type: "hypothesis_committed",
       status: "form",
       hypothesisId: "labor",
       evidenceIds: [],
+      rationale: "Starting hypothesis selected",
+    }));
+  });
+
+  it("uses structured evidence reasoning for a hypothesis update", async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
+    render(<InteractionRenderer interaction={{
+      type: "hypothesis_sequence",
+      interactionId: "hypothesis",
+      prompt: "Update the claim",
+      hypotheses: [{ id: "revenue", label: "Revenue" }, { id: "labor", label: "Labor" }],
+      phase: "update",
+      stepId: "cost-growth",
+      currentHypothesisId: "revenue",
+      evidence: { id: "cost-growth", evidenceId: "cost-growth", text: "Costs rose faster than revenue." },
+    }} onCommit={onCommit} disabled={false} />);
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: "Use this evidence in the update" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Status" }), "revise");
+    await user.click(screen.getByRole("radio", { name: "Labor" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Reasoning" }), "contradicts");
+    await user.click(screen.getByRole("button", { name: "Commit update" }));
+
+    expect(onCommit).toHaveBeenCalledWith(expect.objectContaining({
+      status: "revise",
+      hypothesisId: "labor",
+      evidenceIds: ["cost-growth"],
+      rationale: "The evidence contradicts the prior hypothesis.",
     }));
   });
 
@@ -140,7 +202,7 @@ describe("InteractionRenderer", () => {
     }} onCommit={onCommit} disabled={false} />);
     expect(screen.getByRole("table", { name: "Costs ($m)" })).toBeVisible();
     await user.click(screen.getByRole("radio", { name: "Labor is the outlier" }));
-    await user.type(screen.getByLabelText("Your reasoning"), "Labor rose most.");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Commit observe" }));
     expect(onCommit).toHaveBeenCalledWith(expect.objectContaining({
       type: "exhibit_committed",

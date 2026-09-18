@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ActivityEvent, CourseContext } from "@/core/activity";
 import { ActivityEventSchema } from "@/core/activity";
 import type { projectLearnerActivity } from "@/core/activity-projection";
@@ -9,12 +9,14 @@ import type { LearnerExhibitDefinition } from "@/core/learner-case";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { ActivityAttemptRepository } from "@/data/v3-repository";
 import type { V3Repository } from "@/data/v3-repository";
+import type { ActivityReview } from "@/core/activity-review";
 import {
   InteractionRenderer,
   type InteractionCommit,
   type LearnerInteraction,
 } from "./InteractionRenderer";
 import styles from "./ActivityShell.module.css";
+import { ActivityReviewSummary } from "./ActivityReviewSummary";
 
 type LearnerActivity = ReturnType<typeof projectLearnerActivity>;
 type ActivityEventInput = ActivityEvent extends infer Event
@@ -49,6 +51,7 @@ export function ActivityShell({
   userId,
   courseContext = null,
   exhibit,
+  nextActivityHref,
   createId = () => crypto.randomUUID(),
   now = () => new Date(),
 }: {
@@ -57,9 +60,11 @@ export function ActivityShell({
   userId?: string;
   courseContext?: CourseContext | null;
   exhibit?: LearnerExhibitDefinition;
+  nextActivityHref?: string;
   createId?: () => string;
   now?: () => Date;
 }) {
+  const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const storageKey = `casework:v3-activity:${initial.id}:${initial.contentVersion}`;
   const [restored] = useState(() => readRun(storageKey));
   const [attemptId] = useState(() => restored?.attemptId ?? createId());
@@ -69,6 +74,7 @@ export function ActivityShell({
   const [view, setView] = useState(initial);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
+  const [completionReview, setCompletionReview] = useState<ActivityReview | null>(null);
   const phaseHeading = useRef<HTMLHeadingElement>(null);
   const saved = useRef(false);
 
@@ -158,7 +164,9 @@ export function ActivityShell({
       const result = await response.json() as {
         skillEvidence: ActivityAttemptParameters["skillEvidence"];
         diagnostics: ActivityAttemptParameters["diagnostics"];
+        review: ActivityReview;
       };
+      setCompletionReview(result.review);
       const destination = await repositoryForSave();
       await destination.repository.saveActivityAttempt({
         attemptId,
@@ -200,9 +208,15 @@ export function ActivityShell({
   const feedback = "feedback" in view ? view.feedback : undefined;
   const interaction = view.interaction as LearnerInteraction;
 
+  if (!ready) return null;
+
   return (
     <section className={styles.shell}>
-      <p className={styles.eyebrow}>{initial.labId} · {initial.estimatedMinutes} min</p>
+      <div className={styles.activityNav}>
+        <p className={styles.eyebrow}>{initial.labId} · {initial.estimatedMinutes} min</p>
+        <Link href={`/practice/${initial.labId}`}>Exit Activity</Link>
+      </div>
+      {events.length > 0 && view.phase !== "complete" && <p className={styles.exitNote}>Committed steps are saved in this browser when you exit.</p>}
       <h1>{initial.title}</h1>
       {view.phase === "context" && (
         <button type="button" disabled={status === "saving"} onClick={() => {
@@ -216,6 +230,7 @@ export function ActivityShell({
             interaction={interaction}
             disabled={status === "saving"}
             exhibit={exhibit}
+            orderSeedKey={`casework:choice-seed:v3-activity:${attemptId}`}
             onCommit={(event) => void sendEvent(event).catch(() => undefined)}
           />
         </div>
@@ -255,13 +270,18 @@ export function ActivityShell({
       )}
       {view.phase === "complete" && (
         <div className={styles.phase}>
-          <h2 ref={phaseHeading} tabIndex={-1}>Activity complete</h2>
-          <p>Your committed work and review are complete.</p>
+          <h2 ref={phaseHeading} tabIndex={-1}>Your result</h2>
+          {completionReview && <ActivityReviewSummary review={completionReview} />}
           {status === "error" && (
             <button type="button" onClick={() => void saveCompletion(events)}>Retry save</button>
           )}
           {savedAttemptId && (
-            <Link href={`/practice/attempts/${savedAttemptId}`}>Review completed attempt</Link>
+            <div className={styles.completionActions}>
+              <Link href={`/practice/attempts/${savedAttemptId}`}>Review Answers</Link>
+              <Link href={`/practice/activities/${initial.id}?version=${initial.contentVersion}`}>Practice Again</Link>
+              {nextActivityHref && <Link href={nextActivityHref}>Next Exercise</Link>}
+              <Link href="/practice">Return to Practice</Link>
+            </div>
           )}
         </div>
       )}

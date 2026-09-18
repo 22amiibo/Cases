@@ -6,6 +6,7 @@ import {
   evaluateActivityCompletion,
   replayActivityEvents,
 } from "@/core/activity";
+import { buildActivityReview } from "@/core/activity-review";
 
 export async function POST(
   request: Request,
@@ -25,10 +26,11 @@ export async function POST(
       CourseContextSchema.parse(body.courseContext);
     }
     const events = ActivityEventSchema.array().parse(body.events);
-    return NextResponse.json(evaluateActivityCompletion(
-      definition,
-      replayActivityEvents(definition, events),
-    ));
+    const state = replayActivityEvents(definition, events);
+    return NextResponse.json({
+      ...evaluateActivityCompletion(definition, state),
+      review: buildActivityReview(definition, state),
+    });
   } catch {
     return NextResponse.json({ error: "Invalid activity completion" }, { status: 400 });
   }

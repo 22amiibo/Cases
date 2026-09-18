@@ -298,7 +298,7 @@ describe("buildRecommendedSession", () => {
     ]);
     expect(legacy).toEqual(empty);
     expect(empty).toMatchObject({
-      title: "V2 diagnostic mix",
+      title: "Build your baseline",
       skillId: "clarification",
       diagnosis: null,
       practice: {
@@ -332,7 +332,7 @@ describe("buildRecommendedSession", () => {
     ]);
 
     expect(recommendation).toMatchObject({
-      title: "Missing major branch",
+      title: "Add the major branch missing from the structure.",
       skillId: "structure",
       diagnosis: {
         code: "missing_major_branch",

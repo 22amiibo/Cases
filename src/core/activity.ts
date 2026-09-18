@@ -681,10 +681,6 @@ function evaluateCommit(
     if (event.stage !== stages[commits.length]) {
       throw new Error("Exhibit stages must be committed in order");
     }
-    if (
-      (event.stage === "observe" || event.stage === "interpret") &&
-      !event.response
-    ) throw new Error(`${event.stage} requires a committed response`);
     if (event.stage !== "act") {
       return { phase: "interaction", reviewStep: null, outcomeId: null };
     }

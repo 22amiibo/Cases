@@ -28,7 +28,7 @@
   gap: 7px;
   color: #58655d;
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -55,7 +55,7 @@
   color: #26332b;
   background: transparent;
   cursor: pointer;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .builder button:disabled {
@@ -97,7 +97,7 @@
 
 .depth {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   text-transform: uppercase;
 }

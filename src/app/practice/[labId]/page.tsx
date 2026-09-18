@@ -13,7 +13,7 @@ export default async function LabPage({ params }: { params: Promise<{ labId: str
   return <main className={styles.page}>
     <header className={styles.header}>
       <Link href="/practice">← Practice</Link>
-      <span>{activities.length} active repetition</span>
+      <span>{activities.length} active repetitions</span>
     </header>
     <section className={styles.intro}>
       <p>Skill Lab</p>

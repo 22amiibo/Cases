@@ -32,13 +32,13 @@ export function HomeRecommendation() {
       {recommendation.diagnosis && (
         <span>
           {recommendation.diagnosis.source === "self_assessment"
-            ? "Self-assessed pattern"
-            : "Objective system finding"}
+            ? "Your reflection"
+            : "Coach feedback"}
         </span>
       )}
       <div className={styles.actions}>
         <Link href={recommendation.practice.href}>
-          Practice {recommendation.practice.label} · V{recommendation.practice.contentVersion} →
+          Practice {recommendation.practice.label} →
         </Link>
       </div>
     </section>

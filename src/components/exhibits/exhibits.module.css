@@ -12,7 +12,7 @@
 .exhibit > header span,
 .table caption {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;

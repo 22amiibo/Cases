@@ -65,10 +65,6 @@ export function CalculationTask({
           Check calculation
         </button>
       </div>
-      <label>
-        Scratch calculation (not graded)
-        <textarea rows={4} placeholder="Set up your equation…" />
-      </label>
       {correct !== null && (
         <p className={correct ? styles.correct : styles.incorrect} role="status">
           {correct ? "Correct" : "Check your math"}

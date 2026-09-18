@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import type { InteractionCommit } from "./InteractionRenderer";
 
 type BrainstormInteraction = {
@@ -15,10 +16,12 @@ export function BrainstormBuilder({
   interaction,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: BrainstormInteraction;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [placements, setPlacements] = useState<Record<string, string>>({});
@@ -26,11 +29,12 @@ export function BrainstormBuilder({
   const toggle = (id: string) => setSelected((current) => current.includes(id)
     ? current.filter((value) => value !== id)
     : [...current, id]);
+  const ideas = useStableChoiceOrder(interaction.ideas, orderSeedKey, interaction.interactionId);
 
   return (
     <fieldset>
       <legend>{interaction.prompt}</legend>
-      {interaction.ideas.map((idea) => (
+      {ideas.map((idea) => (
         <div key={idea.id}>
           <label>
             <input type="checkbox" checked={selected.includes(idea.id)} onChange={() => toggle(idea.id)} />

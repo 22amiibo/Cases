@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
 import { CaseEventSchema, type CaseEvent } from "@/core/schema";
+import { diagnosticDefinitions, type DiagnosticCode } from "@/core/diagnostics";
 import { InvestigationGroups } from "@/components/investigation/InvestigationGroups";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
@@ -16,6 +17,17 @@ type CaseReplayProps = {
 
 function stateLabel(state: LearnerCaseReview["nodes"][number]["state"]) {
   return state.replaceAll("-", " ");
+}
+
+const responseKindLabels: Record<LearnerCaseReview["generatedResponses"][number]["kind"], string> = {
+  opening: "Opening response",
+  calculation: "Calculation reasoning",
+  synthesis: "Synthesis",
+  recommendation: "Recommendation",
+};
+
+function savedFeedbackMessage(code: string) {
+  return diagnosticDefinitions[code as DiagnosticCode]?.explanation ?? "A coaching note was saved with this attempt.";
 }
 
 export function CaseReplay({ review }: CaseReplayProps) {
@@ -60,7 +72,6 @@ export function CaseReplay({ review }: CaseReplayProps) {
           <ul>
             {review.feedback.map((item) => (
               <li key={item.code}>
-                <code>{item.code}</code>
                 <p>{item.message}</p>
               </li>
             ))}
@@ -132,7 +143,7 @@ export function CaseReplay({ review }: CaseReplayProps) {
                 <ul>
                   {hypothesis.diagnostics.map((diagnostic) => (
                     <li key={`${diagnostic.source}-${diagnostic.code}`}>
-                      {diagnostic.code.replaceAll("_", " ")} · {diagnostic.source}
+                      {diagnosticDefinitions[diagnostic.code].explanation}
                     </li>
                   ))}
                 </ul>
@@ -144,7 +155,7 @@ export function CaseReplay({ review }: CaseReplayProps) {
 
       {review.generatedResponses.map((step, index) => (
         <section className={styles.frameworkReview} key={`${step.kind}-${step.label}-${index}`}>
-          <span>{step.kind.replaceAll("_", " ")}</span>
+          <span>{responseKindLabels[step.kind]}</span>
           <h2>{step.label}</h2>
           <ol>
             {step.responses.map((response) => (
@@ -158,7 +169,7 @@ export function CaseReplay({ review }: CaseReplayProps) {
           <ul>
             {step.diagnostics.map((diagnostic, index) => (
               <li key={`${diagnostic.code}-${diagnostic.responseId}-${index}`}>
-                {diagnostic.code.replaceAll("_", " ")} · {diagnostic.source}
+                {diagnosticDefinitions[diagnostic.code].explanation}
               </li>
             ))}
           </ul>
@@ -296,11 +307,9 @@ export function ReviewSession({
           )}
         </p>
         {historicalAttempt.feedbackCodes.length > 0 && (
-          <ul>
-            {historicalAttempt.feedbackCodes.map((code, index) => (
-              <li key={`${code}-${index}`}>{code.replaceAll("_", " ")}</li>
-            ))}
-          </ul>
+          <ul>{historicalAttempt.feedbackCodes.map((code, index) => (
+            <li key={`${code}-${index}`}>{savedFeedbackMessage(code)}</li>
+          ))}</ul>
         )}
         <Link href="/progress">Return to progress</Link>
       </section>

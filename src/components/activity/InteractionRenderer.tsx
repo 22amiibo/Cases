@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { LearnerExhibitDefinition } from "@/core/learner-case";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { BrainstormBuilder } from "./BrainstormBuilder";
 import { ExhibitChain } from "./ExhibitChain";
 import { HypothesisSequence } from "./HypothesisSequence";
@@ -81,18 +82,22 @@ export function InteractionRenderer({
   onCommit,
   disabled,
   exhibit,
+  orderSeedKey,
 }: {
   interaction: LearnerInteraction;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
   exhibit?: LearnerExhibitDefinition;
+  orderSeedKey?: string;
 }) {
+  const seedKey = orderSeedKey ?? `casework:choice-seed:v3:${interaction.interactionId}`;
   if (interaction.type === "single_select" || interaction.type === "multi_select") {
     return <SelectInteraction
       key={`${interaction.type}:${interaction.interactionId}`}
       interaction={interaction}
       onCommit={onCommit}
       disabled={disabled}
+      orderSeedKey={seedKey}
     />;
   }
   if (interaction.type === "ranking") {
@@ -101,17 +106,18 @@ export function InteractionRenderer({
       interaction={interaction}
       onCommit={onCommit}
       disabled={disabled}
+      orderSeedKey={seedKey}
     />;
   }
   if (interaction.type === "brainstorm_builder") {
-    return <BrainstormBuilder interaction={interaction} onCommit={onCommit} disabled={disabled} />;
+    return <BrainstormBuilder interaction={interaction} onCommit={onCommit} disabled={disabled} orderSeedKey={seedKey} />;
   }
   if (interaction.type === "hypothesis_sequence") {
-    return <HypothesisSequence interaction={interaction} onCommit={onCommit} disabled={disabled} />;
+    return <HypothesisSequence interaction={interaction} onCommit={onCommit} disabled={disabled} orderSeedKey={seedKey} />;
   }
   if (interaction.type === "exhibit_chain") {
     return exhibit
-      ? <ExhibitChain interaction={interaction} exhibit={exhibit} onCommit={onCommit} disabled={disabled} />
+      ? <ExhibitChain interaction={interaction} exhibit={exhibit} onCommit={onCommit} disabled={disabled} orderSeedKey={seedKey} />
       : <p role="alert">The exhibit is unavailable.</p>;
   }
   return <CategorizationInteraction
@@ -119,6 +125,7 @@ export function InteractionRenderer({
     interaction={interaction}
     onCommit={onCommit}
     disabled={disabled}
+    orderSeedKey={seedKey}
   />;
 }
 
@@ -126,17 +133,20 @@ function SelectInteraction({
   interaction,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: Extract<LearnerInteraction, { type: "single_select" | "multi_select" }>;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const multiple = interaction.type === "multi_select";
+  const options = useStableChoiceOrder(interaction.options, orderSeedKey, interaction.interactionId);
   return (
     <fieldset>
       <legend>{interaction.prompt}</legend>
-      {interaction.options.map((option) => (
+      {options.map((option) => (
         <label key={option.id}>
           <input
             type={multiple ? "checkbox" : "radio"}
@@ -168,12 +178,15 @@ function RankingInteraction({
   interaction,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: Extract<LearnerInteraction, { type: "ranking" }>;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
-    const [order, setOrder] = useState(() => interaction.items.map(({ id }) => id));
+    const items = useStableChoiceOrder(interaction.items, orderSeedKey, interaction.interactionId);
+    const [order, setOrder] = useState(() => items.map(({ id }) => id));
     const move = (index: number, direction: -1 | 1) => {
       const destination = index + direction;
       if (destination < 0 || destination >= order.length) return;
@@ -207,16 +220,19 @@ function CategorizationInteraction({
   interaction,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: Extract<LearnerInteraction, { type: "categorization" }>;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
     const [placements, setPlacements] = useState<Record<string, string>>({});
+    const items = useStableChoiceOrder(interaction.items, orderSeedKey, interaction.interactionId);
     return (
       <fieldset>
         <legend>{interaction.prompt}</legend>
-        {interaction.items.map((item) => (
+        {items.map((item) => (
           <label key={item.id}>
             {item.label}
             <select

@@ -9,7 +9,7 @@
 
 .card > span {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
 }

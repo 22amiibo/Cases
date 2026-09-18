@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import type { LearnerExhibitDefinition } from "@/core/learner-case";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import type { InteractionCommit } from "./InteractionRenderer";
 
 type ExhibitInteraction = {
@@ -17,33 +18,36 @@ export function ExhibitChain({
   exhibit,
   onCommit,
   disabled,
+  orderSeedKey,
 }: {
   interaction: ExhibitInteraction;
   exhibit: LearnerExhibitDefinition;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  orderSeedKey: string;
 }) {
   const [selectedId, setSelectedId] = useState("");
-  const [response, setResponse] = useState("");
-  const needsResponse = interaction.stage === "observe" || interaction.stage === "interpret";
+  const options = useStableChoiceOrder(
+    interaction.options,
+    orderSeedKey,
+    `${interaction.interactionId}:${interaction.stage}`,
+  );
   return <div>
     <ExhibitRenderer definition={exhibit} revealed />
     <fieldset>
       <legend>{interaction.stage[0].toUpperCase() + interaction.stage.slice(1)}</legend>
-      {interaction.options.map((option) => <label key={option.id}>
+      {options.map((option) => <label key={option.id}>
         <input type="radio" name={`exhibit-${interaction.stage}`} checked={selectedId === option.id} onChange={() => setSelectedId(option.id)} />
         {option.label}
       </label>)}
-      {needsResponse && <label>Your reasoning<textarea value={response} onChange={(event) => setResponse(event.target.value)} rows={4} /></label>}
       <button
         type="button"
-        disabled={disabled || !selectedId || (needsResponse && !response.trim())}
+        disabled={disabled || !selectedId}
         onClick={() => onCommit({
           type: "exhibit_committed",
           interactionId: interaction.interactionId,
           stage: interaction.stage,
           selectedIds: [selectedId],
-          ...(needsResponse ? { response: response.trim() } : {}),
         })}
       >Commit {interaction.stage}</button>
     </fieldset>

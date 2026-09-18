@@ -23,7 +23,7 @@
 .feedbackCard > span,
 .efficientPath > span {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -32,7 +32,7 @@
 
 .frameworkReview > span {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -72,7 +72,7 @@
 
 .graph li > span {
   color: #5e6a62;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.67rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -93,7 +93,7 @@
 
 .feedbackCard ul { display: grid; gap: 10px; list-style: none; }
 .feedbackCard li { display: grid; gap: 4px; border-left: 3px solid #d28c5d; padding-left: 11px; }
-.feedbackCard code { color: #a14724; font-family: var(--font-geist-mono); font-size: 0.74rem; }
+.feedbackCard code { color: #a14724; font-family: var(--font-mono); font-size: 0.74rem; }
 
 .efficientPath { grid-column: 1 / -1; }
 .frameworkReview { grid-column: 1 / -1; }

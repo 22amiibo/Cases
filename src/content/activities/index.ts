@@ -5,6 +5,7 @@ import { alpinefitBrainstormingV3 } from "./alpinefit-brainstorming-v3";
 import { alpinefitClarifyingV3 } from "./alpinefit-clarifying-v3";
 import { alpinefitExhibitV3 } from "./alpinefit-exhibit-v3";
 import { alpinefitHypothesisV3 } from "./alpinefit-hypothesis-v3";
+import { flagshipTransferActivitiesV3 } from "./flagship-transfer-v3";
 
 export function createActivityRegistry(
   definitions: unknown[],
@@ -42,12 +43,21 @@ export const activityDefinitions: ActivityDefinition[] = [
   alpinefitExhibitV3,
   alpinefitBrainstormingV3,
   alpinefitHypothesisV3,
+  ...flagshipTransferActivitiesV3,
 ];
 export const activeActivityVersions = Object.freeze({
   "alpinefit-clarifying-v3": 1,
   "alpinefit-exhibit-v3": 1,
   "alpinefit-brainstorming-v3": 1,
   "alpinefit-hypothesis-v3": 1,
+  "paypilot-clarifying-v3": 1,
+  "goldenloaf-clarifying-v3": 1,
+  "paypilot-exhibit-v3": 1,
+  "goldenloaf-exhibit-v3": 1,
+  "paypilot-brainstorming-v3": 1,
+  "goldenloaf-brainstorming-v3": 1,
+  "paypilot-hypothesis-v3": 1,
+  "goldenloaf-hypothesis-v3": 1,
 });
 export const activeActivityDefinitions = activityDefinitions.filter(
   ({ id, contentVersion, status }) => status === "active" && activeActivityVersions[id as keyof typeof activeActivityVersions] === contentVersion,

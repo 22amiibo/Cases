@@ -67,7 +67,7 @@ describe("HomeRecommendation", () => {
     render(<HomeRecommendation />);
 
     expect(
-      screen.getByRole("link", { name: /alpinefit opening clarification · v2/i }),
+      screen.getByRole("link", { name: /alpinefit opening clarification/i }),
     ).toHaveAttribute(
       "href",
       "/drills/clarification?rep=alpinefit-opening-clarification&version=2",
@@ -82,10 +82,10 @@ describe("HomeRecommendation", () => {
     };
     render(<HomeRecommendation />);
 
-    expect(screen.getByText("Objective system finding")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /missing major branch/i }))
+    expect(screen.getByText("Coach feedback")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /add the major branch missing/i }))
       .toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /quickcart structure transfer · v2/i }))
+    expect(screen.getByRole("link", { name: /quickcart structure transfer/i }))
       .toHaveAttribute(
         "href",
         "/drills/structure?rep=quickcart-structure-v2&version=2",

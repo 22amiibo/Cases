@@ -928,7 +928,11 @@ and preserved `/drills` behavior.
   IDs, refresh, and course query context.
 - [x] Add one browser journey per lab plus shared axe and 320px coverage.
 - [x] Run focused tests and commit `feat: launch v3 flagship skill labs`.
-- [ ] Stop. Owner playtests all four labs and records `proceed`,
+- [x] Stop. Owner playtested all four labs and recorded `revise and replaytest`
+  in `PRODUCT_DECISION_LEDGER.md`.
+- [x] Implement the approved Task 7 learning-quality and UX revisions without
+  changing the underlying activity engine or beginning Task 8.
+- [ ] Stop again. Owner replaytests all four revised labs and records `proceed`,
   `revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`.
 - [x] Do not begin Task 8 until the recorded decision is `proceed`.
 

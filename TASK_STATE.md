@@ -17,9 +17,9 @@ V3.0 Tasks 8-12 remain gated on the mandatory Task 7 owner playtest.
 
 ## Current task
 
-Task 7 implementation is complete. The Practice hub, four lab pages, exact
-activity launch, recent activity, and owned attempt review are ready for the
-mandatory owner learning-quality playtest.
+The Task 7 owner playtest recorded `revise and replaytest`. The requested
+learning-quality and UX revisions are implemented and ready for the mandatory
+owner replaytest. Task 8 has not started.
 
 ## Completed tasks
 
@@ -45,6 +45,13 @@ mandatory owner learning-quality playtest.
   history behavior, and preserved `/drills` compatibility are covered. The
   full gate passes 75 test files / 352 tests, 40 Playwright journeys, lint,
   typecheck, production build, and `git diff --check`.
+- The Task 7 revision pass expands every flagship lab to three varied
+  repetitions, strengthens Exhibit decisions and stable per-attempt ordering,
+  replaces unsupported inputs with structured feedback, adds resumable exit
+  and learner-centered completion review, rewrites Progress coaching, derives
+  lightweight achievements, and uses the static typography stack site-wide.
+  Validation passes 77 test files / 359 tests and 46 Playwright journeys,
+  plus lint, typecheck, production build, and `git diff --check`.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -61,7 +68,7 @@ mandatory owner learning-quality playtest.
 
 ## Remaining work
 
-- Owner playtests Clarifying, Exhibit Analysis, Brainstorming, and Hypothesis
+- Owner replaytests Clarifying, Exhibit Analysis, Brainstorming, and Hypothesis
   and records `proceed`, `revise and replaytest`, or `stop`.
 - Tasks 8-12 remain gated on a recorded `proceed` decision.
 
@@ -125,6 +132,6 @@ mandatory owner learning-quality playtest.
 
 ## Exact next action
 
-Run the mandatory owner playtest from `/practice` and record `proceed`,
+Run the mandatory owner replaytest from `/practice` and record `proceed`,
 `revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`. Do not begin
 Task 8 without `proceed`.

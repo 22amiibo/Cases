@@ -21,6 +21,8 @@ describe("CalculationTask", () => {
     const onSubmit = vi.fn();
     render(<CalculationTask definition={task} onSubmit={onSubmit} />);
 
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+
     await user.type(screen.getByLabelText("Answer in $"), "755500");
     await user.click(screen.getByRole("button", { name: "Check calculation" }));
 

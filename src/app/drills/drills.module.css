@@ -18,16 +18,16 @@
   padding-bottom: 22px;
   border-bottom: 1px solid #aeb6ad;
   color: #667169;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
 }
 
 .wordmark {
   color: #18211c;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: 1.1rem;
-  font-weight: 760;
+  font-weight: 700;
   letter-spacing: -0.04em;
   text-transform: none;
 }
@@ -41,14 +41,14 @@
 
 .intro > p {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
 }
 
 .intro h1 {
   max-width: 760px;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: clamp(3rem, 7vw, 6.4rem);
   font-weight: 400;
   line-height: 0.95;
@@ -86,7 +86,7 @@
 .index,
 .count {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
 }

@@ -11,6 +11,10 @@ const descriptions = {
 } as const;
 
 export default function PracticePage() {
+  const labs = [...new Set(activeActivityDefinitions.map(({ labId }) => labId))].map((labId) => ({
+    labId,
+    count: activeActivityDefinitions.filter((activity) => activity.labId === labId).length,
+  }));
   return <main className={styles.page}>
     <header className={styles.header}>
       <Link href="/" className={styles.wordmark}>Casework</Link>
@@ -22,11 +26,11 @@ export default function PracticePage() {
       <span>Commit a decision, review specific feedback, and retry while the context is fresh.</span>
     </section>
     <section className={styles.grid} aria-label="Skill Labs">
-      {activeActivityDefinitions.map((activity, index) => <article className={styles.card} key={activity.id}>
-        <span>0{index + 1} · {activity.estimatedMinutes} min</span>
-        <h2>{SKILL_LAB_LABELS[activity.labId]}</h2>
-        <p>{descriptions[activity.labId as keyof typeof descriptions]}</p>
-        <Link href={`/practice/${activity.labId}`}>Open {SKILL_LAB_LABELS[activity.labId]} lab</Link>
+      {labs.map(({ labId, count }) => <article className={styles.card} key={labId}>
+        <span>{count} exercises</span>
+        <h2>{SKILL_LAB_LABELS[labId]}</h2>
+        <p>{descriptions[labId as keyof typeof descriptions]}</p>
+        <Link href={`/practice/${labId}`}>Open {SKILL_LAB_LABELS[labId]} lab</Link>
       </article>)}
     </section>
     <section className={styles.legacy}>

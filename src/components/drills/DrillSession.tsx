@@ -42,10 +42,6 @@ function pendingDrillKey(definitionId: string) {
   return `drill:${definitionId}`;
 }
 
-function formatFeedback(code: string) {
-  return code.replaceAll("_", " ");
-}
-
 function feedbackMessage(code: string) {
   const messages: Record<string, string> = {
     strong_priority: "Your selected branch has the highest authored information value.",
@@ -203,7 +199,7 @@ function HydratedDrillSession({
             <strong>
               {result.pointsEarned} / {result.pointsPossible}
             </strong>
-            <h2>{formatFeedback(result.feedbackCode)}</h2>
+            <h2>{result.pointsEarned === result.pointsPossible ? "Strong work" : "Keep practicing"}</h2>
             {result.quantitativeFeedback
               ? <QuantitativeFeedbackPanel feedback={result.quantitativeFeedback} />
               : <p>{feedbackMessage(result.feedbackCode)}</p>}
@@ -350,10 +346,6 @@ function QuantitativeForm({
           onChange={setUnit}
         />
       </div>
-      <label>
-        Scratch calculation (not graded)
-        <textarea rows={5} placeholder="Write out your math…" />
-      </label>
       <button type="submit" disabled={!answer || !unit}>
         Check answer
       </button>

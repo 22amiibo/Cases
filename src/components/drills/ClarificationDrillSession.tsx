@@ -11,6 +11,7 @@ import {
   type LearningCycleState,
 } from "@/core/learning-cycle";
 import type { DiagnosticOutcome } from "@/core/schema";
+import { diagnosticDefinitions } from "@/core/diagnostics";
 import { createV2ClarificationAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { PracticeRepository } from "@/data/repository";
@@ -169,8 +170,8 @@ function HydratedClarificationDrillSession({
           <div className={styles.result} aria-live="polite">
             <p>Interviewer responses</p>
             {result.responses.map((item) => <p key={item.questionId}>{item.response}</p>)}
-            <h2>Opening diagnostics</h2>
-            <ul>{result.diagnostics.map((item) => <li key={item.code}>{item.code.replaceAll("_", " ")} · {item.source}</li>)}</ul>
+            <h2>Opening coaching</h2>
+            <ul>{result.diagnostics.map((item) => <li key={item.code}>{diagnosticDefinitions[item.code].explanation}</li>)}</ul>
           </div>
         )}
       </div>

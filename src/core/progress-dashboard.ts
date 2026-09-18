@@ -337,10 +337,10 @@ export function buildRecommendedSession(history: SkillAttempt[]) {
   const candidate = recurringDiagnosticCandidate(v2History);
   if (!candidate) {
     return {
-      title: "V2 diagnostic mix",
+      title: "Build your baseline",
       skillId: "clarification" as const,
       diagnosis: null,
-      explanation: "Build a baseline across the V2 reasoning cycle.",
+      explanation: "Build a baseline across the core reasoning cycle.",
       practice: {
         kind: "drill" as const,
         id: "alpinefit-opening-clarification",
@@ -354,17 +354,12 @@ export function buildRecommendedSession(history: SkillAttempt[]) {
   const area = diagnosticDefinitions[candidate.code].area;
   const skillId = diagnosticSkill(area);
   return {
-    title: readableDiagnostic(candidate.code),
+    title: diagnosticDefinitions[candidate.code].explanation,
     skillId,
     diagnosis: candidate,
-    explanation: `${candidate.count} recent ${candidate.source === "system" ? "system checks" : "self-assessments"} surfaced this pattern.`,
+    explanation: `This pattern appeared in ${candidate.count} recent reviews.`,
     practice: recommendationTarget(area, candidate.latestScaffoldingLevel),
   };
-}
-
-function readableDiagnostic(code: DiagnosticCode) {
-  const text = code.replaceAll("_", " ");
-  return `${text[0].toUpperCase()}${text.slice(1)}`;
 }
 
 function diagnosticSkill(area: DiagnosticArea): TrainableSkillId {

@@ -7,8 +7,27 @@
 .shell h1 {
   margin: 8px 0 32px;
   font-size: clamp(2rem, 6vw, 4rem);
-  font-weight: 450;
+  font-weight: 400;
   letter-spacing: -0.04em;
+}
+
+.activityNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.activityNav a {
+  color: #294c3b;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.exitNote {
+  margin-top: 10px;
+  color: #5f6a63;
+  font-size: 0.85rem;
 }
 
 .shell button {
@@ -29,7 +48,7 @@
 
 .eyebrow {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
 }
@@ -94,4 +113,65 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.review {
+  display: grid;
+  gap: 20px;
+}
+
+.outcome {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 14px;
+  padding: 18px;
+  color: #fffdf6;
+  background: #294c3b;
+}
+
+.outcome strong { font-size: clamp(1.4rem, 4vw, 2.2rem); }
+
+.coaching {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.coaching section,
+.answerReview {
+  border: 1px solid #c4cbc3;
+  border-radius: 12px;
+  padding: 18px;
+  background: #fffef9;
+}
+
+.coaching ul { padding-left: 20px; }
+
+.answerReview summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.answerReview ol { margin-top: 16px; }
+.answerReview li { display: grid; }
+.answerReview small { color: #8b3d20; }
+
+.completionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.completionActions a {
+  border: 1px solid #294c3b;
+  border-radius: 999px;
+  padding: 11px 15px;
+  color: #294c3b;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .coaching { grid-template-columns: 1fr; }
 }

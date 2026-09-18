@@ -14,7 +14,7 @@
   text-transform: uppercase;
 }
 
-.page > header a { color: #294c3b; font-weight: 750; }
+.page > header a { color: #294c3b; font-weight: 700; }
 
 .intro {
   display: grid;
@@ -25,7 +25,7 @@
 
 .intro > p:first-child {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;

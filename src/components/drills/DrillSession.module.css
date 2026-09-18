@@ -8,7 +8,7 @@
   display: flex;
   justify-content: space-between;
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
 }
@@ -27,7 +27,7 @@
 
 .prompt h1 {
   max-width: 760px;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: clamp(2rem, 4.5vw, 4rem);
   font-weight: 400;
   line-height: 1.05;
@@ -52,7 +52,7 @@
   border: 0;
   color: #5f6a63;
   font-size: 0.8rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .form select,
@@ -65,7 +65,7 @@
   color: #18211c;
   background: #fffef9;
   font: inherit;
-  font-weight: 450;
+  font-weight: 400;
 }
 
 .form button,
@@ -102,7 +102,7 @@
 
 .result > p:first-child {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
 }
@@ -110,7 +110,7 @@
 .result strong {
   display: block;
   margin: 18px 0;
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-sans);
   font-size: clamp(3rem, 8vw, 6rem);
   font-weight: 400;
   letter-spacing: -0.06em;
@@ -142,7 +142,7 @@
 
 .exhibitPreview > span {
   color: #9b4a29;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.68rem;
 }
 

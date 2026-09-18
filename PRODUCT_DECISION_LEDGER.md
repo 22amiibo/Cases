@@ -247,23 +247,30 @@ the proceed decision does not represent confirmation that this control works.
 Task 12 remains bounded to the remaining twelve V2 pilot drills and must not
 silently expand into a replay-navigation redesign.
 
-### V3 Gate 7: awaiting owner playtest decision
+### V3 Gate 7: revise and replaytest
 
-**Owner decision:** pending.
+**Owner decision:** `revise and replaytest` on 2026-09-18.
 
 The four V3.0 flagship labs are available from `/practice`: Clarifying, Exhibit
 Analysis, Brainstorming, and Hypothesis. Their implementation gate passes 75
 test files / 352 tests and all 40 Playwright journeys, including axe, 320px
 reflow, refresh recovery, answer secrecy, save retry, and attempt review.
 
-The playtest should determine whether feedback improves a second response,
-classifications are fair and specific, Exhibit's observation-to-action chain is
-clear, Brainstorming rewards structure rather than count, and Hypothesis
-updates remain tied to evidence.
+The first owner playtest approved the flagship-lab architecture but found that
+the initial exercises were too few and, for Exhibit, too easy and predictable.
+It also found weak completion/review hierarchy, no clear activity exit,
+unsupported learner inputs, implementation language in Progress, no milestone
+view, and variable typography.
 
-Record exactly `proceed`, `revise and replaytest`, or `stop` here. Task 8 and
-all later V3.0 implementation remain gated until the recorded decision is
-`proceed`.
+The revision pass adds three varied exercises per flagship lab, stable
+per-attempt choice ordering, stronger Exhibit distractors, structured feedback,
+resumable exit, learner-centered completion/review, translated Progress copy,
+derived achievements, and the static typography stack. The full local gate
+passes 77 test files / 359 tests and 46 Playwright journeys.
+
+The owner must replaytest and record a new `proceed`, `revise and replaytest`,
+or `stop` decision. Task 8 and all later V3.0 implementation remain gated until
+that decision is `proceed`.
 
 ## Wave 1 P0 Preconditions
 

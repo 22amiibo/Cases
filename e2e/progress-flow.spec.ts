@@ -55,31 +55,26 @@ test("guest sees progress and a deterministic next session after practice", asyn
   await page.goto("/");
   await page.getByRole("link", { name: "View progress" }).click();
 
-  await expect(
-    page.getByRole("heading", { name: "Your practice progress" }),
-  ).not.toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Your learning evidence" }),
-  ).toBeVisible();
-  await expect(page.getByText("1 V2 sessions · 2 Legacy V1 sessions")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Progress you can act on" })).toBeVisible();
+  await expect(page.getByText("1 focused practice · 1 completed case")).toBeVisible();
   await expect(
     page
       .locator("section")
-      .filter({ has: page.getByRole("heading", { name: "Legacy V1" }) })
+      .filter({ has: page.getByRole("heading", { name: "Earlier practice" }) })
       .getByRole("article")
       .filter({ has: page.getByRole("heading", { name: "Quantitative reasoning" }) })
       .getByText("Strong", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Recommended next: Comparison missed" }),
+    page.getByRole("heading", { name: "Use the comparison that best distinguishes the result." }),
   ).toBeVisible();
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Recommended next: Comparison missed" }),
+    page.getByRole("heading", { name: "Recommended next: Use the comparison that best distinguishes the result." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /practice beacon exhibit transfer · v2/i }),
+    page.getByRole("link", { name: /practice beacon exhibit transfer/i }),
   ).toHaveAttribute(
     "href",
     "/drills/exhibit?rep=beacon-exhibit-v2&version=2",
@@ -169,10 +164,10 @@ test("dense guest history targets a recurring objective diagnosis and rotates af
   });
 
   await page.goto("/progress");
-  await expect(page.getByRole("heading", { name: "Recommended next: Setup error" }))
+  await expect(page.getByRole("heading", { name: "Rebuild the equation from the business relationships." }))
     .toBeVisible();
-  await expect(page.getByText("Objective system finding")).toBeVisible();
-  await expect(page.getByRole("link", { name: /harborcart quantitative transfer · v2/i }))
+  await expect(page.getByText("Coach feedback").last()).toBeVisible();
+  await expect(page.getByRole("link", { name: /harborcart quantitative transfer/i }))
     .toHaveAttribute(
       "href",
       "/drills/quantitative?rep=harborcart-quantitative-v2&version=2",
@@ -236,9 +231,9 @@ test("signed-in history produces the same exact diagnostic recommendation", asyn
   });
 
   await page.goto("/progress");
-  await expect(page.getByRole("heading", { name: "Recommended next: Missing major branch" }))
+  await expect(page.getByRole("heading", { name: "Add the major branch missing from the structure." }))
     .toBeVisible();
-  const exactRep = page.getByRole("link", { name: /quickcart structure transfer · v2/i });
+  const exactRep = page.getByRole("link", { name: /quickcart structure transfer/i });
   await expect(exactRep).toHaveAttribute(
       "href",
       "/drills/structure?rep=quickcart-structure-v2&version=2",
@@ -322,7 +317,7 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
     request.method() === "POST" &&
     request.url().includes("/api/cases/alpinefit-profitability/session"),
   );
-  await page.getByRole("link", { name: "Review AlpineFit profitability · V2" }).click();
+  await page.getByRole("link", { name: "Review AlpineFit profitability" }).click();
   const replayPayload = await (await replayRequest).postDataJSON() as {
     contentVersion: number;
     events: unknown[];
@@ -379,7 +374,7 @@ test("signed-in case history stops safely when its exact version is unavailable"
   );
 
   await page.goto("/progress");
-  await page.getByRole("link", { name: "Review AlpineFit profitability · V99" }).click();
+  await page.getByRole("link", { name: "Review AlpineFit profitability" }).click();
   await expect(
     page.getByRole("heading", { name: "Historical replay unavailable" }),
   ).toBeVisible();
@@ -470,8 +465,8 @@ test("mixed history keeps V2 evidence separate and reflows at 320px", async ({
     .getByRole("article")
     .filter({ has: page.getByRole("heading", { name: "Case opening & clarification" }) });
   await expect(openingCard.getByText("Building", { exact: true })).toBeVisible();
-  await expect(openingCard.getByText(/Self-assessed/)).toBeVisible();
-  await expect(page.getByText("Legacy score 100")).toBeVisible();
+  await expect(openingCard.getByText(/Your reflection/)).toBeVisible();
+  await expect(page.getByText("Score 100")).toBeVisible();
   await expect(page.getByText(/Interview ready/i)).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(

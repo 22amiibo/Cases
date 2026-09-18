@@ -184,7 +184,7 @@ describe("ReviewSession framework recovery", () => {
       await screen.findByRole("heading", { name: "Historical replay unavailable" }),
     ).toBeVisible();
     expect(screen.getByText("Content version 99")).toBeVisible();
-    expect(screen.getByText("missing major branch")).toBeVisible();
+    expect(screen.getByText("Add the major branch missing from the structure.")).toBeVisible();
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       events: [],

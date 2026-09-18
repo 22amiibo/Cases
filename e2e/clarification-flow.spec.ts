@@ -36,7 +36,7 @@ test("clarification V2 keeps answers hidden, returns authored responses, and rec
   await expect(page.getByText(/Operating margin is operating profit/)).toBeVisible();
   await expect(page.getByText(/last nine months/)).toBeVisible();
   await expect(page.getByText(/does not want a broad price increase/)).toBeVisible();
-  await expect(page.getByText(/strong opening · system/i)).toBeVisible();
+  await expect(page.getByText("You framed the decision and resolved useful ambiguity.")).toBeVisible();
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,

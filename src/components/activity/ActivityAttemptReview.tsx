@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ActivityAttempt } from "@/core/activity";
+import type { ActivityReview } from "@/core/activity-review";
+import { activityEventLabel } from "@/core/activity-review";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { ActivityAttemptRepository, V3Repository } from "@/data/v3-repository";
+import { ActivityReviewSummary } from "./ActivityReviewSummary";
 
 type ReviewView = {
-  title: string;
-  feedback?: { explanation?: string; principle?: string; nextAction?: string };
-  takeaway?: string;
+  review: ActivityReview;
 };
 
 function Timeline({ attempt }: { attempt: ActivityAttempt }) {
   return <>
-    <h2>Committed timeline</h2>
-    <ol>{attempt.events.map((event) => <li key={event.eventId}>{event.type.replaceAll("_", " ")}</li>)}</ol>
+    <h2>Saved decisions</h2>
+    <ol>{attempt.events.map((event) => <li key={event.eventId}>{activityEventLabel(event)}</li>)}</ol>
   </>;
 }
 
@@ -44,10 +45,10 @@ export function ActivityAttemptReview({
           }));
       const attempt = await destination.repository.getActivityAttempt(destination.userId, attemptId);
       if (!attempt) return "unavailable" as const;
-      const response = await fetch(`/api/activities/${attempt.activityId}/session`, {
+      const response = await fetch(`/api/activities/${attempt.activityId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentVersion: attempt.contentVersion, events: attempt.events }),
+        body: JSON.stringify({ contentVersion: attempt.contentVersion, events: attempt.events, courseContext: attempt.courseContext }),
       });
       if (!response.ok) return { attempt, view: null };
       return { attempt, view: await response.json() as ReviewView };
@@ -61,13 +62,9 @@ export function ActivityAttemptReview({
   if (result === "unavailable") return <section><h1>Attempt unavailable</h1><p>This attempt is missing or belongs to another account.</p></section>;
   if (result.view === null) return <section><h1>Historical content unavailable</h1><p>The exact activity version cannot be loaded. Your committed event history remains available below.</p><Timeline attempt={result.attempt} /></section>;
   return <section>
-    <p>Completed {result.attempt.completedAt.slice(0, 10)} · V{result.attempt.contentVersion}</p>
-    <h1>{result.view.title}</h1>
-    {result.view.feedback?.explanation && <p>{result.view.feedback.explanation}</p>}
-    {result.view.feedback?.principle && <p><strong>Principle:</strong> {result.view.feedback.principle}</p>}
-    {result.view.feedback?.nextAction && <p><strong>Next:</strong> {result.view.feedback.nextAction}</p>}
-    {result.view.takeaway && <p><strong>Takeaway:</strong> {result.view.takeaway}</p>}
-    <Timeline attempt={result.attempt} />
+    <p>Completed {result.attempt.completedAt.slice(0, 10)}</p>
+    <h1>{result.view.review.title}</h1>
+    <ActivityReviewSummary review={result.view.review} />
     <Link href="/practice">Return to Practice</Link>
   </section>;
 }

@@ -16,7 +16,7 @@
 
 .header a {
   color: #294c3b;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .intro {
@@ -27,7 +27,7 @@
 .intro p,
 .caseCard span {
   color: #a14724;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;

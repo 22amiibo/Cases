@@ -7,6 +7,16 @@ import type { PracticeRepository } from "@/data/repository";
 import { DrillSession } from "./DrillSession";
 
 describe("DrillSession persistence", () => {
+  it("does not present an unreviewed scratch response as part of quantitative practice", () => {
+    const definition = drillBanks.quantitative[0] as Extract<
+      DrillDefinition,
+      { skillId: "quantitative" }
+    >;
+    render(<DrillSession definitions={[definition]} />);
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Your answer" })).toBeVisible();
+  });
   it("saves the completed drill through the active practice repository", async () => {
     const definition = drillBanks.prioritization[0] as Extract<
       DrillDefinition,

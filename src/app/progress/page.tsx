@@ -12,10 +12,25 @@ function readableFeedback(code: string) {
   return code.replaceAll("_", " ");
 }
 
+const pilotCaseLabels: Record<string, string> = {
+  "alpinefit-profitability": "AlpineFit profitability",
+  "paypilot-growth": "PayPilot growth",
+  "goldenloaf-operations": "GoldenLoaf operations",
+};
+
 export default function ProgressPage() {
   const progress = usePracticeProgress();
   const dashboard = buildProgressDashboard(progress.history);
   const recommendation = buildRecommendedSession(progress.history);
+  const caseReplays = [...new Map(
+    progress.history.flatMap((attempt) =>
+      attempt.attemptType === "case" &&
+      attempt.scoringVersion === "v2" &&
+      attempt.caseId
+        ? [[attempt.attemptId, attempt] as const]
+        : [],
+    ),
+  ).values()];
 
   return (
     <main className={styles.page}>
@@ -136,6 +151,43 @@ export default function ProgressPage() {
               </small>
             </div>
           </section>
+
+          {caseReplays.length > 0 && (
+            <section className={styles.replays} aria-labelledby="case-replays-heading">
+              <div className={styles.sectionIntro}>
+                <div>
+                  <p>Versioned history</p>
+                  <h2 id="case-replays-heading">Case replays</h2>
+                </div>
+                <p>
+                  Each replay uses the content version and ordered events saved
+                  with that attempt.
+                </p>
+              </div>
+              <div className={styles.replayGrid}>
+                {caseReplays.map((attempt) => (
+                  <article key={attempt.attemptId}>
+                    <p>
+                      {new Date(attempt.completedAt).toLocaleDateString("en-US", {
+                        dateStyle: "long",
+                        timeZone: "UTC",
+                      })}
+                    </p>
+                    <h3>
+                      {pilotCaseLabels[attempt.caseId!] ?? attempt.caseId!.replaceAll("-", " ")}
+                      {" · V"}{attempt.contentVersion}
+                    </h3>
+                    <Link
+                      href={`/cases/${attempt.caseId}/review?attemptId=${encodeURIComponent(attempt.attemptId)}`}
+                    >
+                      Review {pilotCaseLabels[attempt.caseId!] ?? attempt.caseId!.replaceAll("-", " ")}
+                      {" · V"}{attempt.contentVersion}
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className={styles.recommendation}>
             <p>Next V2 practice</p>

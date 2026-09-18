@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
-import { CaseEventSchema } from "@/core/schema";
+import { CaseEventSchema, type CaseEvent } from "@/core/schema";
 import { InvestigationGroups } from "@/components/investigation/InvestigationGroups";
+import { getBrowserPracticeSession } from "@/data/browser-practice";
+import type { CaseAttempt } from "@/data/repository";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import styles from "./review.module.css";
 
@@ -193,9 +195,18 @@ function FrameworkTree({
   );
 }
 
-export function ReviewSession({ caseId }: { caseId: string }) {
+export function ReviewSession({
+  caseId,
+  attemptId,
+}: {
+  caseId: string;
+  attemptId?: string;
+}) {
   const [review, setReview] = useState<LearnerCaseReview | null>(null);
-  const [status, setStatus] = useState<"loading" | "missing" | "error">("loading");
+  const [historicalAttempt, setHistoricalAttempt] = useState<CaseAttempt | null>(null);
+  const [status, setStatus] = useState<
+    "loading" | "missing" | "unavailable" | "error"
+  >("loading");
 
   useEffect(() => {
     let active = true;
@@ -203,48 +214,61 @@ export function ReviewSession({ caseId }: { caseId: string }) {
     async function loadReview() {
       await Promise.resolve();
       try {
-        const stored = window.sessionStorage.getItem(
-          `casework:guest-session:${caseId}`,
-        );
-        if (!stored) {
-          if (active) setStatus("missing");
-          return;
+        let events: CaseEvent[];
+        let contentVersion: number;
+        if (attemptId) {
+          const { repository, userId } = await getBrowserPracticeSession();
+          const attempt = await repository.getCaseAttempt(userId, attemptId);
+          if (!attempt || attempt.caseId !== caseId) {
+            if (active) setStatus("missing");
+            return;
+          }
+          if (!active) return;
+          setHistoricalAttempt(attempt);
+          events = attempt.events;
+          contentVersion = attempt.contentVersion ?? 1;
+        } else {
+          const stored = window.sessionStorage.getItem(
+            `casework:guest-session:${caseId}`,
+          );
+          if (!stored) {
+            if (active) setStatus("missing");
+            return;
+          }
+          const parsed = JSON.parse(stored) as {
+            events?: unknown[];
+            contentVersion?: unknown;
+          };
+          if (!Array.isArray(parsed.events)) {
+            if (active) setStatus("missing");
+            return;
+          }
+          events = parsed.events.flatMap((event) => {
+            const result = CaseEventSchema.safeParse(event);
+            return result.success ? [result.data] : [];
+          });
+          contentVersion = Number.isInteger(parsed.contentVersion)
+            ? (parsed.contentVersion as number)
+            : 1;
         }
-        const parsed = JSON.parse(stored) as { events?: unknown[]; contentVersion?: unknown };
-        if (!Array.isArray(parsed.events)) {
-          if (active) setStatus("missing");
-          return;
-        }
-        const events = parsed.events.flatMap((event) => {
-          const result = CaseEventSchema.safeParse(event);
-          return result.success ? [result.data] : [];
-        });
-        void fetch(`/api/cases/${caseId}/session`, {
+        const response = await fetch(`/api/cases/${caseId}/session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            events,
-            contentVersion: Number.isInteger(parsed.contentVersion)
-              ? parsed.contentVersion
-              : 1,
-          }),
-        })
-          .then((response) => {
-            if (!response.ok) throw new Error("Unable to load review");
-            return response.json() as Promise<LearnerSessionView>;
-          })
-          .then((view) => {
-            if (!view.review) {
-              if (active) setStatus("missing");
-              return;
-            }
-            if (active) setReview(view.review);
-          })
-          .catch(() => {
-            if (active) setStatus("error");
-          });
+          body: JSON.stringify({ events, contentVersion }),
+        });
+        if (attemptId && response.status === 404) {
+          if (active) setStatus("unavailable");
+          return;
+        }
+        if (!response.ok) throw new Error("Unable to load review");
+        const view = await response.json() as LearnerSessionView;
+        if (!view.review) {
+          if (active) setStatus("missing");
+          return;
+        }
+        if (active) setReview(view.review);
       } catch {
-        if (active) setStatus("missing");
+        if (active) setStatus(attemptId ? "error" : "missing");
       }
     }
 
@@ -252,9 +276,36 @@ export function ReviewSession({ caseId }: { caseId: string }) {
     return () => {
       active = false;
     };
-  }, [caseId]);
+  }, [attemptId, caseId]);
 
   if (review) return <CaseReplay review={review} />;
+
+  if (status === "unavailable" && historicalAttempt) {
+    return (
+      <section className={styles.emptyState} aria-live="polite">
+        <h2>Historical replay unavailable</h2>
+        <p>
+          This attempt remains in your history, but its exact case definition
+          is unavailable. Casework did not substitute current content.
+        </p>
+        <p>Content version {historicalAttempt.contentVersion ?? 1}</p>
+        <p>
+          Completed {new Date(historicalAttempt.completedAt).toLocaleDateString(
+            "en-US",
+            { dateStyle: "long", timeZone: "UTC" },
+          )}
+        </p>
+        {historicalAttempt.feedbackCodes.length > 0 && (
+          <ul>
+            {historicalAttempt.feedbackCodes.map((code, index) => (
+              <li key={`${code}-${index}`}>{code.replaceAll("_", " ")}</li>
+            ))}
+          </ul>
+        )}
+        <Link href="/progress">Return to progress</Link>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.emptyState} aria-live="polite">
@@ -267,7 +318,7 @@ export function ReviewSession({ caseId }: { caseId: string }) {
       </h2>
       <p>
         {status === "error"
-          ? "We could not load this saved case session."
+          ? "We could not load this saved case attempt."
           : "Finish a structured recommendation before opening the replay."}
       </p>
       {status !== "loading" && (

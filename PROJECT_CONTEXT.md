@@ -908,6 +908,31 @@ npm run build
   was changed during planning. Despite plan approval, the owner explicitly
   instructed that V2 implementation must not start yet.
 
+### Task 17: Version-safe history/replay and pilot release candidate — complete locally
+
+- Added an owned historical case-attempt repository lookup that joins saved
+  attempt metadata with schema-validated events in stored sequence order.
+- Signed-in and guest V2 case attempts are now listed once on Progress and link
+  to replay by stable attempt ID. Completed cases also carry their attempt ID
+  directly into review.
+- Historical review always posts the saved content version and stored events to
+  the authoritative session projection. If that immutable definition is absent,
+  review shows a stored metadata summary and explicitly refuses to substitute
+  current content.
+- Cross-user repository coverage, existing Supabase RLS policy checks, and
+  user-filtered attempt/event reads protect historical attempts from disclosure.
+- Added a signed-in browser stop-state journey with automated accessibility and
+  320px reflow checks. Existing pilot suites retain full case journeys, keyboard
+  operation, 320/768/1440 reflow, refresh recovery, and precommit answer-secrecy
+  assertions.
+- Updated the README and added `RELEASE_NOTES.md` with the additive migration
+  smoke sequence, separate live-release record, honest Wave 1 boundaries, and a
+  rollback that selects V1 active cases without deleting V2 rows.
+- No obsolete V2 feature flag existed. Pilot activation remains explicit in the
+  immutable case/drill version registries.
+- Production migration, deployment, and live smoke testing were not performed;
+  they require explicit owner approval and are recorded separately.
+
 ## Decisions and Notes
 
 - `create-next-app` selected current stable Next.js 16.3.5.
@@ -923,9 +948,7 @@ npm run build
 
 ## Next Action
 
-Assigned Tasks 12–16 are implemented, committed, and fully verified. Task 17
-remains the next plan task and was intentionally not started in this run.
-
-The completed-case replay/retry entry point and the exhausted-investigation
-NorthStar dead end are resolved and covered by unit, component, and browser
-regressions. Live deployment remains outside this local implementation run.
+Task 17 is implemented locally. Review the release-candidate evidence, then
+obtain explicit owner approval before applying live migrations or deploying.
+After approval, record production sign-in/RLS, save, historical replay, rollback,
+and answer-secrecy smoke results separately from this implementation task.

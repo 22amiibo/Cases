@@ -142,6 +142,7 @@ function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
       attemptId: attempt.attemptId,
       attemptType: "case",
       userId: attempt.userId,
+      caseId: attempt.caseId,
       skillId: parsedSkillId,
       score,
       feedbackCodes: attempt.feedbackCodes,
@@ -225,6 +226,14 @@ export class MemoryPracticeRepository implements PracticeRepository {
         candidate.userId === userId && candidate.attemptId === attemptId,
     );
     return attempt ? [...attempt.events] : [];
+  }
+
+  async getCaseAttempt(userId: string, attemptId: string) {
+    const attempt = this.history.caseAttempts.find(
+      (candidate) =>
+        candidate.userId === userId && candidate.attemptId === attemptId,
+    );
+    return attempt ? { ...attempt, events: [...attempt.events] } : null;
   }
 
   private persist() {

@@ -20,6 +20,7 @@ describe("ClarificationDrillSession", () => {
       saveDrillAttempt: vi.fn().mockResolvedValue(undefined),
       saveCaseAttempt: vi.fn().mockResolvedValue(undefined),
       getSkillHistory: vi.fn().mockResolvedValue([]),
+      getCaseAttempt: vi.fn().mockResolvedValue(null),
       getCaseEvents: vi.fn().mockResolvedValue([]),
     };
     vi.spyOn(globalThis, "fetch")

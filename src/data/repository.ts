@@ -20,6 +20,7 @@ export type SkillAttempt = AttemptLearningMetadata & {
   attemptId: string;
   attemptType: "drill" | "case";
   userId: string;
+  caseId?: string;
   skillId: SkillId;
   score: number;
   feedbackCodes: string[];
@@ -47,6 +48,7 @@ export interface PracticeRepository {
   saveDrillAttempt(attempt: DrillAttempt): Promise<void>;
   saveCaseAttempt(attempt: CaseAttempt): Promise<void>;
   getSkillHistory(userId: string): Promise<SkillAttempt[]>;
+  getCaseAttempt(userId: string, attemptId: string): Promise<CaseAttempt | null>;
   getCaseEvents(userId: string, attemptId: string): Promise<CaseEvent[]>;
 }
 

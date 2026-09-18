@@ -2,19 +2,20 @@
 
 ## Objective
 
-Complete Casework V2 implementation-plan Tasks 12–16 in order, preserving V1/V2 separation, immutable historical content, answer secrecy, deterministic evaluation, and existing user work.
+Complete Casework V2 implementation-plan Task 17 locally, preserving V1/V2
+separation, immutable historical content, answer secrecy, deterministic
+evaluation, and existing user work.
 
 ## Remaining task set
 
-1. Task 12 — Author the remaining twelve V2 pilot drills.
-2. Task 13 — Upgrade PayPilot as the intermediate strategy case.
-3. Task 14 — Upgrade GoldenLoaf as the lower-scaffolding transfer case.
-4. Task 15 — Bind concise lessons to exact embedded V2 reps.
-5. Task 16 — Turn V2 Progress into diagnostic coaching.
+1. Obtain explicit owner approval for the production migration and deployment.
+2. Record live sign-in/RLS, save, historical replay, rollback, and answer-
+   secrecy smoke results after deployment.
 
 ## Current task
 
-Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited. Task 17 is outside this run.
+Task 17 is implemented, locally verified, and ready for the required commit.
+Production migration and deployment remain outside this implementation run.
 
 ## Completed tasks
 
@@ -25,10 +26,13 @@ Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited
 - Task 14 committed as `6cec8a8` (`content: add goldenloaf v2 transfer case`).
 - Task 15 committed as `9422518` (`feat: embed exact v2 practice in learn modules`).
 - Task 16 committed as `feat: add diagnostic v2 progress coaching`.
+- Task 17 adds owned exact-version historical replay, safe unavailable-version
+  summaries, Progress replay links, release documentation, and release gates.
 
 ## Remaining work
 
-- No assigned implementation remains.
+- No assigned local implementation remains.
+- Live migration, deployment, and production smoke checks require owner approval.
 
 ## Important decisions and invariants
 
@@ -51,10 +55,18 @@ Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited
 - Task 16 focused gate: 17 Progress core tests and 2 recommendation component tests passed; lint and typecheck passed; all 4 Progress Playwright journeys passed for guest/signed-in and empty/sparse/dense history behavior.
 - Task 16 fresh full gate: 53 test files / 253 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 31 Playwright journeys passed.
 - Post-plan case-flow remediation: 53 test files / 256 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 32 Playwright journeys passed, including exhausted NorthStar synthesis plus completed-case replay and fresh restart.
+- Task 17 full local gate: 54 test files / 262 tests passed; lint, typecheck,
+  production build, and `git diff --check` passed; all 33 Playwright journeys
+  passed, including signed-in unknown-version safety, axe, and 320px reflow.
+- The migration SQL contract tests passed. This machine has no Supabase CLI,
+  PostgreSQL client, or Docker runtime, so an executable local migration reset
+  was not available and remains a release-environment check.
 
 ## Known deferred issues
 
-- Live deployment/migration work is outside Tasks 12–16.
+- Live deployment/migration work requires explicit owner approval.
+- Executable database migration smoke remains pending in an environment with
+  Supabase CLI and a local database runtime.
 
 ## Blockers
 
@@ -62,4 +74,5 @@ Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited
 
 ## Exact next action
 
-Preserve the two pre-existing untracked user items. Task 17 requires a separate run.
+Review the Task 17 report and commit, then obtain owner approval before any live
+migration or deployment. Preserve the two pre-existing untracked user items.

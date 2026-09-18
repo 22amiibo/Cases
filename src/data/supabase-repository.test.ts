@@ -38,6 +38,7 @@ function client(overrides: Partial<PracticeDatabaseClient> = {}) {
     insertCaseAttempt: vi.fn().mockResolvedValue(undefined),
     selectDrillAttempts: vi.fn().mockResolvedValue([]),
     selectCaseAttempts: vi.fn().mockResolvedValue([]),
+    selectCaseAttempt: vi.fn().mockResolvedValue(null),
     selectCaseEvents: vi.fn().mockResolvedValue([]),
     ...overrides,
   } satisfies PracticeDatabaseClient;
@@ -299,6 +300,83 @@ describe("SupabasePracticeRepository", () => {
       "user-1",
       caseAttempt.attemptId,
     );
+  });
+
+  it("reconstructs an owned historical attempt from metadata and ordered events", async () => {
+    const database = client({
+      selectCaseAttempt: vi.fn().mockResolvedValue({
+        id: caseAttempt.attemptId,
+        user_id: "user-1",
+        case_id: "alpinefit-profitability",
+        skill_scores: { structure: 90, synthesis: 60 },
+        feedback_codes: ["strong_cross_exhibit_synthesis"],
+        completed_at: "2026-01-03T00:00:00.000Z",
+        scoring_version: "v2",
+        content_version: 2,
+        event_schema_version: 2,
+        scaffolding_level: "beginner",
+        learning_evidence: null,
+        diagnostics: [],
+      }),
+      selectCaseEvents: vi.fn().mockResolvedValue([
+        {
+          sequence: 1,
+          event: { type: "node_investigated", nodeId: "costs", atMs: 2 },
+        },
+        {
+          sequence: 0,
+          event: {
+            type: "clarification_selected",
+            clarificationId: "clarify-goal",
+            atMs: 1,
+          },
+        },
+      ]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await expect(
+      repository.getCaseAttempt("user-1", caseAttempt.attemptId),
+    ).resolves.toEqual({
+      ...caseAttempt,
+      events: [
+        {
+          type: "clarification_selected",
+          clarificationId: "clarify-goal",
+          atMs: 1,
+        },
+        { type: "node_investigated", nodeId: "costs", atMs: 2 },
+      ],
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [],
+    });
+    expect(database.selectCaseAttempt).toHaveBeenCalledWith(
+      "user-1",
+      caseAttempt.attemptId,
+    );
+  });
+
+  it("does not read events when the attempt row is not owned by the learner", async () => {
+    const database = client({
+      selectCaseAttempt: vi.fn().mockResolvedValue({
+        id: caseAttempt.attemptId,
+        user_id: "someone-else",
+        case_id: "alpinefit-profitability",
+        skill_scores: { structure: 90 },
+        feedback_codes: [],
+        completed_at: "2026-01-03T00:00:00.000Z",
+      }),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await expect(
+      repository.getCaseAttempt("user-1", caseAttempt.attemptId),
+    ).resolves.toBeNull();
+    expect(database.selectCaseEvents).not.toHaveBeenCalled();
   });
 
   it("skips malformed persisted scores without losing valid history", async () => {

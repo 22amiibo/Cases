@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
 import { CaseReplay, ReviewSession } from "./CaseReplay";
 
+const { getBrowserPracticeSession } = vi.hoisted(() => ({
+  getBrowserPracticeSession: vi.fn(),
+}));
+
+vi.mock("@/data/browser-practice", () => ({ getBrowserPracticeSession }));
+
 const review: LearnerCaseReview = {
   framework: {
     branches: [
@@ -35,6 +41,7 @@ describe("ReviewSession framework recovery", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     vi.restoreAllMocks();
+    getBrowserPracticeSession.mockReset();
   });
 
   it("reloads a nested V2 submission and renders the same hierarchy in review", async () => {
@@ -84,6 +91,104 @@ describe("ReviewSession framework recovery", () => {
     expect(JSON.parse(String(request.body))).toEqual({
       events: [frameworkEvent],
       contentVersion: 2,
+    });
+  });
+
+  it("replays a signed-in attempt against its stored content version and events", async () => {
+    const events = [{
+      type: "clarification_selected" as const,
+      clarificationId: "clarify-goal",
+      atMs: 1,
+    }];
+    const getCaseAttempt = vi.fn().mockResolvedValue({
+      attemptId: "historical-attempt",
+      userId: "user-1",
+      caseId: "alpinefit-profitability",
+      completedAt: "2026-09-17T12:00:00.000Z",
+      skillScores: { structure: 90 },
+      feedbackCodes: [],
+      events,
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [],
+    });
+    getBrowserPracticeSession.mockResolvedValue({
+      repository: { getCaseAttempt },
+      userId: "user-1",
+      isSignedIn: true,
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(view), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    render(
+      <ReviewSession
+        caseId="alpinefit-profitability"
+        attemptId="historical-attempt"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Preserved issue tree" }),
+    ).toBeVisible();
+    expect(getCaseAttempt).toHaveBeenCalledWith("user-1", "historical-attempt");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      events,
+      contentVersion: 2,
+    });
+  });
+
+  it("shows stored metadata instead of current content when a version is unavailable", async () => {
+    const getCaseAttempt = vi.fn().mockResolvedValue({
+      attemptId: "unknown-version-attempt",
+      userId: "user-1",
+      caseId: "alpinefit-profitability",
+      completedAt: "2026-09-17T12:00:00.000Z",
+      skillScores: { structure: 90 },
+      feedbackCodes: ["missing_major_branch"],
+      events: [],
+      scoringVersion: "v2",
+      contentVersion: 99,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [],
+    });
+    getBrowserPracticeSession.mockResolvedValue({
+      repository: { getCaseAttempt },
+      userId: "user-1",
+      isSignedIn: true,
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "Case version not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    render(
+      <ReviewSession
+        caseId="alpinefit-profitability"
+        attemptId="unknown-version-attempt"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Historical replay unavailable" }),
+    ).toBeVisible();
+    expect(screen.getByText("Content version 99")).toBeVisible();
+    expect(screen.getByText("missing major branch")).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      events: [],
+      contentVersion: 99,
     });
   });
 });

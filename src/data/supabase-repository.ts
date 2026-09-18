@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import {
   CaseEventSchema,
   DiagnosticOutcomeSchema,
@@ -31,6 +32,7 @@ type DrillAttemptRow = {
 type CaseAttemptRow = {
   id: string;
   user_id: string;
+  case_id?: string;
   skill_scores: Record<string, number>;
   feedback_codes: string[];
   completed_at: string;
@@ -61,6 +63,7 @@ export interface PracticeDatabaseClient {
   insertCaseAttempt(row: CaseAttemptInsert): Promise<void>;
   selectDrillAttempts(userId: string): Promise<DrillAttemptRow[]>;
   selectCaseAttempts(userId: string): Promise<CaseAttemptRow[]>;
+  selectCaseAttempt(userId: string, attemptId: string): Promise<CaseAttemptRow | null>;
   selectCaseEvents(userId: string, attemptId: string): Promise<CaseEventRow[]>;
 }
 
@@ -105,10 +108,21 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
   async selectCaseAttempts(userId: string) {
     const { data, error } = await this.client
       .from("case_attempts")
-      .select("id, user_id, skill_scores, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics")
+      .select("id, user_id, case_id, skill_scores, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics")
       .eq("user_id", userId);
     if (error) throw error;
     return (data ?? []) as CaseAttemptRow[];
+  }
+
+  async selectCaseAttempt(userId: string, attemptId: string) {
+    const { data, error } = await this.client
+      .from("case_attempts")
+      .select("id, user_id, case_id, skill_scores, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics")
+      .eq("user_id", userId)
+      .eq("id", attemptId)
+      .maybeSingle();
+    if (error) throw error;
+    return data as CaseAttemptRow | null;
   }
 
   async selectCaseEvents(userId: string, attemptId: string) {
@@ -168,6 +182,11 @@ function metadataFromRow(
     diagnostics: diagnostics.data,
   };
 }
+
+const CaseSkillScoresSchema = z.partialRecord(
+  SkillIdSchema,
+  z.number().finite().min(0).max(100),
+);
 
 export class SupabasePracticeRepository implements PracticeRepository {
   constructor(private readonly database: PracticeDatabaseClient) {}
@@ -245,6 +264,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
                 attemptId: row.id,
                 attemptType: "case" as const,
                 userId: row.user_id,
+                ...(row.case_id ? { caseId: row.case_id } : {}),
                 skillId: skillId.data,
                 score,
                 feedbackCodes: row.feedback_codes,
@@ -272,6 +292,32 @@ export class SupabasePracticeRepository implements PracticeRepository {
         const parsed = CaseEventSchema.safeParse(event);
         return parsed.success ? [parsed.data] : [];
       });
+  }
+
+  async getCaseAttempt(userId: string, attemptId: string) {
+    const row = await this.database.selectCaseAttempt(userId, attemptId);
+    if (
+      !row ||
+      row.user_id !== userId ||
+      row.id !== attemptId ||
+      !row.case_id
+    ) {
+      return null;
+    }
+    const metadata = metadataFromRow(row, false);
+    const skillScores = CaseSkillScoresSchema.safeParse(row.skill_scores);
+    if (!metadata || !skillScores.success) return null;
+    const events = await this.getCaseEvents(userId, attemptId);
+    return {
+      attemptId: row.id,
+      userId: row.user_id,
+      caseId: row.case_id,
+      completedAt: row.completed_at,
+      skillScores: skillScores.data,
+      feedbackCodes: row.feedback_codes,
+      events,
+      ...metadata,
+    };
   }
 }
 

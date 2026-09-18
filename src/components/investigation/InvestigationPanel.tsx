@@ -176,6 +176,9 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const caseAttemptId = useRef<string | null>(
     pendingCaseAttempt?.attemptId ?? null,
   );
+  const [reviewAttemptId, setReviewAttemptId] = useState(
+    pendingCaseAttempt?.attemptId ?? null,
+  );
   const [recoveryStatus, setRecoveryStatus] = useState<
     "idle" | "saving" | "error"
   >("idle");
@@ -292,9 +295,9 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     const completedView = await loadView(nextEvents, false);
     if (!completedView.review) throw new Error("Completed case review was not returned");
     const practiceSession = await getBrowserPracticeSession();
-    caseAttemptId.current ??= crypto.randomUUID();
+    const attemptId = caseAttemptId.current ??= crypto.randomUUID();
     const attempt = createCaseAttempt({
-      attemptId: caseAttemptId.current,
+      attemptId,
       userId: practiceSession.userId,
       caseId: caseDefinition.id,
       review: completedView.review,
@@ -307,8 +310,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     await practiceSession.repository.saveCaseAttempt(attempt);
     clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id));
     setWorkspace((current) => ({ ...current, events: nextEvents }));
+    setReviewAttemptId(attemptId);
     setView(completedView);
-    router.push(`/cases/${caseDefinition.id}/review`);
+    router.push(
+      `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(attemptId)}`,
+    );
   }
 
   async function recordGeneratedEvent(event: CaseEvent) {
@@ -439,8 +445,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         ...current,
         events: restoredAttempt.events,
       }));
+      setReviewAttemptId(restoredAttempt.attemptId);
       setView(completedView);
-      router.push(`/cases/${caseDefinition.id}/review`);
+      router.push(
+        `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(restoredAttempt.attemptId)}`,
+      );
     } catch {
       setRecoveryStatus("error");
     }
@@ -456,6 +465,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     elapsedOffset.current = 0;
     startedAt.current = null;
     caseAttemptId.current = null;
+    setReviewAttemptId(null);
     initialEvents.current = emptyWorkspace.events;
     setWorkspace(emptyWorkspace);
     setSynthesisEvidenceIds([]);
@@ -755,7 +765,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 and review.
               </p>
               <div className={styles.completionActions}>
-                <Link href={`/cases/${caseDefinition.id}/review`}>
+                <Link
+                  href={reviewAttemptId
+                    ? `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(reviewAttemptId)}`
+                    : `/cases/${caseDefinition.id}/review`}
+                >
                   Review case replay
                 </Link>
                 <button type="button" onClick={startFreshCase}>

@@ -11,7 +11,8 @@
 .recommendation,
 .sectionIntro,
 .legacy,
-.hypothesis {
+.hypothesis,
+.replays {
   width: min(1120px, 100%);
   margin-inline: auto;
 }
@@ -226,6 +227,47 @@
   color: #fffdf6;
 }
 
+.replays {
+  margin-top: 48px;
+}
+
+.replays .sectionIntro {
+  width: 100%;
+}
+
+.replayGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.replayGrid article {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #b8c0b8;
+  border-radius: 14px;
+  background: #faf8f1;
+}
+
+.replayGrid p {
+  color: #a14724;
+  font-family: var(--font-geist-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.replayGrid h3 {
+  overflow-wrap: anywhere;
+}
+
+.replayGrid a {
+  color: #294c3b;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 .recommendation > p {
   color: #f0bf96;
 }
@@ -332,6 +374,10 @@
   }
 
   .legacyGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .replayGrid {
     grid-template-columns: 1fr;
   }
 }

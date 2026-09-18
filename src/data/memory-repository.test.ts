@@ -172,4 +172,25 @@ describe("MemoryPracticeRepository", () => {
       repository.getCaseEvents("someone-else", "case-attempt-1"),
     ).resolves.toEqual([]);
   });
+
+  it("returns a complete historical case attempt only to its owner", async () => {
+    const repository = new MemoryPracticeRepository();
+    const historicalAttempt: CaseAttempt = {
+      ...caseAttempt,
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      learningEvidence: null,
+      diagnostics: [],
+    };
+    await repository.saveCaseAttempt(historicalAttempt);
+
+    await expect(
+      repository.getCaseAttempt("guest-1", "case-attempt-1"),
+    ).resolves.toEqual(historicalAttempt);
+    await expect(
+      repository.getCaseAttempt("someone-else", "case-attempt-1"),
+    ).resolves.toBeNull();
+  });
 });

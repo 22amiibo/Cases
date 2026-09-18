@@ -1,15 +1,17 @@
 # Casework
 
 Casework is a deterministic case-interview practice app. It combines focused
-skill drills, six hand-authored full cases, transparent scoring, case replay,
-and progress-based practice recommendations.
+skill drills, six hand-authored full cases, transparent scoring, version-safe
+case replay, and diagnostic practice recommendations. The Wave 1 V2 pilot adds
+generated-response practice to three cases and three reps in each of six skills.
 
-## Architecture decision: No AI in V1
+## Architecture decision: deterministic, no AI
 
-V1 does not install or call an AI, LLM, embedding, or machine-learning API.
+Casework does not install or call an AI, LLM, embedding, or machine-learning API.
 Case paths, reveal rules, calculations, scoring, feedback, and recommendations
-come from versioned authored content and deterministic TypeScript logic. Inputs
-are structured; free text is available only for ungraded scratch work.
+come from immutable versioned authored content and deterministic TypeScript
+logic. V2 generated prose is committed and reviewed, but never semantically
+scored. Authored comparisons remain hidden until commitment.
 
 ## Local setup
 
@@ -21,8 +23,9 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Guest drill and case
-history uses browser `sessionStorage`, so the complete AlpineFit demo works
-without an account or environment variables.
+history uses browser `sessionStorage`, so the complete pilot works without an
+account or environment variables. Signed-in history and historical replay use
+Supabase when configured.
 
 ## Supabase authentication and persistence
 
@@ -41,10 +44,19 @@ supabase link --project-ref your-project-ref
 supabase db push
 ```
 
-The migration at `supabase/migrations/001_initial.sql` creates profiles, drill
-attempts, case attempts, case events, row-level security policies, validation
-constraints, and the atomic case-save function. Never expose the Supabase
-service-role key to the browser or add it to `NEXT_PUBLIC_*` variables.
+The additive migrations in `supabase/migrations/` create the original practice
+tables, add V2 version/evidence metadata, and retain ordered case events. Row-
+level security and user-scoped reads prevent one learner from opening another
+learner's attempt. Never expose the Supabase service-role key to the browser or
+add it to `NEXT_PUBLIC_*` variables.
+
+## Version-safe replay
+
+Progress links each saved V2 case attempt to its attempt ID. Replay first loads
+that owned attempt's `content_version` and ordered stored events, then resolves
+the matching immutable case definition. If the definition is unavailable,
+Casework shows only a safe stored-attempt summary and never substitutes active
+content.
 
 ## Content authoring rules
 
@@ -80,5 +92,21 @@ Playwright in Chromium.
 
 The app is compatible with Vercel. Configure the two public Supabase variables
 in the Vercel project when account persistence is required; otherwise the guest
-experience remains available. Run the full verification commands before each
-release.
+experience remains available. Production migration and deployment require owner
+approval.
+
+Before an approved release:
+
+1. Confirm a recoverable database backup and compare local/remote migration
+   state with `supabase migration list`.
+2. Run `supabase db reset` against local Supabase to smoke-test all checked-in
+   migrations, then run the full verification commands above.
+3. Inspect browser network responses before commitment for authored answers,
+   rubric correctness, scoring metadata, and hidden case conclusions.
+4. Apply `supabase db push` and deploy only after the owner approves both live
+   actions. Record live sign-in, RLS, save, replay, and answer-secrecy smoke
+   results separately.
+
+Rollback does not delete V2 attempts. Point the three pilot entries in
+`activeCaseVersions` back to version `1`, redeploy the application, and leave
+the additive V2 columns and rows intact for recovery or later analysis.

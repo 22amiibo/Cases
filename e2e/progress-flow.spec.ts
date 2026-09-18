@@ -245,6 +245,78 @@ test("signed-in history produces the same exact diagnostic recommendation", asyn
   ).toBeVisible();
 });
 
+test("signed-in case history stops safely when its exact version is unavailable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const payload = Buffer.from(JSON.stringify({
+    sub: "user-1",
+    exp: 4_102_444_800,
+    role: "authenticated",
+  })).toString("base64url");
+  await page.addInitScript(({ token }) => {
+    localStorage.setItem("sb-127-auth-token", JSON.stringify({
+      access_token: token,
+      refresh_token: "e2e-refresh-token",
+      token_type: "bearer",
+      expires_in: 2_147_483_647,
+      expires_at: 4_102_444_800,
+      user: {
+        id: "user-1",
+        aud: "authenticated",
+        role: "authenticated",
+        email: "learner@example.com",
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+    }));
+  }, { token: `e2e.${payload}.signature` });
+
+  await page.route("http://127.0.0.1:54321/rest/v1/drill_attempts**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", async (route) => {
+    const attempt = {
+      id: "00000000-0000-4000-8000-000000000099",
+      user_id: "user-1",
+      case_id: "alpinefit-profitability",
+      skill_scores: { structure: 90 },
+      feedback_codes: ["missing_major_branch"],
+      completed_at: "2026-09-17T12:00:00.000Z",
+      scoring_version: "v2",
+      content_version: 99,
+      event_schema_version: 2,
+      scaffolding_level: "beginner",
+      learning_evidence: null,
+      diagnostics: [],
+    };
+    const isSingle = new URL(route.request().url()).searchParams.has("id");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(isSingle ? attempt : [attempt]),
+    });
+  });
+  await page.route("http://127.0.0.1:54321/rest/v1/case_events**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+
+  await page.goto("/progress");
+  await page.getByRole("link", { name: "Review AlpineFit profitability · V99" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Historical replay unavailable" }),
+  ).toBeVisible();
+  await expect(page.getByText("Content version 99")).toBeVisible();
+  await expect(page.getByText("Casework did not substitute current content.", { exact: false }))
+    .toBeVisible();
+  await expect(page.getByText("AlpineFit's shrinking margin")).toHaveCount(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    .toBe(true);
+});
+
 test("mixed history keeps V2 evidence separate and reflows at 320px", async ({
   page,
 }) => {

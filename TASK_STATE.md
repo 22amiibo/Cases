@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 2-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 3-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
@@ -17,16 +17,18 @@ V3.0 Tasks 2-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 1 adds V3-only taxonomies and exact sidecar case metadata without widening
-released V1/V2 schemas.
+Task 2 defines the V3.0 activity, diagnostic, attempt, event, and course
+contracts and exact-version registries. It is ready to commit.
 
 ## Completed tasks
 
 - V3.0 Task 0 compatibility coverage and full baseline gate are complete and
-  ready to commit: 58 test files / 276 tests, 34 Playwright journeys, lint,
-  typecheck, production build, and diff check pass.
-- V3.0 Task 1 taxonomy and exact case-metadata contracts are complete and ready
-  to commit: 3 focused files / 24 tests, lint, and typecheck pass.
+  committed as `578248d`: 58 test files / 276 tests, 34 Playwright journeys,
+  lint, typecheck, production build, and diff check pass.
+- V3.0 Task 1 taxonomy and exact case-metadata contracts are committed as
+  `f5b3fbf`: 3 focused files / 24 tests, lint, and typecheck pass.
+- V3.0 Task 2 contract implementation is complete and ready to commit: 4 focused
+  files / 20 tests, lint, and typecheck pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -43,7 +45,8 @@ released V1/V2 schemas.
 
 ## Remaining work
 
-- No assigned release work remains.
+- Execute V3.0 Tasks 3-7, then stop for the mandatory owner playtest gate.
+- Tasks 8-12 remain gated on a recorded `proceed` decision.
 
 ## Important decisions and invariants
 
@@ -105,6 +108,5 @@ released V1/V2 schemas.
 
 ## Exact next action
 
-Commit Task 1, then begin Task 2 with failing V3 activity, diagnostic, and
-course-schema tests. Do not apply migration `004` or deploy without separate
-owner approval.
+Commit Task 2, then begin Task 3 with failing pure-engine and learner-projection
+tests. Do not apply migration `004` or deploy without separate owner approval.

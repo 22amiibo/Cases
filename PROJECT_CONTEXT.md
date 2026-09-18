@@ -71,7 +71,22 @@ npm run build
 
 ## Progress Log
 
-### Casework V3 Task 1: taxonomies and case metadata — ready to commit
+### Casework V3 Task 2: activity, diagnostic, and course contracts — ready to commit
+
+- Added the V3.0 activity definition, event, evidence, attempt, and feedback
+  contracts for exactly the eight interaction variants needed by the four
+  flagship labs.
+- Added authored V3 diagnostic definitions with explicit skill ownership,
+  severity, allowed evidence sources, stable lab targets, and superseding
+  strengths.
+- Added versioned activity and course registries. Active selections reject
+  draft/retired definitions, course references resolve exact resources, and
+  invalid case modes or diagnostic ownership fail closed.
+- Focused validation: 4 files / 20 tests, lint, and typecheck pass.
+- Next action: Task 3, implement the pure activity state machine, deterministic
+  evaluation, and learner-safe projection from these contracts.
+
+### Casework V3 Task 1: taxonomies and case metadata — complete
 
 - Added a V3-only taxonomy with ten evidence skills and nine public lab IDs;
   hypothesis formation and updating remain behaviors under one Hypothesis skill.
@@ -80,10 +95,11 @@ npm run build
 - Added exact sidecar metadata for all six active cases. Practice is supported
   everywhere; Interview Mode is declared only for AlpineFit content version 2.
 - Focused validation: 3 files / 24 tests, lint, and typecheck pass.
+- Committed as `f5b3fbf` (`feat: define casework v3 taxonomies`).
 - Next action: Task 2, define only the V3.0 activity interactions, diagnostics,
   and exact course contracts.
 
-### Casework V3 Task 0: compatibility baseline — ready to commit
+### Casework V3 Task 0: compatibility baseline — complete
 
 - Owner authorized V3.0 implementation on 2026-09-18.
 - Created isolated branch `feature/casework-v3` at reviewed plan commit
@@ -93,6 +109,7 @@ npm run build
   attempt history.
 - Fresh baseline: 58 test files / 276 tests, all 34 Playwright journeys, lint,
   typecheck, production build, and `git diff --check` pass.
+- Committed as `578248d` (`test: freeze v3 compatibility baseline`).
 - Next action: Task 1, add V3 taxonomies and exact sidecar case metadata without
   widening legacy schemas.
 

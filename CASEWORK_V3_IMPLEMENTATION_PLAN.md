@@ -736,7 +736,7 @@ map, migration list, test counts, and representative V1/V2 parse/replay hashes.
   order is controlled.
 - [x] Run `npm test -- src/core/v3-compatibility.test.ts` and confirm green.
 - [x] Run the full V2 gate and record exact counts in `PROJECT_CONTEXT.md`.
-- [ ] Commit `test: freeze v3 compatibility baseline`.
+- [x] Commit `test: freeze v3 compatibility baseline` (`578248d`).
 
 ### Task 1: Add V3 taxonomies without widening legacy schemas
 
@@ -762,7 +762,8 @@ six active cases.
 - [x] Run `npm test -- src/core/v3-taxonomy.test.ts src/core/schema.test.ts` and
   confirm the new module is missing.
 - [x] Implement the constants and schemas exactly as Section 4 defines.
-- [ ] Run the focused tests and commit `feat: define casework v3 taxonomies`.
+- [x] Run the focused tests and commit `feat: define casework v3 taxonomies`
+  (`f5b3fbf`).
 
 ### Task 2: Define versioned activity and course schemas
 
@@ -783,16 +784,16 @@ six active cases.
 active and exact-version registries, course schemas, and exact
 resource-reference validation.
 
-- [ ] Write failing schema tests for duplicate IDs/versions, unknown taxonomy
+- [x] Write failing schema tests for duplicate IDs/versions, unknown taxonomy
   values, duplicate interaction IDs, invalid references, retired active content,
   all-or-none course context, and unknown exact course resources.
-- [ ] Write diagnostic registry tests for unique codes, declared skill
+- [x] Write diagnostic registry tests for unique codes, declared skill
   ownership, allowed source/severity combinations, active recommendation
   targets, and optional superseding strength codes.
-- [ ] Add only the eight V3.0 interaction variants from Section 5.
-- [ ] Reuse `createVersionedRegistry`; do not create a second registry class.
-- [ ] Add one test-only definition in the test file, not public content.
-- [ ] Run `npm test -- src/core/activity.test.ts src/core/course.test.ts
+- [x] Add only the eight V3.0 interaction variants from Section 5.
+- [x] Reuse `createVersionedRegistry`; do not create a second registry class.
+- [x] Add one test-only definition in the test file, not public content.
+- [x] Run `npm test -- src/core/activity.test.ts src/core/course.test.ts
   src/content/versioned-registry.test.ts`.
 - [ ] Commit `feat: define versioned v3 activity contracts`.
 

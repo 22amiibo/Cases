@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import lessons from "./lessons.json";
-import { drillSkillIds, isDrillSkillId } from "./drills";
+import { drillSkillIds, getDrillDefinition, isDrillSkillId } from "./drills";
 import clarificationV2 from "./lessons/clarification-v2.json";
 import { getLessonDefinition, lessonDefinitions } from "./lessons/index";
 
@@ -13,6 +13,8 @@ type Lesson = {
   example: string;
   skillId: string;
   drillRoute: string;
+  contentVersion?: number;
+  practice?: { drillId: string; contentVersion: number };
 };
 
 const requiredSkillLessons = [
@@ -60,18 +62,44 @@ describe("lesson content", () => {
     expect(new Set(lessonDefinitions.map((lesson) => lesson.skillId))).toEqual(new Set(drillSkillIds));
   });
 
-  it("resolves V1 lessons by explicit historical version", () => {
+  it("keeps V1 lessons addressable while active lessons bind exact V2 reps", () => {
+    const expectedRepIds: Record<string, string> = {
+      structuring: "alpinefit-structure-v2",
+      prioritization: "alpinefit-prioritization-v2",
+      "quantitative-implication": "alpinefit-quantitative-v2",
+      "what-so-what-now-what": "alpinefit-exhibit-v2",
+      synthesis: "alpinefit-synthesis-v2",
+      segmentation: "verdant-structure-v2",
+      "mix-shift": "beacon-exhibit-v2",
+      "hidden-denominator": "cedarcare-exhibit-v2",
+      bottleneck: "quickcart-structure-v2",
+      "math-answer-business-answer": "northwind-quantitative-v2",
+    };
+
     for (const lesson of lessons) {
       expect(getLessonDefinition(lesson.id, 1)).toBeDefined();
+      expect(getLessonDefinition(lesson.id, 2)).toMatchObject({
+        contentVersion: 2,
+        practice: { drillId: expectedRepIds[lesson.id], contentVersion: 2 },
+      });
       expect(getLessonDefinition(lesson.id, 99)).toBeUndefined();
       expect(getLessonDefinition(lesson.id)).toBe(
-        getLessonDefinition(lesson.id, 1),
+        getLessonDefinition(lesson.id, 2),
       );
+      const active = getLessonDefinition(lesson.id)! as Lesson;
+      expect(getDrillDefinition(active.practice!.drillId, active.practice!.contentVersion))
+        .toMatchObject({
+          contentVersion: 2,
+          ...(lesson.kind === "skill" ? { skillId: lesson.skillId } : {}),
+        });
     }
   });
 
-  it("publishes the clarification lesson as a separate V2 artifact", () => {
+  it("publishes the clarification lesson with an exact V2 rep", () => {
     expect(getLessonDefinition(clarificationV2.id, 2)).toEqual(clarificationV2);
     expect(getLessonDefinition(clarificationV2.id, 1)).toBeUndefined();
+    expect(clarificationV2).toMatchObject({
+      practice: { drillId: "alpinefit-opening-clarification", contentVersion: 2 },
+    });
   });
 });

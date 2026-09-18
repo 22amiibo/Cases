@@ -71,6 +71,25 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 15: Exact V2 practice in Learn — complete
+
+- Preserved every original lesson as an explicit V1 registry entry and added
+  active V2 lesson projections with exact `{ drillId, contentVersion }`
+  practice references.
+- All six core-skill lessons now embed their declared V2 interaction inline
+  through the existing clarification or V2 drill session components. Learners
+  can also open the same exact rep on its full-page URL.
+- The five pattern lessons remain concise and link to explicit relevant V2 reps,
+  including mix shift, hidden denominator, bottleneck, segmentation, and the
+  distinction between a numeric answer and a business answer.
+- Registry integrity tests prove every exact rep exists at content version 2;
+  core-skill bindings also match the lesson skill. V1 lesson lookup remains
+  stable and no V1 attempt is relabeled.
+- Focused browser coverage completes an embedded rep, verifies the authored
+  comparison stays hidden before commitment, recovers from a failed save, and
+  checks axe and 320px reflow.
+- Next action: Task 16, deterministic diagnostic V2 Progress coaching.
+
 ### Casework V2 Task 14: GoldenLoaf lower-scaffolding transfer — complete
 
 - Added immutable GoldenLoaf V2 content and made it active while preserving the
@@ -866,8 +885,8 @@ npm run build
 
 ## Next Action
 
-Task 14 is complete. Continue with Task 15, exact V2 practice bindings in the
-Learn section.
+Task 15 is complete. Continue with Task 16, deterministic V2 diagnostic
+coaching and exact next-rep recommendations.
 
 The owner could not complete the final manual replay because the completed-case
 screen exposed no replay or retry entry point. That product issue remains

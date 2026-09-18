@@ -163,6 +163,26 @@
   font-weight: 700;
 }
 
+.embeddedPractice {
+  margin-top: 30px;
+  border-top: 1px solid #b8c0b8;
+  padding-top: 20px;
+}
+
+.embeddedPractice summary {
+  cursor: pointer;
+  color: #244a38;
+  font-weight: 700;
+}
+
+.embeddedPractice[open] summary {
+  margin-bottom: 20px;
+}
+
+.embeddedPractice .practiceLink {
+  margin-top: 20px;
+}
+
 .practiceLink:hover,
 .practiceLink:focus-visible {
   color: #a14724;

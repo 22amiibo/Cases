@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmbeddedV2Practice } from "@/components/learn/EmbeddedV2Practice";
 import { lessonDefinitions as lessons } from "@/content/lessons/index";
 import styles from "./learn.module.css";
 
@@ -74,9 +75,19 @@ export default function LearnPage() {
                     <strong>In a case</strong>
                     {lesson.example}
                   </p>
-                  <Link className={styles.practiceLink} href={lesson.drillRoute}>
-                    Practice this skill <span aria-hidden="true">→</span>
-                  </Link>
+                  {lesson.kind === "skill" && lesson.practice ? (
+                    <details className={styles.embeddedPractice}>
+                      <summary>Open exact V2 practice</summary>
+                      <EmbeddedV2Practice {...lesson.practice} />
+                      <Link className={styles.practiceLink} href={lesson.drillRoute}>
+                        Open this rep full page <span aria-hidden="true">→</span>
+                      </Link>
+                    </details>
+                  ) : (
+                    <Link className={styles.practiceLink} href={lesson.drillRoute}>
+                      Practice this pattern <span aria-hidden="true">→</span>
+                    </Link>
+                  )}
                 </article>
               ))}
           </div>

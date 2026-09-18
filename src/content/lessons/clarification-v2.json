@@ -11,5 +11,9 @@
   ],
   "example": "For a margin decline, confirm the metric and timing, then clarify constraints on pricing, investment, and customer experience.",
   "skillId": "clarification",
-  "drillRoute": "/drills/clarification"
+  "drillRoute": "/drills/clarification?rep=alpinefit-opening-clarification",
+  "practice": {
+    "drillId": "alpinefit-opening-clarification",
+    "contentVersion": 2
+  }
 }

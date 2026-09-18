@@ -9,11 +9,17 @@ export function generateStaticParams() {
 
 export default async function CasePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ caseId: string }>;
+  searchParams: Promise<{ version?: string | string[] }>;
 }) {
   const { caseId } = await params;
-  const caseDefinition = getCaseDefinition(caseId);
+  const rawVersion = (await searchParams).version;
+  const versionValue = Array.isArray(rawVersion) ? rawVersion[0] : rawVersion;
+  const contentVersion = versionValue === undefined ? undefined : Number(versionValue);
+  if (versionValue !== undefined && !Number.isInteger(contentVersion)) notFound();
+  const caseDefinition = getCaseDefinition(caseId, contentVersion);
   if (!caseDefinition) notFound();
 
   return (

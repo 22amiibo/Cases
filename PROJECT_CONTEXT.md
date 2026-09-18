@@ -71,6 +71,28 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 16: Diagnostic Progress coaching — complete
+
+- V2 diagnostics now aggregate by stable code, evidence source, skill, first
+  and latest occurrence, and scaffolding level while Legacy V1 remains isolated.
+- Progress exposes committed, reviewed, revised, transferred, and reduced-
+  scaffolding evidence. Self-assessments and objective system findings retain
+  explicit, distinct labels.
+- The deterministic recommendation engine selects recurring unresolved
+  blocking/coaching patterns, retires a pattern after a successful reviewed
+  retry, and maps every actionable diagnostic area to one exact content-version
+  2 transfer drill or pilot case.
+- Recommendation URLs resolve the declared rep and content version; sparse
+  history falls back to an exact V2 diagnostic starting rep.
+- Unit and component coverage proves mixed-source/mixed-version aggregation,
+  retry rotation, V1 exclusion, exact targets, and evidence labels. Browser
+  coverage exercises empty, sparse, and dense guest states plus a signed-in
+  Supabase history, accessibility, 320px reflow, and exact target navigation.
+- Final Task 16 gate: 53 test files / 253 tests, lint, typecheck, production
+  build, and diff check pass; all 31 Playwright journeys pass.
+- Next action: run the final assigned Tasks 12–16 verification and acceptance
+  audit. Task 17 remains outside this run.
+
 ### Casework V2 Task 15: Exact V2 practice in Learn — complete
 
 - Preserved every original lesson as an explicit V1 registry entry and added
@@ -885,8 +907,8 @@ npm run build
 
 ## Next Action
 
-Task 15 is complete. Continue with Task 16, deterministic V2 diagnostic
-coaching and exact next-rep recommendations.
+Assigned Tasks 12–16 are implemented, committed, and fully verified. Task 17
+remains the next plan task and was intentionally not started in this run.
 
 The owner could not complete the final manual replay because the completed-case
 screen exposed no replay or retry entry point. That product issue remains

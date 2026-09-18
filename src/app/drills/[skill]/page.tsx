@@ -6,6 +6,7 @@ import {
   isDrillSkillId,
   isLegacyDrillSkillId,
   clarificationV2Definitions,
+  getDrillDefinition,
   v2PracticeDefinitions,
 } from "@/content/drills";
 import { DrillSession } from "@/components/drills/DrillSession";
@@ -24,16 +25,32 @@ export default async function DrillSkillPage({
   searchParams,
 }: {
   params: Promise<{ skill: string }>;
-  searchParams: Promise<{ rep?: string | string[] }>;
+  searchParams: Promise<{
+    rep?: string | string[];
+    version?: string | string[];
+  }>;
 }) {
   const { skill } = await params;
   if (!isDrillSkillId(skill)) notFound();
   const definitions = skill === "clarification"
     ? clarificationV2Definitions
     : v2PracticeDefinitions.filter((definition) => definition.skillId === skill);
-  const requestedRep = (await searchParams).rep;
+  const query = await searchParams;
+  const requestedRep = query.rep;
   const requestedId = Array.isArray(requestedRep) ? requestedRep[0] : requestedRep;
-  const v2Definition = definitions.find(({ id }) => id === requestedId) ?? definitions[0];
+  const rawVersion = Array.isArray(query.version) ? query.version[0] : query.version;
+  const requestedVersion = rawVersion === undefined ? undefined : Number(rawVersion);
+  if (rawVersion !== undefined && !Number.isInteger(requestedVersion)) notFound();
+  const exactDefinition = requestedId
+    ? getDrillDefinition(requestedId, requestedVersion)
+    : undefined;
+  const v2Definition = requestedId
+    ? definitions.find(
+        ({ id }) =>
+          id === exactDefinition?.id &&
+          exactDefinition.skillId === skill,
+      )
+    : definitions[0];
   if (!v2Definition) notFound();
 
   return (
@@ -47,7 +64,7 @@ export default async function DrillSkillPage({
         <div>
           {definitions.map((definition, index) => (
             <Link
-              href={`/drills/${skill}?rep=${definition.id}`}
+              href={`/drills/${skill}?rep=${definition.id}&version=${definition.contentVersion}`}
               aria-current={definition.id === v2Definition.id ? "page" : undefined}
               key={definition.id}
             >

@@ -238,6 +238,21 @@
   letter-spacing: -0.045em;
 }
 
+.recommendation > span {
+  display: block;
+  max-width: 700px;
+  margin-top: 12px;
+  color: #e4ebe3;
+  line-height: 1.5;
+}
+
+.recommendation > .recommendationSource {
+  color: #f0bf96;
+  font-family: var(--font-geist-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
 .recommendation > div {
   display: flex;
   flex-wrap: wrap;

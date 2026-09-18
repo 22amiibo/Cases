@@ -39,6 +39,7 @@ function v2Attempt({
   transferred = false,
   diagnostics = [],
   caseDiagnostics = [],
+  scaffoldingLevel = "beginner",
 }: {
   attemptId: string;
   skillId?: V2SkillId;
@@ -47,6 +48,7 @@ function v2Attempt({
   transferred?: boolean;
   diagnostics?: DiagnosticOutcome[];
   caseDiagnostics?: DiagnosticOutcome[];
+  scaffoldingLevel?: "beginner" | "intermediate" | "interview";
 }): SkillAttempt {
   const responses: CommittedResponse[] = [{
     responseId: `${attemptId}-r1`,
@@ -79,7 +81,7 @@ function v2Attempt({
     scoringVersion: "v2",
     contentVersion: 2,
     eventSchemaVersion: 2,
-    scaffoldingLevel: "beginner",
+    scaffoldingLevel,
     diagnostics,
     caseDiagnostics,
     learningEvidence: {
@@ -88,7 +90,7 @@ function v2Attempt({
       scoringVersion: "v2",
       contentVersion: 2,
       eventSchemaVersion: 2,
-      scaffoldingLevel: "beginner",
+      scaffoldingLevel,
       responses,
       rubricOutcomes: [{ criterionId: "reviewed", met: true }],
       diagnostics,
@@ -179,7 +181,15 @@ describe("buildProgressDashboard", () => {
     const skill = buildProgressDashboard([
       v2Attempt({ attemptId: "v2-one", day: 1, diagnostics: [diagnostic] }),
     ]).v2.skills.find((item) => item.skillId === "structure");
-    expect(skill?.diagnostics).toEqual([{ diagnostic, count: 1 }]);
+    expect(skill?.diagnostics).toEqual([expect.objectContaining({
+      code: "objective_not_reframed",
+      source: "self_assessment",
+      count: 1,
+      skillId: "structure",
+      scaffoldingLevels: ["beginner"],
+      firstSeenAt: "2026-01-01T00:00:00.000Z",
+      lastSeenAt: "2026-01-01T00:00:00.000Z",
+    })]);
   });
 
   it("counts case-level hypothesis diagnostics once without creating a scored skill", () => {
@@ -206,7 +216,11 @@ describe("buildProgressDashboard", () => {
 
     expect(dashboard.v2.hypothesis).toEqual({
       casesReviewed: 1,
-      diagnostics: [{ diagnostic, count: 1 }],
+      diagnostics: [expect.objectContaining({
+        code: diagnostic.code,
+        source: diagnostic.source,
+        count: 1,
+      })],
     });
     expect(dashboard.v2.skills).toHaveLength(6);
     expect(dashboard.v2.skills.map(({ skillId }) => skillId)).not.toContain(
@@ -214,7 +228,64 @@ describe("buildProgressDashboard", () => {
     );
     expect(
       dashboard.v2.skills.flatMap(({ diagnostics }) => diagnostics),
-    ).not.toContainEqual({ diagnostic, count: 1 });
+    ).not.toContainEqual(expect.objectContaining({ code: diagnostic.code }));
+  });
+
+  it("aggregates V2 diagnostics by code, source, recency, skill, and scaffolding", () => {
+    const system: DiagnosticOutcome = {
+      code: "missing_major_branch",
+      source: "system",
+      severity: "blocking",
+    };
+    const selfAssessed = { ...system, source: "self_assessment" as const };
+    const dashboard = buildProgressDashboard([
+      v2Attempt({ attemptId: "old", day: 1, diagnostics: [system] }),
+      v2Attempt({
+        attemptId: "new",
+        day: 3,
+        diagnostics: [system, selfAssessed],
+        scaffoldingLevel: "intermediate",
+      }),
+      legacyAttempt("legacy", "structure", 0, 4, ["missing_major_branch"]),
+    ]);
+
+    const diagnostics = dashboard.v2.skills.find(
+      ({ skillId }) => skillId === "structure",
+    )?.diagnostics;
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        code: "missing_major_branch",
+        source: "system",
+        count: 2,
+        firstSeenAt: "2026-01-01T00:00:00.000Z",
+        lastSeenAt: "2026-01-03T00:00:00.000Z",
+        skillId: "structure",
+        scaffoldingLevels: ["beginner", "intermediate"],
+      }),
+      expect.objectContaining({
+        code: "missing_major_branch",
+        source: "self_assessment",
+        count: 1,
+      }),
+    ]);
+  });
+
+  it("counts reduced-scaffolding V2 evidence without relabeling V1 history", () => {
+    const skill = buildProgressDashboard([
+      legacyAttempt("legacy", "structure", 100, 1),
+      v2Attempt({ attemptId: "guided", day: 2 }),
+      v2Attempt({
+        attemptId: "transfer",
+        day: 3,
+        transferred: true,
+        scaffoldingLevel: "interview",
+      }),
+    ]).v2.skills.find(({ skillId }) => skillId === "structure");
+
+    expect(skill?.evidence).toMatchObject({
+      reducedScaffolding: 1,
+      scaffolding: { beginner: 1, intermediate: 0, interview: 1 },
+    });
   });
 });
 
@@ -229,7 +300,119 @@ describe("buildRecommendedSession", () => {
     expect(empty).toMatchObject({
       title: "V2 diagnostic mix",
       skillId: "clarification",
-      drillHref: "/drills/clarification",
+      diagnosis: null,
+      practice: {
+        kind: "drill",
+        id: "alpinefit-opening-clarification",
+        contentVersion: 2,
+        href: "/drills/clarification?rep=alpinefit-opening-clarification&version=2",
+      },
+    });
+  });
+
+  it("selects a recurring objective blocking diagnosis and an exact versioned rep", () => {
+    const blocking: DiagnosticOutcome = {
+      code: "missing_major_branch",
+      source: "system",
+      severity: "blocking",
+    };
+    const recommendation = buildRecommendedSession([
+      v2Attempt({ attemptId: "one", day: 1, diagnostics: [blocking] }),
+      v2Attempt({ attemptId: "two", day: 2, diagnostics: [blocking] }),
+      v2Attempt({
+        attemptId: "self",
+        day: 3,
+        skillId: "prioritization",
+        diagnostics: [{
+          code: "low_information_value",
+          source: "self_assessment",
+          severity: "blocking",
+        }],
+      }),
+    ]);
+
+    expect(recommendation).toMatchObject({
+      title: "Missing major branch",
+      skillId: "structure",
+      diagnosis: {
+        code: "missing_major_branch",
+        source: "system",
+        count: 2,
+      },
+      practice: {
+        kind: "drill",
+        id: "quickcart-structure-v2",
+        contentVersion: 2,
+        href: "/drills/structure?rep=quickcart-structure-v2&version=2",
+      },
+    });
+  });
+
+  it("rotates after a successful retry and never considers V1 diagnostics", () => {
+    const missingBranch: DiagnosticOutcome = {
+      code: "missing_major_branch",
+      source: "system",
+      severity: "blocking",
+    };
+    const setup: DiagnosticOutcome = {
+      code: "setup_error",
+      source: "system",
+      severity: "blocking",
+    };
+    const recommendation = buildRecommendedSession([
+      v2Attempt({ attemptId: "branch-1", day: 1, diagnostics: [missingBranch] }),
+      v2Attempt({ attemptId: "branch-2", day: 2, diagnostics: [missingBranch] }),
+      v2Attempt({ attemptId: "math-1", day: 3, skillId: "quantitative", diagnostics: [setup] }),
+      v2Attempt({ attemptId: "math-2", day: 4, skillId: "quantitative", diagnostics: [setup] }),
+      v2Attempt({ attemptId: "branch-success", day: 5, revised: true }),
+      {
+        ...legacyAttempt("legacy", "synthesis", 0, 6),
+        diagnostics: [{
+          code: "answer_not_first",
+          source: "system",
+          severity: "blocking",
+        }],
+      },
+    ]);
+
+    expect(recommendation.diagnosis?.code).toBe("setup_error");
+    expect(recommendation.practice).toMatchObject({
+      id: "harborcart-quantitative-v2",
+      contentVersion: 2,
+    });
+  });
+
+  it("targets the lower-scaffolding pilot case for recurring hypothesis findings", () => {
+    const diagnostic: DiagnosticOutcome = {
+      code: "contradicted_hypothesis_retained",
+      source: "system",
+      severity: "coaching",
+    };
+    const recommendation = buildRecommendedSession([
+      v2Attempt({
+        attemptId: "case-1",
+        day: 1,
+        transferred: true,
+        scaffoldingLevel: "interview",
+        caseDiagnostics: [diagnostic],
+      }),
+      v2Attempt({
+        attemptId: "case-2",
+        day: 2,
+        transferred: true,
+        scaffoldingLevel: "interview",
+        caseDiagnostics: [diagnostic],
+      }),
+    ]);
+
+    expect(recommendation).toMatchObject({
+      diagnosis: { code: "contradicted_hypothesis_retained" },
+      practice: {
+        kind: "case",
+        id: "goldenloaf-operations",
+        contentVersion: 2,
+        href: "/cases/goldenloaf-operations?version=2",
+      },
     });
   });
 });

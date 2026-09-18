@@ -19,6 +19,11 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1",
     url: "http://127.0.0.1:3000",
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "e2e-anon-key",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

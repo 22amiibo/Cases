@@ -44,19 +44,205 @@ test("guest sees progress and a deterministic next session after practice", asyn
       .getByText("Strong", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Recommended next: V2 diagnostic mix" }),
+    page.getByRole("heading", { name: "Recommended next: Comparison missed" }),
   ).toBeVisible();
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Recommended next: V2 diagnostic mix" }),
+    page.getByRole("heading", { name: "Recommended next: Comparison missed" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /practice case opening & clarification/i }),
-  ).toHaveAttribute("href", "/drills/clarification");
+    page.getByRole("link", { name: /practice beacon exhibit transfer · v2/i }),
+  ).toHaveAttribute(
+    "href",
+    "/drills/exhibit?rep=beacon-exhibit-v2&version=2",
+  );
+});
+
+test("dense guest history targets a recurring objective diagnosis and rotates after retry", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    const diagnostic = {
+      code: "missing_major_branch",
+      source: "system",
+      severity: "blocking",
+    };
+    const drillAttempts = [1, 2, 3].map((day) => ({
+      attemptId: `structure-${day}`,
+      userId: "guest",
+      drillId: "quickcart-structure-v2",
+      skillId: "structure",
+      score: 0,
+      feedbackCodes: [],
+      conceptIdsPracticed: ["structure"],
+      completedAt: `2026-09-0${day}T00:00:00.000Z`,
+      scoringVersion: "v2",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scaffoldingLevel: "beginner",
+      diagnostics: day < 3 ? [diagnostic] : [],
+      learningEvidence: {
+        interactionId: `structure-${day}`,
+        skillId: "structure",
+        scoringVersion: "v2",
+        contentVersion: 2,
+        eventSchemaVersion: 2,
+        scaffoldingLevel: "beginner",
+        responses: [{
+          responseId: `structure-${day}-r1`,
+          interactionId: `structure-${day}`,
+          revision: 1,
+          revisionOf: null,
+          responseKind: "structure",
+          text: "Committed structure",
+          committedAtMs: day,
+        }],
+        rubricOutcomes: [{ criterionId: "branches", met: day === 3 }],
+        diagnostics: day < 3 ? [diagnostic] : [],
+      },
+    }));
+    const setup = {
+      code: "setup_error",
+      source: "system",
+      severity: "blocking",
+    };
+    for (const day of [4, 5]) {
+      drillAttempts.push({
+        ...drillAttempts[0],
+        attemptId: `math-${day}`,
+        drillId: "harborcart-quantitative-v2",
+        skillId: "quantitative",
+        conceptIdsPracticed: ["quantitative"],
+        completedAt: `2026-09-0${day}T00:00:00.000Z`,
+        diagnostics: [setup],
+        learningEvidence: {
+          ...drillAttempts[0].learningEvidence,
+          interactionId: `math-${day}`,
+          skillId: "quantitative",
+          responses: [{
+            responseId: `math-${day}-r1`,
+            interactionId: `math-${day}`,
+            revision: 1,
+            revisionOf: null,
+            responseKind: "quantitative",
+            text: "Committed setup",
+            committedAtMs: day,
+          }],
+          diagnostics: [setup],
+        },
+      });
+    }
+    sessionStorage.setItem("casework:practice-history", JSON.stringify({
+      drillAttempts,
+      caseAttempts: [],
+    }));
+  });
+
+  await page.goto("/progress");
+  await expect(page.getByRole("heading", { name: "Recommended next: Setup error" }))
+    .toBeVisible();
+  await expect(page.getByText("Objective system finding")).toBeVisible();
+  await expect(page.getByRole("link", { name: /harborcart quantitative transfer · v2/i }))
+    .toHaveAttribute(
+      "href",
+      "/drills/quantitative?rep=harborcart-quantitative-v2&version=2",
+    );
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+});
+
+test("signed-in history produces the same exact diagnostic recommendation", async ({
+  page,
+}) => {
+  const payload = Buffer.from(JSON.stringify({
+    sub: "user-1",
+    exp: 4_102_444_800,
+    role: "authenticated",
+  })).toString("base64url");
+  await page.addInitScript(({ token }) => {
+    localStorage.setItem("sb-127-auth-token", JSON.stringify({
+      access_token: token,
+      refresh_token: "e2e-refresh-token",
+      token_type: "bearer",
+      expires_in: 2_147_483_647,
+      expires_at: 4_102_444_800,
+      user: {
+        id: "user-1",
+        aud: "authenticated",
+        role: "authenticated",
+        email: "learner@example.com",
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+    }));
+  }, { token: `e2e.${payload}.signature` });
+
+  await page.route("http://127.0.0.1:54321/rest/v1/drill_attempts**", async (route) => {
+    const diagnostic = {
+      code: "missing_major_branch",
+      source: "system",
+      severity: "blocking",
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([1, 2].map((day) => ({
+        id: `signed-structure-${day}`,
+        user_id: "user-1",
+        skill_id: "structure",
+        score: 0,
+        feedback_codes: [],
+        completed_at: `2026-09-0${day}T00:00:00.000Z`,
+        scoring_version: "v2",
+        content_version: 2,
+        event_schema_version: 2,
+        scaffolding_level: "beginner",
+        diagnostics: [diagnostic],
+        learning_evidence: {
+          interactionId: `signed-structure-${day}`,
+          skillId: "structure",
+          scoringVersion: "v2",
+          contentVersion: 2,
+          eventSchemaVersion: 2,
+          scaffoldingLevel: "beginner",
+          responses: [{
+            responseId: `signed-structure-${day}-r1`,
+            interactionId: `signed-structure-${day}`,
+            revision: 1,
+            revisionOf: null,
+            responseKind: "structure",
+            text: "Committed structure",
+            committedAtMs: day,
+          }],
+          rubricOutcomes: [{ criterionId: "branches", met: false }],
+          diagnostics: [diagnostic],
+        },
+      }))),
+    });
+  });
+  await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+
+  await page.goto("/progress");
+  await expect(page.getByRole("heading", { name: "Recommended next: Missing major branch" }))
+    .toBeVisible();
+  const exactRep = page.getByRole("link", { name: /quickcart structure transfer · v2/i });
+  await expect(exactRep).toHaveAttribute(
+      "href",
+      "/drills/structure?rep=quickcart-structure-v2&version=2",
+    );
+  await exactRep.click();
   await expect(
-    page.getByRole("link", { name: /practice alpinefit/i }),
-  ).toHaveAttribute("href", "/cases/alpinefit-profitability");
+    page.getByRole("heading", { name: "Structure a delivery-reliability problem" }),
+  ).toBeVisible();
 });
 
 test("mixed history keeps V2 evidence separate and reflows at 320px", async ({

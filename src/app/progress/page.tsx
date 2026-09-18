@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   buildProgressDashboard,
   buildRecommendedSession,
-  SKILL_LABELS,
 } from "@/core/progress-dashboard";
 import { usePracticeProgress } from "@/components/progress/usePracticeProgress";
 import styles from "./progress.module.css";
@@ -75,20 +74,22 @@ export default function ProgressPage() {
                       <li>Reviewed: {skill.evidence.reviewed}</li>
                       <li>Revised: {skill.evidence.revised}</li>
                       <li>Transferred: {skill.evidence.transferred}</li>
+                      <li>Reduced scaffolding: {skill.evidence.reducedScaffolding}</li>
                     </ul>
                   </div>
                   <div>
                     <h3>Diagnostic evidence</h3>
                     {skill.diagnostics.length > 0 ? (
                       <ul>
-                        {skill.diagnostics.slice(0, 3).map(({ diagnostic, count }) => (
+                        {skill.diagnostics.slice(0, 3).map((diagnostic) => (
                           <li key={`${diagnostic.source}:${diagnostic.code}`}>
                             <span className={styles.source}>
                               {diagnostic.source === "self_assessment"
                                 ? "Self-assessed"
                                 : "System check"}
                             </span>{" "}
-                            {readableFeedback(diagnostic.code)} · {count}
+                            {readableFeedback(diagnostic.code)} · {diagnostic.count}
+                            {" · latest "}{diagnostic.lastSeenAt.slice(0, 10)}
                           </li>
                         ))}
                       </ul>
@@ -114,14 +115,15 @@ export default function ProgressPage() {
               <h3>Diagnostic evidence</h3>
               {dashboard.v2.hypothesis.diagnostics.length > 0 ? (
                 <ul>
-                  {dashboard.v2.hypothesis.diagnostics.map(({ diagnostic, count }) => (
+                  {dashboard.v2.hypothesis.diagnostics.map((diagnostic) => (
                     <li key={`${diagnostic.source}:${diagnostic.code}`}>
                       <span className={styles.source}>
                         {diagnostic.source === "self_assessment"
                           ? "Self-assessed"
                           : "System check"}
                       </span>{" "}
-                      {readableFeedback(diagnostic.code)} · {count}
+                      {readableFeedback(diagnostic.code)} · {diagnostic.count}
+                      {" · latest "}{diagnostic.lastSeenAt.slice(0, 10)}
                     </li>
                   ))}
                 </ul>
@@ -138,12 +140,17 @@ export default function ProgressPage() {
           <section className={styles.recommendation}>
             <p>Next V2 practice</p>
             <h2>Recommended next: {recommendation.title}</h2>
+            <span>{recommendation.explanation}</span>
+            {recommendation.diagnosis && (
+              <span className={styles.recommendationSource}>
+                {recommendation.diagnosis.source === "self_assessment"
+                  ? "Self-assessed pattern"
+                  : "Objective system finding"}
+              </span>
+            )}
             <div>
-              <Link href={recommendation.drillHref}>
-                Practice {SKILL_LABELS[recommendation.skillId]} →
-              </Link>
-              <Link href={recommendation.caseHref}>
-                Practice {recommendation.caseTitle} →
+              <Link href={recommendation.practice.href}>
+                Practice {recommendation.practice.label} · V{recommendation.practice.contentVersion} →
               </Link>
             </div>
           </section>

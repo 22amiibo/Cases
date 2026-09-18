@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { buildRecommendedSession, SKILL_LABELS } from "@/core/progress-dashboard";
+import { buildRecommendedSession } from "@/core/progress-dashboard";
 import { usePracticeProgress } from "./usePracticeProgress";
 import styles from "./HomeRecommendation.module.css";
 
@@ -28,13 +28,17 @@ export function HomeRecommendation() {
     <section className={styles.recommendation} aria-label="Recommended practice">
       <p>Your next useful rep</p>
       <h2>Recommended next: {recommendation.title}</h2>
-      <span>A deterministic recommendation based on your completed practice.</span>
+      <span>{recommendation.explanation}</span>
+      {recommendation.diagnosis && (
+        <span>
+          {recommendation.diagnosis.source === "self_assessment"
+            ? "Self-assessed pattern"
+            : "Objective system finding"}
+        </span>
+      )}
       <div className={styles.actions}>
-        <Link href={recommendation.drillHref}>
-          Practice {SKILL_LABELS[recommendation.skillId]} →
-        </Link>
-        <Link href={recommendation.caseHref}>
-          Practice {recommendation.caseTitle} →
+        <Link href={recommendation.practice.href}>
+          Practice {recommendation.practice.label} · V{recommendation.practice.contentVersion} →
         </Link>
       </div>
     </section>

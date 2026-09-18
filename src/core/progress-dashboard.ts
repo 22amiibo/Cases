@@ -1,10 +1,14 @@
 import type { DiagnosticOutcome, V2SkillId } from "./schema";
-import type { SkillAttempt } from "@/data/repository";
-import { diagnosticDefinitions } from "./diagnostics";
 import {
-  calculateRollingSkillScore,
-  recommendNextPractice,
-} from "./progress";
+  selectV2SkillHistory,
+  type SkillAttempt,
+} from "@/data/repository";
+import {
+  diagnosticDefinitions,
+  type DiagnosticCode,
+  type DiagnosticArea,
+} from "./diagnostics";
+import { calculateRollingSkillScore } from "./progress";
 
 export const LEGACY_TRAINABLE_SKILLS = [
   "structure",
@@ -144,30 +148,83 @@ export function calculateV2EvidenceStatus(
     : "Consistent";
 }
 
-function summarizeDiagnostics(diagnostics: DiagnosticOutcome[]) {
-  const counts = new Map<string, { diagnostic: DiagnosticOutcome; count: number }>();
-  for (const diagnostic of diagnostics) {
-    const key = `${diagnostic.source}:${diagnostic.code}`;
+type DiagnosticObservation = {
+  diagnostic: DiagnosticOutcome;
+  completedAt: string;
+  skillId: string;
+  scaffoldingLevel: "beginner" | "intermediate" | "interview";
+  scope: "skill" | "case";
+};
+
+function summarizeDiagnostics(observations: DiagnosticObservation[]) {
+  const counts = new Map<string, {
+    code: DiagnosticCode;
+    source: DiagnosticOutcome["source"];
+    severity: DiagnosticOutcome["severity"];
+    count: number;
+    firstSeenAt: string;
+    lastSeenAt: string;
+    skillId: string;
+    scaffoldingLevels: Array<DiagnosticObservation["scaffoldingLevel"]>;
+    latestScaffoldingLevel: DiagnosticObservation["scaffoldingLevel"];
+    scope: DiagnosticObservation["scope"];
+  }>();
+  for (const observation of observations) {
+    const { diagnostic } = observation;
+    const key = `${observation.scope}:${observation.skillId}:${diagnostic.source}:${diagnostic.code}`;
     const prior = counts.get(key);
-    counts.set(key, { diagnostic, count: (prior?.count ?? 0) + 1 });
+    const dates = prior
+      ? [prior.firstSeenAt, prior.lastSeenAt, observation.completedAt].sort()
+      : [observation.completedAt];
+    counts.set(key, {
+      code: diagnostic.code,
+      source: diagnostic.source,
+      severity: diagnostic.severity,
+      count: (prior?.count ?? 0) + 1,
+      firstSeenAt: dates[0],
+      lastSeenAt: dates.at(-1)!,
+      skillId: observation.skillId,
+      scaffoldingLevels: [...new Set([
+        ...(prior?.scaffoldingLevels ?? []),
+        observation.scaffoldingLevel,
+      ])],
+      latestScaffoldingLevel:
+        !prior || observation.completedAt >= prior.lastSeenAt
+          ? observation.scaffoldingLevel
+          : prior.latestScaffoldingLevel,
+      scope: observation.scope,
+    });
   }
   return [...counts.values()].sort(
     (left, right) =>
       right.count - left.count ||
-      left.diagnostic.code.localeCompare(right.diagnostic.code),
+      right.lastSeenAt.localeCompare(left.lastSeenAt) ||
+      left.code.localeCompare(right.code),
   );
 }
 
 function diagnosticSummary(attempts: SkillAttempt[]) {
   return summarizeDiagnostics(
-    attempts.flatMap((attempt) => attempt.diagnostics ?? []),
+    attempts.flatMap((attempt) =>
+      (attempt.diagnostics ?? []).flatMap((diagnostic) =>
+        attempt.scaffoldingLevel
+          ? [{
+              diagnostic,
+              completedAt: attempt.completedAt,
+              skillId: attempt.skillId,
+              scaffoldingLevel: attempt.scaffoldingLevel,
+              scope: "skill",
+            }]
+          : [],
+      ),
+    ),
   );
 }
 
 function hypothesisDiagnosticSummary(attempts: SkillAttempt[]) {
   const seenCaseAttempts = new Set<string>();
   let casesReviewed = 0;
-  const diagnostics = attempts.flatMap((attempt) => {
+  const diagnostics = attempts.flatMap((attempt): DiagnosticObservation[] => {
     if (
       attempt.attemptType !== "case" ||
       seenCaseAttempts.has(attempt.attemptId)
@@ -179,7 +236,15 @@ function hypothesisDiagnosticSummary(attempts: SkillAttempt[]) {
       ({ code }) => diagnosticDefinitions[code].area === "hypothesis",
     );
     if (hypothesisDiagnostics.length > 0) casesReviewed += 1;
-    return hypothesisDiagnostics;
+    return attempt.scaffoldingLevel
+      ? hypothesisDiagnostics.map((diagnostic) => ({
+          diagnostic,
+          completedAt: attempt.completedAt,
+          skillId: "hypothesis",
+          scaffoldingLevel: attempt.scaffoldingLevel!,
+          scope: "case",
+        }))
+      : [];
   });
   return {
     casesReviewed,
@@ -194,9 +259,7 @@ export function buildProgressDashboard(
   const legacyHistory = history.filter(
     (attempt) => (attempt.scoringVersion ?? "v1") === "v1",
   );
-  const v2History = history.filter(
-    (attempt) => attempt.scoringVersion === "v2",
-  );
+  const v2History = selectV2SkillHistory(history);
 
   return {
     v2: {
@@ -220,6 +283,22 @@ export function buildProgressDashboard(
             transferred: attempts.filter(
               (attempt) => attempt.attemptType === "case",
             ).length,
+            reducedScaffolding: attempts.filter(
+              (attempt) =>
+                attempt.scaffoldingLevel === "intermediate" ||
+                attempt.scaffoldingLevel === "interview",
+            ).length,
+            scaffolding: {
+              beginner: attempts.filter(
+                (attempt) => attempt.scaffoldingLevel === "beginner",
+              ).length,
+              intermediate: attempts.filter(
+                (attempt) => attempt.scaffoldingLevel === "intermediate",
+              ).length,
+              interview: attempts.filter(
+                (attempt) => attempt.scaffoldingLevel === "interview",
+              ).length,
+            },
           },
           diagnostics: diagnosticSummary(attempts),
         };
@@ -251,26 +330,161 @@ export function buildProgressDashboard(
 }
 
 export function buildRecommendedSession(history: SkillAttempt[]) {
-  const v2History = history.filter(
+  const v2History = selectV2SkillHistory(history).filter(
     (attempt) =>
-      attempt.scoringVersion === "v2" &&
       V2_TRAINABLE_SKILLS.includes(attempt.skillId as TrainableSkillId),
   );
-  const recommendation = recommendNextPractice(v2History, "v2");
-  const skillId =
-    recommendation.kind === "skill" &&
-    V2_TRAINABLE_SKILLS.includes(recommendation.skillId as TrainableSkillId)
-      ? (recommendation.skillId as TrainableSkillId)
-      : "clarification";
+  const candidate = recurringDiagnosticCandidate(v2History);
+  if (!candidate) {
+    return {
+      title: "V2 diagnostic mix",
+      skillId: "clarification" as const,
+      diagnosis: null,
+      explanation: "Build a baseline across the V2 reasoning cycle.",
+      practice: {
+        kind: "drill" as const,
+        id: "alpinefit-opening-clarification",
+        contentVersion: 2 as const,
+        label: "AlpineFit opening clarification",
+        href: "/drills/clarification?rep=alpinefit-opening-clarification&version=2",
+      },
+    };
+  }
 
+  const area = diagnosticDefinitions[candidate.code].area;
+  const skillId = diagnosticSkill(area);
   return {
-    title:
-      recommendation.kind === "skill"
-        ? SKILL_LABELS[skillId]
-        : "V2 diagnostic mix",
+    title: readableDiagnostic(candidate.code),
     skillId,
-    drillHref: `/drills/${skillId}`,
-    caseTitle: "AlpineFit",
-    caseHref: "/cases/alpinefit-profitability",
+    diagnosis: candidate,
+    explanation: `${candidate.count} recent ${candidate.source === "system" ? "system checks" : "self-assessments"} surfaced this pattern.`,
+    practice: recommendationTarget(area, candidate.latestScaffoldingLevel),
+  };
+}
+
+function readableDiagnostic(code: DiagnosticCode) {
+  const text = code.replaceAll("_", " ");
+  return `${text[0].toUpperCase()}${text.slice(1)}`;
+}
+
+function diagnosticSkill(area: DiagnosticArea): TrainableSkillId {
+  if (V2_TRAINABLE_SKILLS.includes(area as TrainableSkillId)) {
+    return area as TrainableSkillId;
+  }
+  return area === "recommendation" ? "synthesis" : "prioritization";
+}
+
+function uniqueCaseAttempts(history: SkillAttempt[]) {
+  const seen = new Set<string>();
+  return oldestFirst(history).filter((attempt) => {
+    if (attempt.attemptType !== "case" || seen.has(attempt.attemptId)) return false;
+    seen.add(attempt.attemptId);
+    return true;
+  });
+}
+
+function recurringDiagnosticCandidate(history: SkillAttempt[]) {
+  const observations = [
+    ...history.flatMap((attempt): DiagnosticObservation[] =>
+      (attempt.diagnostics ?? []).flatMap((diagnostic) =>
+        attempt.scaffoldingLevel
+          ? [{
+              diagnostic,
+              completedAt: attempt.completedAt,
+              skillId: attempt.skillId,
+              scaffoldingLevel: attempt.scaffoldingLevel,
+              scope: "skill",
+            }]
+          : [],
+      ),
+    ),
+    ...uniqueCaseAttempts(history).flatMap((attempt): DiagnosticObservation[] =>
+      (attempt.caseDiagnostics ?? []).flatMap((diagnostic) =>
+        attempt.scaffoldingLevel
+          ? [{
+              diagnostic,
+              completedAt: attempt.completedAt,
+              skillId: diagnosticDefinitions[diagnostic.code].area,
+              scaffoldingLevel: attempt.scaffoldingLevel,
+              scope: "case",
+            }]
+          : [],
+      ),
+    ),
+  ].filter(({ diagnostic }) => diagnostic.severity !== "strength");
+
+  return summarizeDiagnostics(observations)
+    .filter((diagnostic) => diagnostic.count >= 2)
+    .filter((diagnostic) => {
+      const relevant = diagnostic.scope === "case"
+        ? uniqueCaseAttempts(history)
+        : oldestFirst(history).filter(
+            (attempt) => attempt.skillId === diagnostic.skillId && isReviewed(attempt),
+          );
+      const latest = relevant.at(-1);
+      const latestDiagnostics = diagnostic.scope === "case"
+        ? latest?.caseDiagnostics
+        : latest?.diagnostics;
+      return latestDiagnostics?.some(
+        ({ code, source }) => code === diagnostic.code && source === diagnostic.source,
+      );
+    })
+    .sort((left, right) => {
+      const severity = { blocking: 2, coaching: 1, strength: 0 };
+      return severity[right.severity] - severity[left.severity] ||
+        Number(right.source === "system") - Number(left.source === "system") ||
+        right.count - left.count ||
+        right.lastSeenAt.localeCompare(left.lastSeenAt) ||
+        left.code.localeCompare(right.code);
+    })[0] ?? null;
+}
+
+function recommendationTarget(
+  area: DiagnosticArea,
+  scaffolding: DiagnosticObservation["scaffoldingLevel"],
+) {
+  if (area === "hypothesis" || area === "recommendation") {
+    const target = scaffolding === "interview"
+      ? { id: "goldenloaf-operations", label: "GoldenLoaf operations transfer" }
+      : scaffolding === "intermediate"
+        ? { id: "paypilot-growth", label: "PayPilot growth strategy" }
+        : { id: "alpinefit-profitability", label: "AlpineFit profitability" };
+    return {
+      kind: "case" as const,
+      ...target,
+      contentVersion: 2 as const,
+      href: `/cases/${target.id}?version=2`,
+    };
+  }
+
+  const advanced = scaffolding !== "beginner";
+  const targets = {
+    clarification: advanced
+      ? ["streamwave-opening-clarification", "StreamWave opening clarification"]
+      : ["cedarcare-opening-clarification", "CedarCare opening clarification"],
+    structure: advanced
+      ? ["verdant-structure-v2", "Verdant structure transfer"]
+      : ["quickcart-structure-v2", "QuickCart structure transfer"],
+    prioritization: advanced
+      ? ["urbaneats-prioritization-v2", "UrbanEats prioritization transfer"]
+      : ["meridian-prioritization-v2", "Meridian prioritization transfer"],
+    quantitative: advanced
+      ? ["northwind-quantitative-v2", "Northwind quantitative transfer"]
+      : ["harborcart-quantitative-v2", "HarborCart quantitative transfer"],
+    exhibit: advanced
+      ? ["cedarcare-exhibit-v2", "CedarCare exhibit transfer"]
+      : ["beacon-exhibit-v2", "Beacon exhibit transfer"],
+    synthesis: advanced
+      ? ["brightlearn-synthesis-v2", "BrightLearn synthesis transfer"]
+      : ["aeroparts-synthesis-v2", "AeroParts synthesis transfer"],
+  } as const;
+  const skillId = diagnosticSkill(area);
+  const [id, label] = targets[skillId];
+  return {
+    kind: "drill" as const,
+    id,
+    contentVersion: 2 as const,
+    label,
+    href: `/drills/${skillId}?rep=${id}&version=2`,
   };
 }

@@ -14,7 +14,7 @@ Complete Casework V2 implementation-plan Tasks 12–16 in order, preserving V1/V
 
 ## Current task
 
-Task 16 — turn V2 Progress into diagnostic coaching. Inspect current progress aggregation, recommendation, repository selectors, and UI tests before adding mixed-source/version RED tests.
+Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited. Task 17 is outside this run.
 
 ## Completed tasks
 
@@ -23,12 +23,12 @@ Task 16 — turn V2 Progress into diagnostic coaching. Inspect current progress 
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
 - Task 13 committed as `3caf4d9` (`content: upgrade paypilot for v2 intermediate practice`).
 - Task 14 committed as `6cec8a8` (`content: add goldenloaf v2 transfer case`).
-- Task 15 implementation and its full verification gate are complete; commit is pending.
+- Task 15 committed as `9422518` (`feat: embed exact v2 practice in learn modules`).
+- Task 16 committed as `feat: add diagnostic v2 progress coaching`.
 
 ## Remaining work
 
-- Commit Task 15, then implement, verify, document, and commit Task 16.
-- Run final verification for the assigned Tasks 12–16 and audit their acceptance criteria.
+- No assigned implementation remains.
 
 ## Important decisions and invariants
 
@@ -47,6 +47,8 @@ Task 16 — turn V2 Progress into diagnostic coaching. Inspect current progress 
 - Task 13 fresh gate: 50 test files / 240 tests passed; lint passed without warnings; typecheck, production build, and `git diff --check` passed; all 26 Playwright journeys passed.
 - Task 14 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 27 Playwright journeys passed.
 - Task 15 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 29 Playwright journeys passed, including exact Learn routing, answer secrecy, save retry, axe, and phone reflow checks.
+- Task 16 focused gate: 17 Progress core tests and 2 recommendation component tests passed; lint and typecheck passed; all 4 Progress Playwright journeys passed for guest/signed-in and empty/sparse/dense history behavior.
+- Task 16 fresh full gate: 53 test files / 253 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 31 Playwright journeys passed.
 
 ## Known deferred issues
 
@@ -59,4 +61,4 @@ Task 16 — turn V2 Progress into diagnostic coaching. Inspect current progress 
 
 ## Exact next action
 
-Commit the intended Task 15 files as `feat: embed exact v2 practice in learn modules`, then inspect V2 Progress and add Task 16 mixed-source/version RED tests.
+Preserve the two pre-existing untracked user items. Task 17 requires a separate run.

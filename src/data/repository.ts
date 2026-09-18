@@ -49,3 +49,15 @@ export interface PracticeRepository {
   getSkillHistory(userId: string): Promise<SkillAttempt[]>;
   getCaseEvents(userId: string, attemptId: string): Promise<CaseEvent[]>;
 }
+
+export function selectV2SkillHistory(history: SkillAttempt[]) {
+  return history.filter(
+    (attempt) =>
+      attempt.scoringVersion === "v2" &&
+      Number.isInteger(attempt.contentVersion) &&
+      Number(attempt.contentVersion) > 0 &&
+      Number.isInteger(attempt.eventSchemaVersion) &&
+      Number(attempt.eventSchemaVersion) > 0 &&
+      attempt.scaffoldingLevel != null,
+  );
+}

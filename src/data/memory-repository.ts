@@ -7,7 +7,7 @@ import {
   ScaffoldingLevelSchema,
   SkillIdSchema,
 } from "@/core/schema";
-import { ActivityAttemptSchema } from "@/core/activity";
+import { ActivityAttemptSchema, type CourseContext } from "@/core/activity";
 import type {
   CaseAttempt,
   DrillAttempt,
@@ -277,6 +277,8 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
     validateCourseContext(parsed.courseContext, { type: "activity", id: parsed.activityId, contentVersion: parsed.contentVersion });
     this.requireCourseEnrollment(parsed);
     this.saveImmutable(this.history.activityAttempts, parsed);
+    if (parsed.events.some(event => event.type === "activity_completed")) this.advanceCourseActivity(parsed.userId, parsed.courseContext, parsed.completedAt);
+    this.persist();
   }
 
   async getActivityAttempt(userId: string, attemptId: string) {
@@ -296,6 +298,8 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
     validateCourseContext(parsed.courseContext, { type: "case", id: parsed.caseId, contentVersion: parsed.contentVersion, mode: parsed.caseMode });
     this.requireCourseEnrollment(parsed);
     this.saveImmutable(this.history.v3CaseAttempts, parsed);
+    if (parsed.events.some(event => event.type === "recommendation_submitted")) this.advanceCourseActivity(parsed.userId, parsed.courseContext, parsed.completedAt);
+    this.persist();
   }
 
   async enroll(enrollment: CourseEnrollment) {
@@ -307,7 +311,6 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
     );
     validateEnrollment(parsed, index >= 0);
     if (index < 0) this.history.courseEnrollments.push(parsed);
-    else this.history.courseEnrollments[index] = parsed;
     this.persist();
   }
 
@@ -327,10 +330,8 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
       candidate.courseStepId === parsed.courseStepId &&
       candidate.eventType === parsed.eventType,
     );
-    if (existing && JSON.stringify(existing) !== JSON.stringify(parsed)) {
-      throw new Error("Conflicting course step event retry");
-    }
     if (!existing) this.history.courseStepEvents.push(parsed);
+    this.advanceCourseActivity(parsed.userId, parsed, (existing ?? parsed).occurredAt);
     this.persist();
   }
 
@@ -348,13 +349,21 @@ export class MemoryPracticeRepository implements PracticeRepository, V3Repositor
     if (context && !this.history.courseEnrollments.some(e => e.userId === attempt.userId && e.courseId === context.courseId && e.courseVersion === context.courseVersion)) throw new Error("Course enrollment not found");
   }
 
+  private advanceCourseActivity(userId: string, context: CourseContext | null, occurredAt: string) {
+    if (!context) return;
+    const enrollment = this.history.courseEnrollments.find(e => e.userId === userId && e.courseId === context.courseId && e.courseVersion === context.courseVersion);
+    if (enrollment && Date.parse(occurredAt) > Date.parse(enrollment.lastActivityAt)) {
+      enrollment.lastActivityAt = occurredAt;
+      enrollment.lastStepId = context.courseStepId;
+    }
+  }
+
   private saveImmutable<T extends { attemptId: string }>(items: T[], item: T) {
     const existing = items.find(({ attemptId }) => attemptId === item.attemptId);
     if (existing && JSON.stringify(existing) !== JSON.stringify(item)) {
       throw new Error(`Conflicting attempt retry: ${item.attemptId}`);
     }
     if (!existing) items.push(item);
-    this.persist();
   }
 
   private persist() {

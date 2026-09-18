@@ -15,18 +15,19 @@ export function CourseView({ course, lesson, step, nextPracticeHref }: { course:
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
   const recording = useRef(false);
+  const recorded = useRef<string | null>(null);
   const retry = progress.retry;
   useEffect(() => {
-    if (error || !lesson || !step || progress.status !== "ready" || !derived.enrollment || derived.completedStepIds.includes(step.id) || recording.current) return;
+    const identity = `${progress.userId}:${course.id}:${course.contentVersion}:${step?.id}`;
+    if (error || !lesson || !step || progress.status !== "ready" || !derived.enrollment || recorded.current === identity || recording.current) return;
     recording.current = true;
     void (async () => {
       try {
         const { repository, userId } = await getBrowserPracticeSession();
         if (userId !== progress.userId) throw new Error("Account changed; reload the lesson");
         const context = validateCourseContext({ courseId: course.id, courseVersion: course.contentVersion, courseStepId: step.id }, { type: "lesson", id: lesson.id, contentVersion: lesson.contentVersion ?? 1 })!;
-        const evidence = await (repository as V3Repository).listCourseEvidence(userId);
-        const existing = evidence.lessonEvents.find(e => e.courseId === course.id && e.courseVersion === course.contentVersion && e.courseStepId === step.id);
-        if (!existing) await (repository as V3Repository).recordLessonViewed({ ...context, userId, eventType: "lesson_viewed", lessonId: lesson.id, lessonVersion: lesson.contentVersion ?? 1, occurredAt: new Date().toISOString() });
+        await (repository as V3Repository).recordLessonViewed({ ...context, userId, eventType: "lesson_viewed", lessonId: lesson.id, lessonVersion: lesson.contentVersion ?? 1, occurredAt: new Date().toISOString() });
+        recorded.current = identity;
         retry();
       } catch { setError(true); }
       finally { recording.current = false; }

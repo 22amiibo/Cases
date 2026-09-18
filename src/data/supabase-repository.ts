@@ -1,7 +1,7 @@
 import { validateCourseContext, validateEnrollment } from "@/core/course-progress";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { ActivityAttemptSchema, type ActivityAttempt } from "@/core/activity";
+import { ActivityAttemptSchema, type ActivityAttempt, type CourseContext } from "@/core/activity";
 import {
   CaseEventSchema,
   DiagnosticOutcomeSchema,
@@ -25,6 +25,11 @@ import {
   type V3CaseAttempt,
   type V3Repository,
 } from "./v3-repository";
+
+// PostgREST returns timestamptz values with offsets; domain timestamps use UTC.
+function databaseTimestamp(value: unknown) {
+  return new Date(z.iso.datetime({ offset: true }).parse(value)).toISOString();
+}
 
 type DrillAttemptRow = {
   id: string;
@@ -116,6 +121,7 @@ export interface PracticeDatabaseClient {
   selectV3CaseAttempts(userId: string): Promise<V3CaseAttemptRow[]>;
   upsertCourseEnrollment(enrollment: CourseEnrollment): Promise<void>;
   insertCourseStepEvent(event: CourseStepEvent): Promise<void>;
+  advanceCourseActivity(userId: string, context: CourseContext, occurredAt: string): Promise<void>;
   selectCourseEnrollments(userId: string): Promise<unknown[]>;
   selectCourseStepEvents(userId: string): Promise<unknown[]>;
 }
@@ -271,7 +277,15 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
       started_at: enrollment.startedAt,
       last_activity_at: enrollment.lastActivityAt,
       last_step_id: enrollment.lastStepId,
-    }, { onConflict: "user_id,course_id,course_version" });
+    }, { onConflict: "user_id,course_id,course_version", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+
+  async advanceCourseActivity(userId: string, context: CourseContext, occurredAt: string) {
+    const { error } = await this.client.from("course_enrollments")
+      .update({ last_activity_at: occurredAt, last_step_id: context.courseStepId })
+      .eq("user_id", userId).eq("course_id", context.courseId).eq("course_version", context.courseVersion)
+      .lt("last_activity_at", occurredAt);
     if (error) throw error;
   }
 
@@ -528,6 +542,7 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       completed_at: parsed.completedAt,
       events: parsed.events,
     });
+    if (parsed.courseContext && parsed.events.some(event => event.type === "activity_completed")) await this.database.advanceCourseActivity(parsed.userId, parsed.courseContext, parsed.completedAt);
   }
 
   async getActivityAttempt(userId: string, attemptId: string) {
@@ -568,6 +583,7 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       course_step_id: parsed.courseContext?.courseStepId ?? null,
       events: parsed.events,
     });
+    if (parsed.courseContext && parsed.events.some(event => event.type === "recommendation_submitted")) await this.database.advanceCourseActivity(parsed.userId, parsed.courseContext, parsed.completedAt);
   }
 
   async enroll(enrollment: CourseEnrollment) {
@@ -582,6 +598,11 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
     validateCourseContext(parsed, { type: "lesson", id: parsed.lessonId, contentVersion: parsed.lessonVersion });
     await this.requireCourseEnrollment({ userId: parsed.userId, courseContext: parsed });
     await this.database.insertCourseStepEvent(parsed);
+    // A duplicate lesson has the original event time, even after an ambiguous save retry.
+    const rows = await this.database.selectCourseStepEvents(parsed.userId);
+    const saved = rows.map(value => value as Record<string, unknown>).find(row => row.user_id === parsed.userId && row.course_id === parsed.courseId && row.course_version === parsed.courseVersion && row.course_step_id === parsed.courseStepId && row.event_type === parsed.eventType && row.lesson_id === parsed.lessonId && row.lesson_version === parsed.lessonVersion);
+    if (!saved) throw new Error("Saved course lesson event not found");
+    await this.database.advanceCourseActivity(parsed.userId, parsed, databaseTimestamp(saved.occurred_at));
   }
 
   async listCourseEvidence(userId: string) {
@@ -595,8 +616,8 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       userId: (row as Record<string, unknown>).user_id,
       courseId: (row as Record<string, unknown>).course_id,
       courseVersion: (row as Record<string, unknown>).course_version,
-      startedAt: (row as Record<string, unknown>).started_at,
-      lastActivityAt: (row as Record<string, unknown>).last_activity_at,
+      startedAt: databaseTimestamp((row as Record<string, unknown>).started_at),
+      lastActivityAt: databaseTimestamp((row as Record<string, unknown>).last_activity_at),
       lastStepId: (row as Record<string, unknown>).last_step_id,
     }));
     const lessonEvents = lessonRows.map((row) => CourseStepEventSchema.parse({
@@ -607,7 +628,7 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       courseStepId: (row as Record<string, unknown>).course_step_id,
       lessonId: (row as Record<string, unknown>).lesson_id,
       lessonVersion: (row as Record<string, unknown>).lesson_version,
-      occurredAt: (row as Record<string, unknown>).occurred_at,
+      occurredAt: databaseTimestamp((row as Record<string, unknown>).occurred_at),
     }));
     // ponytail: one ordered-event read per V3 case; batch when course history latency matters.
     const caseAttempts = await Promise.all(caseRows.flatMap((row) =>
@@ -642,8 +663,8 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
         courseVersion: row.course_version,
         courseStepId: row.course_step_id,
       },
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
+      startedAt: databaseTimestamp(row.started_at),
+      completedAt: databaseTimestamp(row.completed_at),
       events,
     });
   }
@@ -659,7 +680,7 @@ export class SupabasePracticeRepository implements PracticeRepository, V3Reposit
       scoringVersion: row.scoring_version,
       scaffoldingLevel: row.scaffolding_level,
       caseMode: row.case_mode,
-      completedAt: row.completed_at,
+      completedAt: databaseTimestamp(row.completed_at),
       skillScores: row.skill_scores,
       feedbackCodes: row.feedback_codes,
       skillEvidence: row.skill_evidence,

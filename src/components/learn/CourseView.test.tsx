@@ -28,3 +28,18 @@ it("does not enroll a new learner in a retired course", async () => {
   expect(await screen.findByText(/retired course is available to prior learners/i)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Enroll in course" })).toBeNull();
 });
+it("retries the persistence boundary after an ambiguous lesson save", async () => {
+  const repo = state.repo = new MemoryPracticeRepository();
+  await repo.enroll({ userId: "guest", courseId: profitabilityCourse.id, courseVersion: 1, startedAt: "2026-09-01T00:00:00Z", lastActivityAt: "2026-09-01T00:00:00Z", lastStepId: "overview" });
+  const save = repo.recordLessonViewed.bind(repo);
+  let failed = false;
+  const record = vi.spyOn(repo, "recordLessonViewed").mockImplementation(async event => {
+    await save(event);
+    if (!failed) { failed = true; throw new Error("Enrollment activity save interrupted"); }
+  });
+  render(<CourseView course={profitabilityCourse} lesson={getLessonDefinition("profitability-overview-v3", 1)!} step={profitabilityCourse.steps[0]} nextPracticeHref="/practice" />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Course progress was not saved");
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await waitFor(() => expect(record).toHaveBeenCalledTimes(2));
+  expect((await repo.listCourseEvidence("guest")).lessonEvents).toHaveLength(1);
+});

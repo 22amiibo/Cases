@@ -27,3 +27,21 @@ it("rejects saving course attempts without enrollment or with a mismatched step"
   await repo.enroll(enrollment);
   await expect(repo.saveActivityAttempt({ ...attempt, courseContext: { ...attempt.courseContext, courseStepId: "brainstorming" } })).rejects.toThrow();
 });
+
+it("treats a lesson retry with a new timestamp as a no-op and preserves the first event", async () => {
+  const repo = new MemoryPracticeRepository();
+  await repo.enroll(enrollment);
+  await repo.recordLessonViewed(event);
+  await expect(repo.recordLessonViewed({ ...event, occurredAt: "2026-09-03T00:00:00Z" })).resolves.toBeUndefined();
+  expect((await repo.listCourseEvidence("guest")).lessonEvents).toEqual([event]);
+});
+
+it("preserves the first enrollment and advances only newer validated course evidence", async () => {
+  const repo = new MemoryPracticeRepository();
+  await repo.enroll(enrollment);
+  const drivers = { ...event, courseStepId: "drivers", lessonId: "profitability-drivers-v3", occurredAt: "2026-09-02T00:00:00Z" };
+  await repo.recordLessonViewed(drivers);
+  await repo.enroll({ ...enrollment, startedAt: "2026-09-03T00:00:00Z", lastActivityAt: "2026-09-03T00:00:00Z" });
+  await repo.recordLessonViewed(event);
+  expect((await repo.listCourseEvidence("guest")).enrollments).toEqual([{ ...enrollment, lastActivityAt: drivers.occurredAt, lastStepId: "drivers" }]);
+});

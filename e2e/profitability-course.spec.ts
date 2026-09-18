@@ -63,6 +63,8 @@ test("guest completes all nine exact Profitability steps, AlpineFit, and the deb
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem("casework:practice-history")!));
   expect(saved.courseStepEvents).toHaveLength(4);
+  expect(saved.courseEnrollments[0].lastStepId).toBe("case");
+  expect(saved.courseEnrollments[0].lastActivityAt).toBe(saved.v3CaseAttempts[0].completedAt);
   expect(saved.activityAttempts).toHaveLength(4);
   expect(saved.v3CaseAttempts[0].courseContext).toEqual({ courseId: "profitability-v3", courseVersion: 1, courseStepId: "case" });
   await page.getByRole("link", { name: "Review capstone debrief" }).click();
@@ -107,7 +109,11 @@ test("signed-in learners continue from repository evidence on a second device", 
       const url = new URL(request.url());
       const table = url.pathname.split("/").at(-1)!;
       if (request.method() === "POST" && rows[table]) rows[table].push(request.postDataJSON());
-      await route.fulfill({ contentType: "application/json", body: request.method() === "GET" ? JSON.stringify((rows[table] ?? []).filter(row => url.searchParams.get("user_id") === `eq.${row.user_id}`)) : "null" });
+      if (request.method() === "PATCH" && rows[table]) {
+        const update = request.postDataJSON();
+        rows[table].filter(row => url.searchParams.get("user_id") === `eq.${row.user_id}` && url.searchParams.get("course_id") === `eq.${row.course_id}` && url.searchParams.get("course_version") === `eq.${row.course_version}` && Date.parse(String(row.last_activity_at)) < Date.parse(url.searchParams.get("last_activity_at")!.slice(3))).forEach(row => Object.assign(row, update));
+      }
+      await route.fulfill({ contentType: "application/json", body: request.method() === "GET" ? JSON.stringify((rows[table] ?? []).filter(row => url.searchParams.get("user_id") === `eq.${row.user_id}`).map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, key.endsWith("_at") && typeof value === "string" ? value.replace("Z", "+00:00") : value])))) : "null" });
     });
   }
   const first = await devices[0].newPage();
@@ -115,6 +121,7 @@ test("signed-in learners continue from repository evidence on a second device", 
   await first.getByRole("button", { name: "Enroll in course" }).click();
   await first.getByRole("link", { name: "Continue course", exact: true }).click();
   await expect(first.getByRole("link", { name: "Continue course", exact: true })).toHaveAttribute("href", /step=drivers$/);
+  expect(rows.course_enrollments[0].last_activity_at).toBe(rows.course_step_events[0].occurred_at);
   await devices[0].close();
   const second = await devices[1].newPage();
   await second.goto("http://127.0.0.1:3000/learn/courses/profitability-v3?version=1");

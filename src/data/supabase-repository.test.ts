@@ -68,6 +68,7 @@ function client(overrides: Partial<PracticeDatabaseClient> = {}) {
     selectV3CaseAttempts: vi.fn().mockResolvedValue([]),
     upsertCourseEnrollment: vi.fn().mockResolvedValue(undefined),
     insertCourseStepEvent: vi.fn().mockResolvedValue(undefined),
+    advanceCourseActivity: vi.fn().mockResolvedValue(undefined),
     selectCourseEnrollments: vi.fn().mockResolvedValue([]),
     selectCourseStepEvents: vi.fn().mockResolvedValue([]),
     ...overrides,
@@ -98,7 +99,7 @@ describe("SupabasePracticeRepository", () => {
     const savedRows = new Map<string, typeof row>();
     const database = client({
       insertV3CaseAttempt: vi.fn().mockImplementation(async (insert) => {
-        savedRows.set(insert.id, { ...row, ...insert });
+        savedRows.set(insert.id, { ...row, ...insert, completed_at: insert.completed_at.replace("Z", "+00:00") });
       }),
       selectV3CaseAttempts: vi.fn().mockImplementation(async () => [...savedRows.values()]),
       selectCaseEvents: vi.fn().mockResolvedValue([{ sequence: 0, event: v3CaseAttempt.events[0] }]),
@@ -120,7 +121,7 @@ describe("SupabasePracticeRepository", () => {
     );
     expect(database.insertCaseAttempt).not.toHaveBeenCalled();
     await expect(repository.listCourseEvidence("user-1")).resolves.toMatchObject({
-      caseAttempts: [{ attemptId: v3CaseAttempt.attemptId, caseMode: "interview" }],
+      caseAttempts: [{ attemptId: v3CaseAttempt.attemptId, caseMode: "interview", completedAt: v3CaseAttempt.completedAt }],
     });
   });
   it("writes normalized drill attempts and complete case attempts", async () => {
@@ -592,8 +593,8 @@ describe("SupabasePracticeRepository", () => {
         course_id: null,
         course_version: null,
         course_step_id: null,
-        started_at: attempt.startedAt,
-        completed_at: attempt.completedAt,
+        started_at: attempt.startedAt.replace("Z", "+00:00"),
+        completed_at: attempt.completedAt.replace("Z", "+00:00"),
       }),
       selectActivityEvents: vi.fn().mockResolvedValue([
         { sequence: 1, event: attempt.events[1] },
@@ -631,4 +632,24 @@ it("continues an exact enrolled course across repository instances and devices",
   expect(deriveCourseProgress(profitabilityCourse, evidence, "user-1").nextStep?.id).toBe("drivers");
   expect(deriveCourseProgress(profitabilityCourse, evidence, "other").completedStepIds).toEqual([]);
   await expect(second.saveV3CaseAttempt({ ...v3CaseAttempt, courseContext: { courseId: "profitability-v3", courseVersion: 1, courseStepId: "case" } })).rejects.toThrow();
+});
+
+it("uses the persisted PostgreSQL lesson timestamp when repairing enrollment activity", async () => {
+  const database = client({
+    selectCourseEnrollments: async () => [{ user_id: "user-1", course_id: "profitability-v3", course_version: 1 }],
+    selectCourseStepEvents: async () => [{ user_id: "user-1", course_id: "profitability-v3", course_version: 1, course_step_id: "overview", event_type: "lesson_viewed", lesson_id: "profitability-overview-v3", lesson_version: 1, occurred_at: "2026-09-01T12:00:00+00:00" }],
+  });
+  const repository = new SupabasePracticeRepository(database);
+  await expect(repository.recordLessonViewed({ userId: "user-1", courseId: "profitability-v3", courseVersion: 1, courseStepId: "overview", eventType: "lesson_viewed", lessonId: "profitability-overview-v3", lessonVersion: 1, occurredAt: "2026-09-05T12:00:00Z" })).resolves.toBeUndefined();
+  expect(database.advanceCourseActivity).toHaveBeenCalledWith("user-1", expect.objectContaining({ courseStepId: "overview" }), "2026-09-01T12:00:00.000Z");
+});
+
+it("normalizes PostgreSQL offset timestamps when reading course enrollment and lesson evidence", async () => {
+  const repository = new SupabasePracticeRepository(client({
+    selectCourseEnrollments: async () => [{ user_id: "user-1", course_id: "profitability-v3", course_version: 1, started_at: "2026-09-01T12:00:00+00:00", last_activity_at: "2026-09-02T12:00:00+00:00", last_step_id: "overview" }],
+    selectCourseStepEvents: async () => [{ user_id: "user-1", course_id: "profitability-v3", course_version: 1, course_step_id: "overview", event_type: "lesson_viewed", lesson_id: "profitability-overview-v3", lesson_version: 1, occurred_at: "2026-09-02T12:00:00+00:00" }],
+  }));
+  const evidence = await repository.listCourseEvidence("user-1");
+  expect(evidence.enrollments[0]).toMatchObject({ startedAt: "2026-09-01T12:00:00.000Z", lastActivityAt: "2026-09-02T12:00:00.000Z" });
+  expect(evidence.lessonEvents[0].occurredAt).toBe("2026-09-02T12:00:00.000Z");
 });

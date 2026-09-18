@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 1-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 2-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
@@ -17,14 +17,16 @@ V3.0 Tasks 1-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 0 freezes the released compatibility baseline before V3 contracts are
-added. The isolated `feature/casework-v3` worktree starts from `10f3fcb`.
+Task 1 adds V3-only taxonomies and exact sidecar case metadata without widening
+released V1/V2 schemas.
 
 ## Completed tasks
 
 - V3.0 Task 0 compatibility coverage and full baseline gate are complete and
   ready to commit: 58 test files / 276 tests, 34 Playwright journeys, lint,
   typecheck, production build, and diff check pass.
+- V3.0 Task 1 taxonomy and exact case-metadata contracts are complete and ready
+  to commit: 3 focused files / 24 tests, lint, and typecheck pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -103,5 +105,6 @@ added. The isolated `feature/casework-v3` worktree starts from `10f3fcb`.
 
 ## Exact next action
 
-Commit Task 0, then begin Task 1 with failing V3 taxonomy and exact case-metadata
-tests. Do not apply migration `004` or deploy without separate owner approval.
+Commit Task 1, then begin Task 2 with failing V3 activity, diagnostic, and
+course-schema tests. Do not apply migration `004` or deploy without separate
+owner approval.

@@ -71,6 +71,18 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 1: taxonomies and case metadata — ready to commit
+
+- Added a V3-only taxonomy with ten evidence skills and nine public lab IDs;
+  hypothesis formation and updating remain behaviors under one Hypothesis skill.
+- Mapped every released V2 diagnostic to one V3 skill without relabeling old
+  attempts or widening `SkillIdSchema` / `V2SkillIdSchema`.
+- Added exact sidecar metadata for all six active cases. Practice is supported
+  everywhere; Interview Mode is declared only for AlpineFit content version 2.
+- Focused validation: 3 files / 24 tests, lint, and typecheck pass.
+- Next action: Task 2, define only the V3.0 activity interactions, diagnostics,
+  and exact course contracts.
+
 ### Casework V3 Task 0: compatibility baseline — ready to commit
 
 - Owner authorized V3.0 implementation on 2026-09-18.
@@ -84,7 +96,7 @@ npm run build
 - Next action: Task 1, add V3 taxonomies and exact sidecar case metadata without
   widening legacy schemas.
 
-### Casework V3 implementation plan — draft for owner review
+### Casework V3 implementation plan — approved
 
 - Reconciled the proposed V3 roadmap with the released V2 baseline at
   `c9dde86` and saved the implementation-ready draft in

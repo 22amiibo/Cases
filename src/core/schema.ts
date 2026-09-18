@@ -33,7 +33,7 @@ export const SkillIdSchema = z.enum([
 
 export type SkillId = z.infer<typeof SkillIdSchema>;
 
-const IdentifierSchema = z
+export const IdentifierSchema = z
   .string()
   .min(1)
   .regex(/^[a-z0-9]+(?:[a-z0-9_-]*[a-z0-9])?$/, "Use a stable slug ID");

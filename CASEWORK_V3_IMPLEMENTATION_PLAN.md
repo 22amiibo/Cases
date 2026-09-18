@@ -754,14 +754,14 @@ map, migration list, test counts, and representative V1/V2 parse/replay hashes.
 V2-diagnostic-to-V3-skill compatibility map, and exact sidecar metadata for all
 six active cases.
 
-- [ ] Write failing tests for every accepted ID, unknown-ID rejection, unique
+- [x] Write failing tests for every accepted ID, unknown-ID rejection, unique
   labels, one `hypothesis` skill, and unchanged legacy `SkillIdSchema` behavior.
-- [ ] Write failing metadata tests for exact case lookup, all six active cases,
+- [x] Write failing metadata tests for exact case lookup, all six active cases,
   positive duration, registered industries/skills, Practice support everywhere,
   and Interview support only on AlpineFit V2.
-- [ ] Run `npm test -- src/core/v3-taxonomy.test.ts src/core/schema.test.ts` and
+- [x] Run `npm test -- src/core/v3-taxonomy.test.ts src/core/schema.test.ts` and
   confirm the new module is missing.
-- [ ] Implement the constants and schemas exactly as Section 4 defines.
+- [x] Implement the constants and schemas exactly as Section 4 defines.
 - [ ] Run the focused tests and commit `feat: define casework v3 taxonomies`.
 
 ### Task 2: Define versioned activity and course schemas

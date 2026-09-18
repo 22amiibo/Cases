@@ -253,7 +253,7 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
     const history = JSON.parse(
       sessionStorage.getItem("casework:practice-history") ?? "{}",
     ) as {
-      caseAttempts?: Array<{
+      v3CaseAttempts?: Array<{
         attemptId: string;
         caseId: string;
         skillScores: Record<string, number>;
@@ -268,8 +268,8 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
         diagnostics: unknown[];
       }>;
     };
-    if (!history.caseAttempts?.[0]) throw new Error("Completed case was not saved");
-    return history.caseAttempts[0];
+    if (!history.v3CaseAttempts?.[0]) throw new Error("Completed case was not saved");
+    return history.v3CaseAttempts[0];
   });
   await installSignedInSession(page);
 
@@ -283,12 +283,12 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
     skill_scores: savedAttempt.skillScores,
     feedback_codes: savedAttempt.feedbackCodes,
     completed_at: savedAttempt.completedAt,
-    scoring_version: savedAttempt.scoringVersion,
+    scoring_version: "v2",
     content_version: savedAttempt.contentVersion,
     event_schema_version: savedAttempt.eventSchemaVersion,
     scaffolding_level: savedAttempt.scaffoldingLevel,
-    learning_evidence: savedAttempt.learningEvidence,
-    diagnostics: savedAttempt.diagnostics,
+    learning_evidence: null,
+    diagnostics: [],
   };
   let ownedAttemptRequestUrl = "";
   await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", async (route) => {
@@ -323,6 +323,8 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
     events: unknown[];
   };
 
+  await expect(page).toHaveURL(new RegExp(`/cases/alpinefit-profitability/attempts/${savedAttempt.attemptId}$`));
+  await expect(page.getByRole("heading", { name: "Chronological replay" })).toBeVisible();
   expect(replayPayload.contentVersion).toBe(2);
   expect(replayPayload.events).toEqual(savedAttempt.events);
   expect(new URL(ownedAttemptRequestUrl).searchParams.get("user_id"))
@@ -472,4 +474,73 @@ test("mixed history keeps V2 evidence separate and reflows at 320px", async ({
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
+});
+
+test("signed-in V3 Interview replay preserves mode, evidence timing, and accessible event navigation", async ({ page }) => {
+  test.setTimeout(90_000);
+  await completeAlpineFitV2(page, { interview: true });
+  const saved = await page.evaluate(() => {
+    const history = JSON.parse(sessionStorage.getItem("casework:practice-history") ?? "{}");
+    return history.v3CaseAttempts[0];
+  });
+  await installSignedInSession(page);
+  await page.route("http://127.0.0.1:54321/rest/v1/**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  const row = {
+    id: saved.attemptId, user_id: "user-1", case_id: saved.caseId,
+    completed_at: saved.completedAt, skill_scores: saved.skillScores, feedback_codes: saved.feedbackCodes,
+    scoring_version: "v3", content_version: 2, event_schema_version: 2,
+    scaffolding_level: saved.scaffoldingLevel, case_mode: "interview",
+    skill_evidence: saved.skillEvidence, diagnostics: saved.diagnostics,
+    course_id: null, course_version: null, course_step_id: null,
+  };
+  const ownedReads: string[] = [];
+  await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", (route) => {
+    const url = new URL(route.request().url());
+    ownedReads.push(url.searchParams.get("user_id") ?? "");
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(url.searchParams.has("id") ? row : [row]) });
+  });
+  await page.route("http://127.0.0.1:54321/rest/v1/case_events**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(saved.events.map((event: unknown, sequence: number) => ({ event, sequence })).reverse()) }),
+  );
+  await page.setViewportSize({ width: 320, height: 900 });
+  const request = page.waitForRequest((candidate) => candidate.method() === "POST" && candidate.url().includes("/api/cases/alpinefit-profitability/session"));
+  await page.goto(`/cases/${saved.caseId}/attempts/${saved.attemptId}`);
+  expect((await request).postDataJSON()).toEqual({ events: saved.events, contentVersion: 2, mode: "interview" });
+  expect(ownedReads.length).toBeGreaterThan(0);
+  expect(ownedReads.every((value) => value === "eq.user-1")).toBe(true);
+  await expect(page.getByRole("heading", { name: "Chronological replay" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "What went well" })).toBeVisible();
+  const improve = page.getByRole("region", { name: "What to improve" });
+  await expect(improve).toBeVisible();
+  const citation = page.getByRole("region", { name: "What went well" }).getByRole("link", { name: /^Event / }).first();
+  await citation.focus();
+  const target = await citation.getAttribute("href");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(target!)).toBeFocused();
+  const firstEvidence = page.locator("#case-event-1 details");
+  await firstEvidence.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(firstEvidence).toHaveAttribute("open", "");
+  await expect(firstEvidence).toContainText("No investigation evidence had been revealed yet.");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const nextPractice = page.getByRole("region", { name: "Practice next" }).getByRole("link", { name: /^Practice / }).first();
+  await nextPractice.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/practice\/|\/drills\//);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  row.content_version = 99;
+  await page.goto(`/cases/${saved.caseId}/attempts/${saved.attemptId}`);
+  await expect(page.getByRole("heading", { name: "Historical replay unavailable" })).toBeVisible();
+  await expect(page.getByText("Content version 99")).toBeVisible();
+  await expect(page.getByText("Original learner submissions")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  row.user_id = "other-user";
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "No completed case to review" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chronological replay" })).toHaveCount(0);
 });

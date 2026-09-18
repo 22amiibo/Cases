@@ -302,3 +302,88 @@ describe("CaseReplay investigation groups", () => {
     ).toBeVisible();
   });
 });
+
+describe("chronological debrief", () => {
+  beforeEach(() => { vi.restoreAllMocks(); getBrowserPracticeSession.mockReset(); });
+
+  it("keeps raw learner submissions available when the exact content has disappeared", async () => {
+    getBrowserPracticeSession.mockResolvedValue({ userId: "user-1", repository: {
+      getCaseAttempt: vi.fn().mockResolvedValue({
+        attemptId: "gone", userId: "user-1", caseId: "alpinefit-profitability", contentVersion: 99,
+        completedAt: "2026-09-17T12:00:00.000Z", feedbackCodes: [],
+        events: [{ type: "calculation_submitted", taskId: "math", answer: 17, atMs: 1 }],
+      }),
+    } });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 404 }));
+    render(<ReviewSession caseId="alpinefit-profitability" attemptId="gone" />);
+    await screen.findByRole("heading", { name: "Historical replay unavailable" });
+    expect(screen.getByText(/"answer": 17/)).toBeVisible();
+  });
+
+  it("links diagnostic claims to the real event, labels reflections, and offers a working skill lab", async () => {
+    const { buildCaseReplayTimeline } = await import("@/core/replay-timeline");
+    const { getCaseDefinition } = await import("@/content/cases");
+    const timeline = buildCaseReplayTimeline(getCaseDefinition("alpinefit-profitability", 2)!, { events: [{
+      type: "calculation_submitted", taskId: "overtime-cost", answer: 5, unit: "$", atMs: 3,
+      eventSchemaVersion: 2, authoredComparisonViewed: true,
+      responses: [{ responseId: "math-1", interactionId: "math", revision: 1, revisionOf: null, responseKind: "calculation", text: "I multiplied hours by the premium.", committedAtMs: 2 }],
+      rubricOutcomes: [], diagnostics: [
+        { code: "sense_check_missing", source: "self_assessment", severity: "coaching", responseId: "math-1" },
+        { code: "strong_quantitative_reasoning", source: "system", severity: "strength", responseId: "math-1" },
+      ],
+    }] });
+    render(<CaseReplay review={{ ...review, timeline }} />);
+    expect(screen.getByRole("heading", { name: "Chronological replay" })).toBeVisible();
+    const improve = screen.getByRole("region", { name: "What to improve" });
+    expect(within(improve).getByText(/Self-assessment/)).toBeVisible();
+    expect(within(improve).getByRole("link", { name: "Event 1" })).toHaveAttribute("href", "#case-event-1");
+    expect(screen.getByRole("region", { name: "What went well" })).toHaveTextContent("Objective outcome");
+    expect(within(screen.getByRole("region", { name: "Practice next" })).getByRole("link", { name: /Case math/ })).toHaveAttribute("href", "/drills/quantitative");
+    expect(document.getElementById("case-event-1")).toHaveTextContent("I multiplied hours by the premium.");
+  });
+
+  it.each(["practice", "interview"] as const)("honors saved V3 %s mode rather than inferring it from comparison markers", async (caseMode) => {
+    const events = [{ type: "clarification_selected", clarificationId: "target-metric", atMs: 1 }];
+    getBrowserPracticeSession.mockResolvedValue({ userId: "user-1", isSignedIn: true, repository: {
+      getCaseAttempt: vi.fn().mockResolvedValue(null),
+      listCourseEvidence: vi.fn().mockResolvedValue({ caseAttempts: [{
+        attemptId: "v3-saved", userId: "user-1", caseId: "alpinefit-profitability", contentVersion: 2,
+        caseMode, events, scoringVersion: "v3", feedbackCodes: [], completedAt: "2026-09-17T12:00:00.000Z",
+      }] }),
+    } });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(view)));
+    render(<ReviewSession caseId="alpinefit-profitability" attemptId="v3-saved" />);
+    await screen.findByRole("heading", { name: "Preserved issue tree" });
+    expect(JSON.parse(String(fetchMock.mock.calls.at(-1)?.[1]?.body))).toEqual({ events, contentVersion: 2, mode: caseMode });
+  });
+
+  it("clears an earlier review when navigation reaches an inaccessible attempt", async () => {
+    const repository = {
+      getCaseAttempt: vi.fn().mockResolvedValue({ attemptId: "owned", userId: "user-1", caseId: "alpinefit-profitability", contentVersion: 2, events: [] }),
+      listCourseEvidence: vi.fn().mockResolvedValue({ caseAttempts: [] }),
+    };
+    getBrowserPracticeSession.mockResolvedValue({ userId: "user-1", repository });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(view)));
+    const rendered = render(<ReviewSession caseId="alpinefit-profitability" attemptId="owned" />);
+    await screen.findByRole("heading", { name: "Preserved issue tree" });
+    repository.getCaseAttempt.mockResolvedValue(null);
+    rendered.rerender(<ReviewSession caseId="alpinefit-profitability" attemptId="inaccessible" />);
+    await screen.findByRole("heading", { name: "No completed case to review" });
+    expect(screen.queryByRole("heading", { name: "Preserved issue tree" })).not.toBeInTheDocument();
+  });
+
+  it("does not replay another user's attempt from the history fallback", async () => {
+    getBrowserPracticeSession.mockResolvedValue({ userId: "user-1", isSignedIn: true, repository: {
+      getCaseAttempt: vi.fn().mockResolvedValue(null),
+      listCourseEvidence: vi.fn().mockResolvedValue({ caseAttempts: [{
+        attemptId: "private", userId: "other-user", caseId: "alpinefit-profitability", contentVersion: 2,
+        caseMode: "interview", events: [],
+      }] }),
+    } });
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    fetchMock.mockClear();
+    render(<ReviewSession caseId="alpinefit-profitability" attemptId="private" />);
+    expect(await screen.findByRole("heading", { name: "No completed case to review" })).toBeVisible();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

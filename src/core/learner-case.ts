@@ -1,3 +1,4 @@
+import { buildCaseReplayTimeline, type CaseReplayEntry } from "./replay-timeline";
 import type { CaseStage, RevealedFact } from "./case-engine";
 import type {
   CaseDefinition,
@@ -78,6 +79,7 @@ export type LearnerFeedback = {
 };
 
 export type LearnerCaseReview = {
+  timeline?: CaseReplayEntry[];
   framework: {
     branches: FrameworkBranch[];
     priorityConceptId: string;
@@ -352,6 +354,7 @@ export function toLearnerCaseDefinition(
 export function toLearnerCaseReview(
   definition: CaseDefinition,
   events: CaseEvent[],
+  context: CaseRunContext = { mode: "practice", contentVersion: definition.version },
 ): LearnerCaseReview {
   const completedEvents = materializeCompletedCaseEvents(definition, events);
   const score = scoreCase(definition, completedEvents);
@@ -426,6 +429,7 @@ export function toLearnerCaseReview(
   }
 
   return {
+    timeline: buildCaseReplayTimeline(definition, { events: completedEvents, caseMode: context.mode }),
     framework: frameworkEvent
       ? {
           ...frameworkSubmissionFromEvent(frameworkEvent),

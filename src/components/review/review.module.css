@@ -107,3 +107,12 @@
 @media (max-width: 850px) {
   .reviewGrid { grid-template-columns: 1fr; }
 }
+
+.timeline { display: grid; gap: 24px; padding-left: 20px; }
+.timeline > li { display: grid; gap: 12px; scroll-margin-top: 24px; }
+.timeline ul { padding-left: 20px; }
+.timeline summary { cursor: pointer; }
+.reviewGrid > * { min-width: 0; overflow-wrap: anywhere; }
+.timeline a, .frameworkReview a, .feedbackCard a { text-decoration: underline; }
+
+.rawSubmissions { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.85rem; }

@@ -47,7 +47,7 @@ export default function ProgressPage() {
       id: attempt.attemptId,
       completedAt: attempt.completedAt,
       label: caseLabels[attempt.caseId!] ?? "Case practice",
-      href: `/cases/${attempt.caseId}/review?attemptId=${encodeURIComponent(attempt.attemptId)}`,
+      href: `/cases/${attempt.caseId}/attempts/${encodeURIComponent(attempt.attemptId)}`,
     })),
   ].sort((left, right) => right.completedAt.localeCompare(left.completedAt)).slice(0, 6);
   const achievements = buildAchievements(progress.history, activityAttempts, v3CaseAttempts);
@@ -90,7 +90,7 @@ export default function ProgressPage() {
 
       <section className={styles.replays} aria-labelledby="case-history-heading">
         <div className={styles.sectionIntro}><div><p>Completed cases</p><h2 id="case-history-heading">Case history</h2></div><p>Each review reopens the exact case saved with the attempt.</p></div>
-        {caseReplays.length > 0 ? <div className={styles.replayGrid}>{caseReplays.map((attempt) => <article key={attempt.attemptId}><p>{date(attempt.completedAt)}</p><h3>{caseLabels[attempt.caseId!] ?? attempt.caseId!.replaceAll("-", " ")}</h3><Link href={`/cases/${attempt.caseId}/review?attemptId=${encodeURIComponent(attempt.attemptId)}`}>Review {caseLabels[attempt.caseId!] ?? "case"}</Link></article>)}</div> : <p>Complete a case to create your first case review.</p>}
+        {caseReplays.length > 0 ? <div className={styles.replayGrid}>{caseReplays.map((attempt) => <article key={attempt.attemptId}><p>{date(attempt.completedAt)}</p><h3>{caseLabels[attempt.caseId!] ?? attempt.caseId!.replaceAll("-", " ")}</h3><Link href={`/cases/${attempt.caseId}/attempts/${encodeURIComponent(attempt.attemptId)}`}>Review {caseLabels[attempt.caseId!] ?? "case"}</Link></article>)}</div> : <p>Complete a case to create your first case review.</p>}
       </section>
 
       <section className={styles.replays} aria-labelledby="achievements-heading">

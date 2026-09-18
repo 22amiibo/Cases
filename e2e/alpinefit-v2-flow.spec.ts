@@ -47,7 +47,7 @@ test("AlpineFit V2 completes the full generated loop with refresh and retry", as
 
   expect(precommitBodies.some((body) => body.includes("756000"))).toBe(false);
   expect(precommitBodies.some((body) => body.includes("stabilize-staffing"))).toBe(false);
-  await expect(page.getByText("Revision 2")).toBeVisible();
+  await expect(page.getByText("Revision 2", { exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

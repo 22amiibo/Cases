@@ -366,7 +366,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     setReviewAttemptId(attempt.attemptId);
     setView(completedView);
     router.push(
-      `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(attempt.attemptId)}`,
+      `/cases/${caseDefinition.id}/attempts/${encodeURIComponent(attempt.attemptId)}`,
     );
   }
 
@@ -519,7 +519,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       setReviewAttemptId(pendingCaseAttempt.attemptId);
       setView(completedView);
       router.push(
-        `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(pendingCaseAttempt.attemptId)}`,
+        `/cases/${caseDefinition.id}/attempts/${encodeURIComponent(pendingCaseAttempt.attemptId)}`,
       );
     } catch {
       setRecoveryStatus("error");
@@ -849,7 +849,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
               <div className={styles.completionActions}>
                 <Link
                   href={reviewAttemptId
-                    ? `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(reviewAttemptId)}`
+                    ? `/cases/${caseDefinition.id}/attempts/${encodeURIComponent(reviewAttemptId)}`
                     : `/cases/${caseDefinition.id}/review`}
                 >
                   Review case replay

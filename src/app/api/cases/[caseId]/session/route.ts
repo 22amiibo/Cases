@@ -184,7 +184,7 @@ export async function POST(
       : null,
     review:
       session.currentStage === "complete"
-        ? toLearnerCaseReview(caseDefinition, session.events)
+        ? toLearnerCaseReview(caseDefinition, session.events, runContext)
         : null,
   };
 

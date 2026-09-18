@@ -52,7 +52,7 @@ it("lists each V2 case attempt once with a version-safe replay link", () => {
   });
   expect(replay).toHaveAttribute(
     "href",
-    "/cases/alpinefit-profitability/review?attemptId=case-attempt-1",
+    "/cases/alpinefit-profitability/attempts/case-attempt-1",
   );
   expect(within(screen.getByRole("region", { name: "Case history" })).getAllByText("September 17, 2026")).toHaveLength(1);
 });

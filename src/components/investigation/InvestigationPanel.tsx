@@ -16,6 +16,8 @@ import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
 import { createCaseAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
+import type { V3CaseAttempt, V3CaseAttemptRepository } from "@/data/v3-repository";
+import { v2DiagnosticSkillMap } from "@/core/v3-taxonomy";
 import {
   clearPendingAttempt,
   loadPendingAttempt,
@@ -48,18 +50,23 @@ type InvestigationPanelProps = {
   caseDefinition: LearnerCaseDefinition;
 };
 
-function caseStorageKey(caseId: string) {
-  return `casework:guest-session:${caseId}`;
+function caseStorageKey(caseId: string, mode: LearnerCaseDefinition["caseMode"]) {
+  return mode === "practice"
+    ? `casework:guest-session:${caseId}`
+    : `casework:guest-session:${caseId}:${mode}`;
 }
 
-function pendingCaseKey(caseId: string) {
-  return `case:${caseId}`;
+function pendingCaseKey(caseId: string, mode: LearnerCaseDefinition["caseMode"]) {
+  return mode === "practice" ? `case:${caseId}` : `case:${caseId}:${mode}`;
 }
 
-function restorePendingCaseAttempt(caseId: string): CaseAttempt | null {
+function restorePendingCaseAttempt(
+  caseId: string,
+  mode: LearnerCaseDefinition["caseMode"],
+): CaseAttempt | null {
   const pending = loadPendingAttempt<CaseAttempt>(
     window.sessionStorage,
-    pendingCaseKey(caseId),
+    pendingCaseKey(caseId, mode),
   );
   if (
     !pending ||
@@ -138,6 +145,35 @@ function evidenceLabel(id: string) {
   return id.replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function createV3CaseAttempt(
+  attempt: CaseAttempt,
+  caseMode: LearnerCaseDefinition["caseMode"],
+): V3CaseAttempt {
+  const diagnostics = attempt.diagnostics ?? [];
+  return {
+    attemptId: attempt.attemptId,
+    userId: attempt.userId,
+    caseId: attempt.caseId,
+    contentVersion: attempt.contentVersion!,
+    eventSchemaVersion: 2,
+    scoringVersion: "v3",
+    scaffoldingLevel: attempt.scaffoldingLevel ?? null,
+    caseMode,
+    completedAt: attempt.completedAt,
+    skillScores: attempt.skillScores,
+    feedbackCodes: attempt.feedbackCodes,
+    skillEvidence: [],
+    diagnostics: diagnostics.map(({ code, source, severity }) => ({
+      code,
+      skillId: v2DiagnosticSkillMap[code],
+      source,
+      severity,
+    })),
+    courseContext: null,
+    events: attempt.events,
+  };
+}
+
 export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
   const clientReady = useSyncExternalStore(
     () => () => undefined,
@@ -152,7 +188,7 @@ export function InvestigationPanel({ caseDefinition }: InvestigationPanelProps) 
 
 function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps) {
   const router = useRouter();
-  const storageKey = caseStorageKey(caseDefinition.id);
+  const storageKey = caseStorageKey(caseDefinition.id, caseDefinition.caseMode);
   const [restoredWorkspace] = useState(() =>
     restoreWorkspace(window.sessionStorage.getItem(storageKey), caseDefinition.version),
   );
@@ -171,7 +207,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const initialEvents = useRef(workspace.events);
   const latestRequest = useRef(0);
   const [pendingCaseAttempt] = useState(() =>
-    restorePendingCaseAttempt(caseDefinition.id),
+    restorePendingCaseAttempt(caseDefinition.id, caseDefinition.caseMode),
   );
   const caseAttemptId = useRef<string | null>(
     pendingCaseAttempt?.attemptId ?? null,
@@ -208,6 +244,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         body: JSON.stringify({
           events: nextEvents,
           contentVersion: caseDefinition.version,
+          mode: caseDefinition.caseMode,
         }),
       });
       if (!response.ok) throw new Error("Unable to load case session");
@@ -235,6 +272,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       body: JSON.stringify({
         events: initialEvents.current,
         contentVersion: caseDefinition.version,
+        mode: caseDefinition.caseMode,
       }),
     })
       .then((response) => {
@@ -255,7 +293,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     return () => {
       active = false;
     };
-  }, [caseDefinition.id, caseDefinition.version, sessionExpired]);
+  }, [caseDefinition.caseMode, caseDefinition.id, caseDefinition.version, sessionExpired]);
 
   useEffect(() => {
     if (sessionExpired) return;
@@ -306,15 +344,26 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       contentVersion: caseDefinition.version,
       scaffoldingLevel: caseDefinition.scaffoldingLevel,
     });
-    savePendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id), attempt);
-    await practiceSession.repository.saveCaseAttempt(attempt);
-    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id));
+    savePendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode), attempt);
+    await saveAttempt(practiceSession.repository, attempt);
+    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode));
     setWorkspace((current) => ({ ...current, events: nextEvents }));
     setReviewAttemptId(attemptId);
     setView(completedView);
     router.push(
       `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(attemptId)}`,
     );
+  }
+
+  async function saveAttempt(
+    repository: Awaited<ReturnType<typeof getBrowserPracticeSession>>["repository"],
+    attempt: CaseAttempt,
+  ) {
+    await repository.saveCaseAttempt(attempt);
+    if (caseDefinition.id === "alpinefit-profitability" && caseDefinition.version === 2) {
+      await (repository as typeof repository & V3CaseAttemptRepository)
+        .saveV3CaseAttempt(createV3CaseAttempt(attempt, caseDefinition.caseMode));
+    }
   }
 
   async function recordGeneratedEvent(event: CaseEvent) {
@@ -378,6 +427,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         body: JSON.stringify({
           contentVersion: caseDefinition.version,
           events,
+          mode: caseDefinition.caseMode,
           response,
         }),
       },
@@ -402,6 +452,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       body: JSON.stringify({
         contentVersion: caseDefinition.version,
         events,
+        mode: caseDefinition.caseMode,
         phase,
         response,
       }),
@@ -420,6 +471,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       body: JSON.stringify({
         contentVersion: caseDefinition.version,
         events,
+        mode: caseDefinition.caseMode,
         ...completion,
         atMs: timestamp(),
       }),
@@ -441,11 +493,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         ...pendingCaseAttempt,
         userId: practiceSession.userId,
       };
-      await practiceSession.repository.saveCaseAttempt(restoredAttempt);
+      await saveAttempt(practiceSession.repository, restoredAttempt);
       const completedView = await loadView(restoredAttempt.events, false);
       clearPendingAttempt(
         window.sessionStorage,
-        pendingCaseKey(caseDefinition.id),
+        pendingCaseKey(caseDefinition.id, caseDefinition.caseMode),
       );
       setWorkspace((current) => ({
         ...current,
@@ -514,6 +566,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         <Link href="/cases">← All cases</Link>
         <div className={styles.headerActions}>
           <CaseWalkthrough />
+          {caseDefinition.caseMode === "interview" && <InterviewTimer />}
           <span>Guest session · {events.length} events saved</span>
         </div>
       </header>
@@ -562,6 +615,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
             <CaseGeneratedStep
               caseId={caseDefinition.id}
               contentVersion={caseDefinition.version}
+              caseMode={caseDefinition.caseMode}
               kind="opening"
               prompt={caseDefinition.openingPrompt}
               events={events}
@@ -627,6 +681,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   caseId={caseDefinition.id}
                   practice={view.hypothesis}
                   facts={facts}
+                  caseMode={caseDefinition.caseMode}
                   onCommit={commitHypothesisResponse}
                   onComplete={completeHypothesis}
                 />
@@ -673,6 +728,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   key={calculation.id}
                   caseId={caseDefinition.id}
                   contentVersion={caseDefinition.version}
+                  caseMode={caseDefinition.caseMode}
                   kind="calculation"
                   itemId={calculation.id}
                   prompt={calculation.responsePrompt}
@@ -696,7 +752,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 />
               ))}
 
-              {calculationFeedback && (
+              {caseDefinition.caseMode === "practice" && calculationFeedback && (
                 <QuantitativeFeedbackPanel feedback={calculationFeedback} />
               )}
 
@@ -704,6 +760,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 <CaseGeneratedStep
                   caseId={caseDefinition.id}
                   contentVersion={caseDefinition.version}
+                  caseMode={caseDefinition.caseMode}
                   kind="synthesis"
                   prompt={view.synthesis.prompt}
                   events={events}
@@ -738,6 +795,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
             <CaseGeneratedStep
               caseId={caseDefinition.id}
               contentVersion={caseDefinition.version}
+              caseMode={caseDefinition.caseMode}
               kind="recommendation"
               prompt={view.recommendationPrompt}
               events={events}
@@ -788,6 +846,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
         <div className={styles.sideRail}>
           <EvidencePanel
+            caseMode={caseDefinition.caseMode}
             facts={facts}
             exhibits={view?.exhibits ?? []}
             interpretedExhibitIds={view?.interpretedExhibitIds ?? []}
@@ -806,6 +865,15 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       </div>
     </main>
   );
+}
+
+function InterviewTimer() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const interval = window.setInterval(() => setSeconds((current) => current + 1), 1_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  return <output aria-label="Interview timer">Interview timer · {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</output>;
 }
 
 function WorkspaceFailure({

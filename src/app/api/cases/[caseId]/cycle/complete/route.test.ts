@@ -134,4 +134,57 @@ describe("case learning-cycle completion", () => {
     expect(applyCaseEvent(session, event).events.at(-1)).toEqual(event);
     expect(scoreCase(definition, [...session.events, event]).quantitative).toBe(0);
   });
+
+  it("hides immediate correctness and rejects revised checkpoints in Interview Mode", async () => {
+    const { session, atMs } = sessionAtCalculation();
+    const calculation = definition.calculations[0];
+    const firstCycle = completedCycle(calculation.responseCycle!, "calculation-response", atMs);
+    const retriedCycle = {
+      ...firstCycle,
+      responses: [...firstCycle.responses, {
+        ...firstCycle.responses[0],
+        responseId: "calculation-response-2",
+        revision: 2,
+        revisionOf: "calculation-response",
+      }],
+    };
+    const retry = await POST(
+      new Request("http://localhost/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          mode: "interview",
+          events: session.events,
+          kind: "calculation",
+          itemId: calculation.id,
+          cycle: retriedCycle,
+          checkpoint: { answer: calculation.expectedAnswer, unit: "$" },
+          atMs,
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+    expect(retry.status).toBe(400);
+
+    const firstAttempt = await POST(
+      new Request("http://localhost/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          mode: "interview",
+          events: session.events,
+          kind: "calculation",
+          itemId: calculation.id,
+          cycle: firstCycle,
+          checkpoint: { answer: calculation.expectedAnswer, unit: "%" },
+          atMs,
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+    expect(firstAttempt.status).toBe(200);
+    const payload = await firstAttempt.json();
+    expect(payload).not.toHaveProperty("feedback");
+    expect(payload.event.authoredComparisonViewed).toBe(false);
+  });
 });

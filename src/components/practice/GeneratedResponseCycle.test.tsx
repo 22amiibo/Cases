@@ -94,6 +94,29 @@ describe("GeneratedResponseCycle", () => {
     expect(screen.queryByRole("button", { name: "Skip this practice" })).toBeNull();
   });
 
+  it("defers the authored comparison and finishes without a retry in interview mode", async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    render(
+      <GeneratedResponseCycle
+        prompt={prompt}
+        onCommit={vi.fn().mockResolvedValue(reveal)}
+        onComplete={onComplete}
+        deferComparison
+      />,
+    );
+
+    await user.type(screen.getByLabelText("Your response"), "Labor is the outlier.");
+    await user.click(screen.getByRole("button", { name: "Commit response" }));
+    await user.click(screen.getByRole("button", { name: "Save self-check" }));
+
+    expect(await screen.findByRole("heading", { name: "Continue the interview" })).toBeVisible();
+    expect(screen.queryByText(reveal.comparison.text)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try another response" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({ phase: "complete" }));
+  });
+
   it("restores two linked revisions while leaving uncommitted text out of storage", async () => {
     const user = userEvent.setup();
     let responseNumber = 0;

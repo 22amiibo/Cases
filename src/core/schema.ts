@@ -512,7 +512,7 @@ const HypothesisEvidenceSchema = z.object({
   rubricOutcomes: z.array(RubricOutcomeSchema),
   diagnostics: z.array(DiagnosticOutcomeSchema),
   rationale: z.string().trim().min(1).max(10_000),
-  authoredComparisonViewed: z.literal(true),
+  authoredComparisonViewed: z.boolean(),
 });
 
 const GeneratedCaseEvidenceSchema = z.object({
@@ -520,7 +520,7 @@ const GeneratedCaseEvidenceSchema = z.object({
   responses: CommittedResponseChainSchema,
   rubricOutcomes: z.array(RubricOutcomeSchema),
   diagnostics: z.array(DiagnosticOutcomeSchema),
-  authoredComparisonViewed: z.literal(true),
+  authoredComparisonViewed: z.boolean(),
 });
 
 const HypothesisFormedEventSchema = TimedEventSchema.extend({
@@ -563,7 +563,7 @@ export const CaseEventSchema = z.union([
     questions: z.array(
       z.object({ questionId: IdentifierSchema, interviewerResponse: z.string().min(1) }),
     ).min(1),
-    authoredComparisonViewed: z.literal(true),
+    authoredComparisonViewed: z.boolean(),
   }),
   LegacyFrameworkSubmittedEventSchema,
   V2FrameworkSubmittedEventSchema,
@@ -589,8 +589,8 @@ export const CaseEventSchema = z.union([
     responses: CommittedResponseChainSchema,
     rubricOutcomes: z.array(RubricOutcomeSchema),
     diagnostics: z.array(DiagnosticOutcomeSchema),
-    insightIds: z.array(IdentifierSchema).min(1),
-    authoredComparisonViewed: z.literal(true),
+    insightIds: z.array(IdentifierSchema),
+    authoredComparisonViewed: z.boolean(),
   }),
   TimedEventSchema.extend({
     type: z.literal("calculation_submitted"),

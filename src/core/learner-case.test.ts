@@ -6,6 +6,22 @@ import { projectHypothesisPractice, toLearnerCaseDefinition, toLearnerCaseReview
 import type { CaseEvent } from "./schema";
 
 describe("toLearnerCaseDefinition", () => {
+  it("keeps case mode separate from authored scaffolding and removes interview hints", () => {
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+    const practice = toLearnerCaseDefinition(definition, {
+      mode: "practice",
+      contentVersion: 2,
+    });
+    const interview = toLearnerCaseDefinition(definition, {
+      mode: "interview",
+      contentVersion: 2,
+    });
+
+    expect(practice).toMatchObject({ caseMode: "practice", scaffoldingLevel: "beginner" });
+    expect(interview).toMatchObject({ caseMode: "interview", scaffoldingLevel: "beginner" });
+    expect(interview.openingPrompt?.guidance).toEqual([]);
+  });
+
   it("removes hidden scoring and causal metadata from the client payload", () => {
     const definition = CaseDefinitionSchema.parse(alpineFitContent);
     const learnerDefinition = toLearnerCaseDefinition(definition);

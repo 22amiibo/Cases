@@ -3,6 +3,7 @@ import type { AuthoredLearningCycle, LearningCycleState } from "./learning-cycle
 import type { CaseDefinition, CaseEvent, DiagnosticOutcome } from "./schema";
 import { withinTolerance } from "./validation";
 import type { QuantitativeFeedback } from "./quantitative-feedback";
+import { getCaseModePolicy } from "./case-mode";
 
 export type CaseCycleKind = "opening" | "calculation" | "synthesis" | "recommendation";
 
@@ -52,7 +53,7 @@ export function buildGeneratedCaseEvent({
     responses: cycle.responses,
     rubricOutcomes: assessment.outcomes,
     diagnostics: [...cycle.diagnostics],
-    authoredComparisonViewed: true as const,
+    authoredComparisonViewed: getCaseModePolicy(session.runContext.mode).showImmediateFeedback,
     atMs,
   };
   const definition = session.caseDefinition;

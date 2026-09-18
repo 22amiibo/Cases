@@ -30,6 +30,14 @@ function savedFeedbackMessage(code: string) {
   return diagnosticDefinitions[code as DiagnosticCode]?.explanation ?? "A coaching note was saved with this attempt.";
 }
 
+function replayMode(events: CaseEvent[]) {
+  return events.some(
+    (event) => "authoredComparisonViewed" in event && !event.authoredComparisonViewed,
+  )
+    ? "interview"
+    : "practice";
+}
+
 export function CaseReplay({ review }: CaseReplayProps) {
   return (
     <div className={styles.reviewGrid}>
@@ -265,7 +273,11 @@ export function ReviewSession({
         const response = await fetch(`/api/cases/${caseId}/session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ events, contentVersion }),
+          body: JSON.stringify({
+            events,
+            contentVersion,
+            mode: replayMode(events),
+          }),
         });
         if (attemptId && response.status === 404) {
           if (active) setStatus("unavailable");

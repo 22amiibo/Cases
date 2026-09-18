@@ -51,3 +51,24 @@ test("AlpineFit V2 completes the full generated loop with refresh and retry", as
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("AlpineFit Interview Mode defers authored feedback until the case is complete", async ({ page }) => {
+  test.setTimeout(90_000);
+  const revealBodies: string[] = [];
+  const responseReads: Promise<void>[] = [];
+  page.on("response", (response) => {
+    if (/\/api\/cases\/alpinefit-profitability\/(cycle|hypotheses)\/commit|\/api\/cases\/alpinefit-profitability\/exhibits\/[^/]+\/commit/.test(response.url())) {
+      responseReads.push(response.text().then((body) => { revealBodies.push(body); }));
+    }
+  });
+
+  await page.goto("/cases/alpinefit-profitability?mode=interview");
+  await expect(page.getByLabel("Interview timer")).toBeVisible();
+  await completeAlpineFitV2(page, { interview: true });
+  await Promise.all(responseReads);
+
+  expect(revealBodies).not.toEqual([]);
+  expect(revealBodies.every((body) => !body.includes("Current overtime creates approximately $756,000"))).toBe(true);
+  expect(revealBodies.every((body) => !body.includes("One defensible interpretation"))).toBe(true);
+  await expect(page.getByRole("heading", { name: "Your case review" })).toBeVisible();
+});

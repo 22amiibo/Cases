@@ -932,8 +932,8 @@ and preserved `/drills` behavior.
   in `PRODUCT_DECISION_LEDGER.md`.
 - [x] Implement the approved Task 7 learning-quality and UX revisions without
   changing the underlying activity engine or beginning Task 8.
-- [ ] Stop again. Owner replaytests all four revised labs and records `proceed`,
-  `revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`.
+- [x] Stop again. Owner replaytested all four revised labs and recorded `proceed`
+  in `PRODUCT_DECISION_LEDGER.md` on 2026-09-18.
 - [x] Do not begin Task 8 until the recorded decision is `proceed`.
 
 ### Task 8: Add explicit AlpineFit case modes
@@ -950,13 +950,13 @@ and preserved `/drills` behavior.
 **Produces:** Persisted `caseMode`, server-enforced mode policy, timer UI, and
 AlpineFit completion in both modes without duplicating content.
 
-- [ ] Write failing tests for policy values, retry/hint rejection in Interview
+- [x] Write failing tests for policy values, retry/hint rejection in Interview
   Mode, delayed reveal, limited backtracking, refresh, save retry, and distinct
   scaffolding/mode fields.
-- [ ] Implement `CaseRunContext` at the shared legality/projection seams.
-- [ ] Preserve current Practice Mode behavior and all V1/V2 journeys.
-- [ ] Run focused tests and both AlpineFit browser journeys.
-- [ ] Commit `feat: add alpinefit practice and interview modes`.
+- [x] Implement `CaseRunContext` at the shared legality/projection seams.
+- [x] Preserve current Practice Mode behavior and all V1/V2 journeys.
+- [x] Run focused tests and both AlpineFit browser journeys.
+- [x] Commit `feat: add alpinefit practice and interview modes`.
 
 ### Task 9: Add chronological replay and debrief
 

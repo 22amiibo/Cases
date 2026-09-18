@@ -3,6 +3,9 @@ import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
 import { CaseDefinitionSchema } from "@/core/schema";
 
 vi.mock("@/content/cases", () => ({ getCaseDefinition: vi.fn() }));
+vi.mock("@/content/cases/metadata", () => ({
+  getCaseMetadata: vi.fn(() => ({ supportedModes: ["practice", "interview"] })),
+}));
 
 import { getCaseDefinition } from "@/content/cases";
 import { POST } from "./route";
@@ -81,6 +84,34 @@ describe("exhibit commitment projection", () => {
       definition.exhibits[0].insights.map(({ id, label }) => ({ id, label })),
     );
     expect(JSON.stringify(payload)).not.toContain('"strength"');
+  });
+
+  it("defers authored exhibit review and rejects revisions in Interview Mode", async () => {
+    const interview = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({ contentVersion: 2, mode: "interview", events, response }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id, exhibitId: "cost-category" }) },
+    );
+    expect(interview.status).toBe(200);
+    const payload = await interview.json();
+    expect(JSON.stringify(payload)).not.toContain("Labor is the cost outlier.");
+    expect(payload.insightOptions).toEqual([]);
+
+    const retry = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          mode: "interview",
+          events,
+          response: { ...response, responseId: "response-2", revision: 2, revisionOf: "response-1" },
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id, exhibitId: "cost-category" }) },
+    );
+    expect(retry.status).toBe(400);
   });
 
   it("refuses to reveal answers before the exhibit is available", async () => {

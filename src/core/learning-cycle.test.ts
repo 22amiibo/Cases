@@ -3,6 +3,7 @@ import type { CommittedResponse } from "./schema";
 import {
   applyLearningCycleAction,
   createLearningCycleState,
+  deferLearningCycleReveal,
   projectLearningCyclePrompt,
   restoreLearningCycleState,
   revealLearningCycleAfterCommit,
@@ -65,6 +66,15 @@ describe("generated response learning cycle", () => {
     expect(serialized).not.toContain("Names the strongest comparison");
     expect(serialized).not.toContain("comparison_missed");
     expect(serialized).not.toContain(definition.comparison.text);
+  });
+
+  it("defers authored comparisons and diagnostics for an interview response", () => {
+    const deferred = deferLearningCycleReveal(definition, firstResponse);
+
+    expect(deferred.criteria).toEqual(definition.criteria);
+    expect(deferred.comparison.text).not.toContain(definition.comparison.text);
+    expect(deferred.diagnosticRules).toEqual([]);
+    expect(JSON.stringify(deferred)).not.toContain("comparison_missed");
   });
 
   it("rejects self-check, comparison, and retry transitions before commitment", () => {

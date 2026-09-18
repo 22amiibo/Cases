@@ -47,6 +47,35 @@ const investigationEvents = [
 ];
 
 describe("case learning-cycle commitment projection", () => {
+  it("defers Interview Mode comparisons until the completed-case debrief", async () => {
+    const result = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          mode: "interview",
+          events: [],
+          kind: "opening",
+          response: {
+            responseId: "opening-response",
+            interactionId: opening.interactionId,
+            revision: 1,
+            revisionOf: null,
+            responseKind: opening.responseKind,
+            text: "Clarify the margin objective and scope.",
+            committedAtMs: 1,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+    const payload = JSON.stringify(await result.json());
+
+    expect(result.status).toBe(200);
+    expect(payload).not.toContain(opening.comparison.text);
+    expect(payload).not.toContain(opening.diagnosticRules[0]?.code ?? "never");
+  });
+
   it("does not reveal a calculation comparison before its prerequisites are met", async () => {
     const cycle = definition.calculations[0].responseCycle!;
     const requestBody = {

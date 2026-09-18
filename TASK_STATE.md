@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 8-12 remain gated on the mandatory Task 7 owner playtest.
+V3.0 Tasks 9-12 remain after the completed Task 8 case-mode work.
 
 ## V3 planning
 
@@ -17,9 +17,9 @@ V3.0 Tasks 8-12 remain gated on the mandatory Task 7 owner playtest.
 
 ## Current task
 
-The Task 7 owner playtest recorded `revise and replaytest`. The requested
-learning-quality and UX revisions are implemented and ready for the mandatory
-owner replaytest. Task 8 has not started.
+Task 8 is complete. AlpineFit now has explicit Practice and Interview modes
+with separate persisted workspaces, server-enforced policy, deferred Interview
+feedback, and mode-aware saved attempts.
 
 ## Completed tasks
 
@@ -52,6 +52,12 @@ owner replaytest. Task 8 has not started.
   lightweight achievements, and uses the static typography stack site-wide.
   Validation passes 77 test files / 359 tests and 46 Playwright journeys,
   plus lint, typecheck, production build, and `git diff --check`.
+- The Task 7 owner replaytest recorded `proceed` on 2026-09-18 in
+  `PRODUCT_DECISION_LEDGER.md`, opening Task 8.
+- V3.0 Task 8 is complete: AlpineFit Practice and Interview modes have
+  server-enforced policy and deferred Interview feedback, preserve mode timing
+  in case events, persist `caseMode` in V3 attempts, and pass focused, browser,
+  lint, typecheck, and production-build checks.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -68,9 +74,7 @@ owner replaytest. Task 8 has not started.
 
 ## Remaining work
 
-- Owner replaytests Clarifying, Exhibit Analysis, Brainstorming, and Hypothesis
-  and records `proceed`, `revise and replaytest`, or `stop`.
-- Tasks 8-12 remain gated on a recorded `proceed` decision.
+- Complete V3.0 Tasks 9-12 according to the approved implementation plan.
 
 ## Important decisions and invariants
 
@@ -83,6 +87,9 @@ owner replaytest. Task 8 has not started.
 - Completed cases expose explicit replay and fresh-practice entry points.
 - Exhausting every authored investigation is a valid path to synthesis; it must not require a nonexistent next investigation.
 - Do not stage or edit pre-existing `supabase/.temp/` or `src/content/drills/quantitative 2.json`.
+- `caseMode` is separate from scaffolding. Interview attempts record deferred
+  comparison timing as `authoredComparisonViewed: false`; Practice preserves
+  the existing immediate-feedback requirement.
 
 ## Verification already performed
 
@@ -132,6 +139,5 @@ owner replaytest. Task 8 has not started.
 
 ## Exact next action
 
-Run the mandatory owner replaytest from `/practice` and record `proceed`,
-`revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`. Do not begin
-Task 8 without `proceed`.
+Begin Task 9: add chronological replay and debrief using the persisted Task 8
+mode and exact-version case events.

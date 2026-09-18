@@ -21,6 +21,7 @@ import {
 import type { LearnerLearningCyclePrompt } from "./learning-cycle";
 import { projectLearningCyclePrompt } from "./learning-cycle";
 import { getCurrentHypothesisId, getHypothesisEvents } from "./hypothesis";
+import { getCaseModePolicy, type CaseRunContext } from "./case-mode";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
@@ -84,7 +85,7 @@ export type LearnerCaseReview = {
     rubricOutcomes: RubricOutcome[];
     diagnostics: DiagnosticOutcome[];
     insightIds: string[];
-    authoredComparisonViewed: true;
+    authoredComparisonViewed: boolean;
   }>;
   hypotheses: Array<{
     type: "hypothesis_formed" | "hypothesis_updated";
@@ -116,12 +117,14 @@ export type LearnerCaseDefinition = Pick<
   CaseDefinition,
   "id" | "version" | "title" | "category" | "difficulty" | "prompt" | "objective"
 > & {
+  caseMode: CaseRunContext["mode"];
   clarificationOptions: Array<{ id: string; label: string }>;
   openingPrompt: LearnerLearningCyclePrompt | null;
   scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
 };
 
 export type LearnerSessionView = {
+  caseMode: CaseRunContext["mode"];
   currentStage: CaseStage;
   availableActions: Array<{
     id: string;
@@ -251,7 +254,12 @@ function projectGeneratedCaseResponses(
 
 export function toLearnerCaseDefinition(
   definition: CaseDefinition,
+  context: CaseRunContext = { mode: "practice", contentVersion: definition.version },
 ): LearnerCaseDefinition {
+  const policy = getCaseModePolicy(context.mode);
+  const openingPrompt = definition.opening
+    ? projectLearningCyclePrompt(definition.opening.responseCycle)
+    : null;
   const scaffoldingLevel = definition.version >= 2
     ? definition.opening?.responseCycle.scaffoldingLevel ??
       definition.hypothesisPractice?.initial.scaffoldingLevel ??
@@ -267,13 +275,15 @@ export function toLearnerCaseDefinition(
     difficulty: definition.difficulty,
     prompt: definition.prompt,
     objective: definition.objective,
+    caseMode: context.mode,
     scaffoldingLevel,
     clarificationOptions: definition.version >= 2 && definition.opening
       ? []
       : definition.clarificationOptions.map(({ id, label }) => ({ id, label })),
-    openingPrompt: definition.opening
-      ? projectLearningCyclePrompt(definition.opening.responseCycle)
-      : null,
+    openingPrompt: openingPrompt && {
+      ...openingPrompt,
+      guidance: policy.showHints ? openingPrompt.guidance : [],
+    },
   };
 }
 
@@ -428,14 +438,19 @@ export function toLearnerCaseReview(
 export function projectHypothesisPractice(
   definition: CaseDefinition,
   events: CaseEvent[],
+  context: CaseRunContext = { mode: "practice", contentVersion: definition.version },
 ): LearnerSessionView["hypothesis"] {
+  const promptFor = (cycle: NonNullable<CaseDefinition["hypothesisPractice"]>["initial"]) => {
+    const prompt = projectLearningCyclePrompt(cycle);
+    return getCaseModePolicy(context.mode).showHints ? prompt : { ...prompt, guidance: [] };
+  };
   const practice = definition.hypothesisPractice;
   if (!practice) return null;
   const hypothesisEvents = getHypothesisEvents(events);
   if (hypothesisEvents.length === 0) {
     return {
       phase: "initial",
-      prompt: projectLearningCyclePrompt(practice.initial),
+      prompt: promptFor(practice.initial),
       currentHypothesisId: null,
       revisionOfResponseId: null,
     };
@@ -446,7 +461,7 @@ export function projectHypothesisPractice(
   ) {
     return {
       phase: "update",
-      prompt: projectLearningCyclePrompt(practice.update),
+      prompt: promptFor(practice.update),
       currentHypothesisId: getCurrentHypothesisId(events),
       revisionOfResponseId: hypothesisEvents.at(-1)?.responses.at(-1)?.responseId ?? null,
     };

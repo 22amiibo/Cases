@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { caseDefinitions } from "@/content/cases";
+import { getCaseMetadata } from "@/content/cases/metadata";
 import styles from "./page.module.css";
 
 export default function CasesPage() {
@@ -31,9 +32,16 @@ export default function CasesPage() {
               <h2>{caseDefinition.title}</h2>
               <p>{caseDefinition.objective}</p>
             </div>
-            <Link href={`/cases/${caseDefinition.id}`}>
-              Start {caseDefinition.title}
-            </Link>
+            <div>
+              <Link href={`/cases/${caseDefinition.id}?mode=practice`}>
+                Start {caseDefinition.title}
+              </Link>
+              {getCaseMetadata(caseDefinition.id, caseDefinition.version)?.supportedModes.includes("interview") && (
+                <Link href={`/cases/${caseDefinition.id}?mode=interview`}>
+                  Start Interview Mode
+                </Link>
+              )}
+            </div>
           </article>
         ))}
       </section>

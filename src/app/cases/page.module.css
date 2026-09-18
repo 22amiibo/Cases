@@ -79,7 +79,13 @@
   line-height: 1.55;
 }
 
-.caseCard a {
+.caseCard > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.caseCard > div:last-child a {
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 13px 18px;

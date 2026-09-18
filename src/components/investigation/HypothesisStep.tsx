@@ -7,6 +7,7 @@ import { restoreLearningCycleState, type LearningCycleReveal, type LearningCycle
 import type { LearnerSessionView } from "@/core/learner-case";
 import type { CommittedResponse } from "@/core/schema";
 import type { RevealedFact } from "@/core/case-engine";
+import type { CaseMode } from "@/core/v3-taxonomy";
 import styles from "./HypothesisStep.module.css";
 
 type HypothesisPractice = NonNullable<LearnerSessionView["hypothesis"]>;
@@ -37,12 +38,14 @@ export function HypothesisStep({
   caseId,
   practice,
   facts,
+  caseMode = "practice",
   onCommit,
   onComplete,
 }: {
   caseId: string;
   practice: HypothesisPractice;
   facts: RevealedFact[];
+  caseMode?: CaseMode;
   onCommit: (phase: "initial" | "update", response: CommittedResponse) => Promise<{
     reveal: LearningCycleReveal;
     options: Array<{ id: string; label: string }>;
@@ -123,6 +126,7 @@ export function HypothesisStep({
           storageKey={storageKey}
           onCommit={commitResponse}
           onComplete={setCycle}
+          deferComparison={caseMode === "interview"}
         />
       )}
       {cycle && practice.phase === "initial" && (

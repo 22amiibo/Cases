@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { getCaseDefinition } from "@/content/cases";
+import { getCaseMetadata } from "@/content/cases/metadata";
+import { getCaseModePolicy } from "@/core/case-mode";
 import { getCaseLearningCycle, type CaseCycleKind } from "@/core/case-learning";
 import {
   getAvailableActions,
   isGeneratedCaseCycleAvailable,
   replayCaseEvents,
 } from "@/core/case-engine";
-import { revealLearningCycleAfterCommit } from "@/core/learning-cycle";
+import { deferLearningCycleReveal, revealLearningCycleAfterCommit } from "@/core/learning-cycle";
 import { CaseEventSchema, CommittedResponseSchema } from "@/core/schema";
+import { CaseModeSchema } from "@/core/v3-taxonomy";
 
 const kinds = new Set<CaseCycleKind>(["opening", "calculation", "synthesis", "recommendation"]);
 
@@ -23,10 +26,20 @@ export async function POST(
     }
     const definition = getCaseDefinition(caseId, body.contentVersion as number);
     if (!definition) return NextResponse.json({ error: "Case not found" }, { status: 404 });
+    const mode = CaseModeSchema.safeParse(body.mode ?? "practice");
+    if (!mode.success || !getCaseMetadata(caseId, definition.version)?.supportedModes.includes(mode.data)) {
+      return NextResponse.json({ error: "Case mode not supported" }, { status: 400 });
+    }
     const parsedEvents = body.events.map((event) => CaseEventSchema.safeParse(event));
     const response = CommittedResponseSchema.safeParse(body.response);
     if (!response.success || parsedEvents.some(({ success }) => !success)) throw new Error("Invalid event history");
-    const session = replayCaseEvents(definition, parsedEvents.flatMap((event) => event.success ? [event.data] : []));
+    if (!getCaseModePolicy(mode.data).allowCheckpointRetry && response.data.revision > 1) {
+      throw new Error("Checkpoint retry is not allowed");
+    }
+    const session = replayCaseEvents(definition, parsedEvents.flatMap((event) => event.success ? [event.data] : []), {
+      mode: mode.data,
+      contentVersion: definition.version,
+    });
     if (!session) throw new Error("Invalid event history");
     const kind = body.kind as CaseCycleKind;
     const itemId = typeof body.itemId === "string" ? body.itemId : undefined;
@@ -48,7 +61,9 @@ export async function POST(
           ? { actions: getAvailableActions(session).map(({ id, label }) => ({ id, label })) }
           : null;
     return NextResponse.json({
-      reveal: revealLearningCycleAfterCommit(cycle, response.data),
+      reveal: getCaseModePolicy(mode.data).showImmediateFeedback
+        ? revealLearningCycleAfterCommit(cycle, response.data)
+        : deferLearningCycleReveal(cycle, response.data),
       checkpoint,
     });
   } catch {

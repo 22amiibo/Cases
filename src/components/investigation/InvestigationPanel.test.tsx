@@ -20,10 +20,12 @@ const caseDefinition: LearnerCaseDefinition = {
   objective: "Recommend a practical response.",
   clarificationOptions: [],
   openingPrompt: null,
+  caseMode: "practice",
   scaffoldingLevel: "beginner",
 };
 
 const view: LearnerSessionView = {
+  caseMode: "practice",
   currentStage: "investigate",
   availableActions: [
     {

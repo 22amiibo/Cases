@@ -12,6 +12,7 @@ import {
   type LearningCycleState,
 } from "@/core/learning-cycle";
 import type { CaseEvent, CommittedResponse } from "@/core/schema";
+import type { CaseMode } from "@/core/v3-taxonomy";
 import styles from "./EvidencePanel.module.css";
 
 type EvidencePanelProps = {
@@ -31,6 +32,7 @@ type EvidencePanelProps = {
       "type" | "eventSchemaVersion" | "atMs"
     >,
   ) => Promise<void>;
+  caseMode?: CaseMode;
 };
 
 export function EvidencePanel({
@@ -39,6 +41,7 @@ export function EvidencePanel({
   interpretedExhibitIds = [],
   onCommitResponse,
   onSubmitInterpretation,
+  caseMode = "practice",
 }: EvidencePanelProps) {
   return (
     <section className={styles.panel} aria-labelledby="evidence-title">
@@ -72,6 +75,7 @@ export function EvidencePanel({
                   prompt={exhibit.interpretationPrompt}
                   onCommitResponse={onCommitResponse}
                   onSubmitInterpretation={onSubmitInterpretation}
+                  caseMode={caseMode}
                 />
               ) : null)}
           </div>
@@ -86,6 +90,7 @@ function ExhibitInterpretationPractice({
   prompt,
   onCommitResponse,
   onSubmitInterpretation,
+  caseMode,
 }: {
   exhibit: LearnerExhibitDefinition;
   prompt: NonNullable<LearnerExhibitDefinition["interpretationPrompt"]>;
@@ -93,6 +98,7 @@ function ExhibitInterpretationPractice({
   onSubmitInterpretation: NonNullable<
     EvidencePanelProps["onSubmitInterpretation"]
   >;
+  caseMode: CaseMode;
 }) {
   const cycleStorageKey = `casework:exhibit-cycle:${exhibit.id}`;
   const optionsStorageKey = `${cycleStorageKey}:insights`;
@@ -141,8 +147,25 @@ function ExhibitInterpretationPractice({
           return result.reveal;
         }}
         onComplete={setCompletedState}
+        deferComparison={caseMode === "interview"}
       />
-      {completedState && insightOptions.length > 0 && (
+      {completedState && caseMode === "interview" && (
+        <button type="button" onClick={() => {
+          const latest = completedState.responses.at(-1);
+          const assessment = completedState.assessments.find(
+            (candidate) => candidate.responseId === latest?.responseId,
+          );
+          void onSubmitInterpretation({
+            exhibitId: exhibit.id,
+            responses: completedState.responses,
+            rubricOutcomes: assessment?.outcomes ?? [],
+            diagnostics: completedState.diagnostics,
+            insightIds: [],
+            authoredComparisonViewed: false,
+          });
+        }}>Continue</button>
+      )}
+      {completedState && caseMode === "practice" && insightOptions.length > 0 && (
         <form
           onSubmit={(event) => {
             event.preventDefault();

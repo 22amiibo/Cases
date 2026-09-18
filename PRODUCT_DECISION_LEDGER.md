@@ -272,6 +272,14 @@ The owner must replaytest and record a new `proceed`, `revise and replaytest`,
 or `stop` decision. Task 8 and all later V3.0 implementation remain gated until
 that decision is `proceed`.
 
+### V3 Gate 7: proceed
+
+**Owner decision:** `proceed` on 2026-09-18.
+
+The owner replaytest passed and authorized Task 8 to begin. The decision opens
+the explicit AlpineFit Practice and Interview mode work; later V3.0 tasks remain
+bounded by their own plan requirements.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

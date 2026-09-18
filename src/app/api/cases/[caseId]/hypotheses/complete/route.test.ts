@@ -3,6 +3,9 @@ import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
 import { CaseDefinitionSchema } from "@/core/schema";
 
 vi.mock("@/content/cases", () => ({ getCaseDefinition: vi.fn() }));
+vi.mock("@/content/cases/metadata", () => ({
+  getCaseMetadata: vi.fn(() => ({ supportedModes: ["practice", "interview"] })),
+}));
 
 import { getCaseDefinition } from "@/content/cases";
 import { POST } from "./route";

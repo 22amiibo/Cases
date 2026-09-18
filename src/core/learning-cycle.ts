@@ -227,6 +227,21 @@ export function revealLearningCycleAfterCommit(
   });
 }
 
+export function deferLearningCycleReveal(
+  definition: AuthoredLearningCycle,
+  response: CommittedResponse,
+): LearningCycleReveal {
+  const reveal = revealLearningCycleAfterCommit(definition, response);
+  return {
+    criteria: reveal.criteria,
+    comparison: {
+      title: "Review available after completion",
+      text: "Your comparison and diagnostics will be available in the completed-case debrief.",
+    },
+    diagnosticRules: [],
+  };
+}
+
 export function createLearningCycleState(
   interactionId: string,
 ): LearningCycleState {
@@ -365,6 +380,7 @@ export function restoreLearningCycleState(
 export function validateCompletedLearningCycleState(
   value: unknown,
   definition: AuthoredLearningCycle,
+  allowDeferredReveal = false,
 ): LearningCycleState | null {
   const parsed = LearningCycleStateSchema.safeParse(value);
   if (
@@ -402,7 +418,7 @@ export function validateCompletedLearningCycleState(
       );
     }
 
-    return serializeLearningCycleState(canonical) === serializeLearningCycleState(parsed.data)
+    return (allowDeferredReveal || serializeLearningCycleState(canonical) === serializeLearningCycleState(parsed.data))
       ? canonical
       : null;
   } catch {

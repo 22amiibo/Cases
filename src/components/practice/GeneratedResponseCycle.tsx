@@ -22,6 +22,7 @@ type GeneratedResponseCycleProps = {
   storageKey?: string;
   onComplete?: (state: LearningCycleState) => void;
   allowSkip?: boolean;
+  deferComparison?: boolean;
 };
 
 function defaultResponseId() {
@@ -36,6 +37,7 @@ export function GeneratedResponseCycle({
   storageKey,
   onComplete,
   allowSkip = true,
+  deferComparison = false,
 }: GeneratedResponseCycleProps) {
   const headingId = useId();
   const [state, setState] = useState<LearningCycleState>(() => {
@@ -223,7 +225,7 @@ export function GeneratedResponseCycle({
         </>
       )}
 
-      {state.phase === "comparison_ready" && (
+      {state.phase === "comparison_ready" && !deferComparison && (
         <>
           <span className={styles.eyebrow}>Self-check saved</span>
           <h2 id={headingId} ref={phaseHeading} tabIndex={-1}>
@@ -236,6 +238,23 @@ export function GeneratedResponseCycle({
           >
             View comparison
           </button>
+        </>
+      )}
+
+      {state.phase === "comparison_ready" && deferComparison && (
+        <>
+          <span className={styles.eyebrow}>Response saved</span>
+          <h2 id={headingId} ref={phaseHeading} tabIndex={-1}>Continue the interview</h2>
+          <p>Your comparison and diagnostics will be available after you complete the case.</p>
+          <button type="button" onClick={() => {
+            const completed = applyLearningCycleAction(
+              applyLearningCycleAction(state, { type: "comparison_viewed" }),
+              { type: "cycle_completed" },
+            );
+            if (storageKey) window.sessionStorage.setItem(storageKey, serializeLearningCycleState(completed));
+            setState(completed);
+            onComplete?.(completed);
+          }}>Continue</button>
         </>
       )}
 

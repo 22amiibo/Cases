@@ -18,6 +18,7 @@ import {
   type CommittedResponse,
 } from "@/core/schema";
 import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
+import type { CaseMode } from "@/core/v3-taxonomy";
 import styles from "./HypothesisStep.module.css";
 
 type Choice = { id: string; label: string };
@@ -50,6 +51,7 @@ export function clearCaseCycleStorage(
 export function CaseGeneratedStep({
   caseId,
   contentVersion,
+  caseMode = "practice",
   kind,
   itemId,
   prompt,
@@ -63,6 +65,7 @@ export function CaseGeneratedStep({
 }: {
   caseId: string;
   contentVersion: number;
+  caseMode?: CaseMode;
   kind: CaseCycleKind;
   itemId?: string;
   prompt: LearnerLearningCyclePrompt;
@@ -132,7 +135,7 @@ export function CaseGeneratedStep({
     const result = await fetch(`/api/cases/${caseId}/cycle/commit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentVersion, events, kind, itemId, response }),
+      body: JSON.stringify({ contentVersion, mode: caseMode, events, kind, itemId, response }),
     });
     if (!result.ok) throw new Error("Unable to commit response");
     const payload = await result.json() as { reveal: LearningCycleReveal; checkpoint: CheckpointReveal | null };
@@ -160,7 +163,7 @@ export function CaseGeneratedStep({
       const result = await fetch(`/api/cases/${caseId}/cycle/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentVersion, events, kind, itemId, cycle, checkpoint, atMs: atMs() }),
+        body: JSON.stringify({ contentVersion, mode: caseMode, events, kind, itemId, cycle, checkpoint, atMs: atMs() }),
       });
       if (!result.ok) throw new Error("Unable to complete practice");
       const payload = await result.json() as {
@@ -190,7 +193,7 @@ export function CaseGeneratedStep({
   return (
     <section className={styles.card} aria-label={`${kind} practice`}>
       <span>Case practice · {kind}</span>
-      {!cycle && <GeneratedResponseCycle prompt={prompt} storageKey={key} onCommit={commit} onComplete={setCycle} allowSkip={false} />}
+      {!cycle && <GeneratedResponseCycle prompt={prompt} storageKey={key} onCommit={commit} onComplete={setCycle} allowSkip={false} deferComparison={caseMode === "interview"} />}
       {cycle && (
         <div className={styles.form}>
           {kind === "opening" && <fieldset><legend>Choose the questions you would ask</legend>{orderedQuestionOptions.map((choice) => <label key={choice.id}><input type="checkbox" checked={selectedIds.includes(choice.id)} onChange={() => toggle(choice.id, 4)} />{choice.label}</label>)}</fieldset>}

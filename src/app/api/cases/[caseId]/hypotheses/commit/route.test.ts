@@ -3,6 +3,9 @@ import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
 import { CaseDefinitionSchema } from "@/core/schema";
 
 vi.mock("@/content/cases", () => ({ getCaseDefinition: vi.fn() }));
+vi.mock("@/content/cases/metadata", () => ({
+  getCaseMetadata: vi.fn(() => ({ supportedModes: ["practice", "interview"] })),
+}));
 
 import { getCaseDefinition } from "@/content/cases";
 import { POST } from "./route";
@@ -83,6 +86,33 @@ describe("hypothesis commitment projection", () => {
       { id: "testable", label: "Makes a testable claim" },
     ]);
     expect(payload.options).toEqual(definition.hypothesisPractice?.options);
+  });
+
+  it("defers authored comparison and rejects revisions in Interview Mode", async () => {
+    const interview = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({ contentVersion: 2, mode: "interview", events, phase: "initial", response }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+    expect(interview.status).toBe(200);
+    expect(JSON.stringify(await interview.json())).not.toContain("Costs may be growing too quickly.");
+
+    const retry = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          mode: "interview",
+          events,
+          phase: "initial",
+          response: { ...response, responseId: "hypothesis-2", revision: 2, revisionOf: "hypothesis-1" },
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+    expect(retry.status).toBe(400);
   });
 
   it("reveals choices for the update only after its response is committed", async () => {

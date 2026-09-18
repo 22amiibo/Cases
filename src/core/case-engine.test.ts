@@ -6,6 +6,7 @@ import {
   createCaseSession,
   getAvailableActions,
   getRevealedFacts,
+  isCaseEventAllowed,
 } from "./case-engine";
 
 const alpineFit = CaseDefinitionSchema.parse(alpineFitContent);
@@ -220,6 +221,34 @@ describe("deterministic case engine", () => {
     expect(afterRepeat.revealedExhibitIds).toEqual(["cost-category"]);
   });
 
+  it("locks visited investigations in Interview Mode while preserving Practice backtracking", () => {
+    const session = createCaseSession(alpineFit, {
+      mode: "interview",
+      contentVersion: alpineFit.version,
+    });
+    const structured = applyCaseEvent(applyCaseEvent(session, {
+      type: "clarification_selected",
+      clarificationId: "target-metric",
+      atMs: 1,
+    }), {
+      type: "framework_submitted",
+      conceptIds: ["revenue", "variable_cost"],
+      priorityConceptId: "variable_cost",
+      atMs: 2,
+    });
+    const investigated = applyCaseEvent(structured, {
+      type: "node_investigated",
+      nodeId: "costs",
+      atMs: 3,
+    });
+
+    expect(applyCaseEvent(investigated, {
+      type: "node_investigated",
+      nodeId: "costs",
+      atMs: 4,
+    })).toBe(investigated);
+  });
+
   it("moves through the authored interaction stages", () => {
     const clarify = createCaseSession(alpineFit);
     const structure = applyCaseEvent(clarify, {
@@ -414,6 +443,12 @@ describe("deterministic case engine", () => {
     };
 
     expect(applyCaseEvent(session, synthesis)).toBe(session);
+    expect(isCaseEventAllowed(session, { ...v2InterpretationEvent, insightIds: [] })).toBe(false);
+    expect(isCaseEventAllowed(
+      session,
+      { ...v2InterpretationEvent, insightIds: [] },
+      { mode: "interview", contentVersion: v2ExhibitDefinition.version },
+    )).toBe(true);
     const interpreted = applyCaseEvent(session, v2InterpretationEvent);
     expect(interpreted.events.at(-1)).toEqual(v2InterpretationEvent);
     expect(applyCaseEvent(interpreted, synthesis).currentStage).toBe("recommend");
@@ -450,6 +485,44 @@ describe("deterministic case engine", () => {
         questions: [{ questionId: opening.questions[0].questionId, interviewerResponse: "Forged" }],
       }),
     ).toBe(session);
+  });
+
+  it("rejects checkpoint retries in Interview Mode without changing Practice Mode", () => {
+    const opening = {
+      type: "case_opening_submitted" as const,
+      eventSchemaVersion: 2 as const,
+      responses: [
+        {
+          responseId: "opening-1",
+          interactionId: "case-opening",
+          revision: 1,
+          revisionOf: null,
+          responseKind: "objective_restatement",
+          text: "Explain the margin decline.",
+          committedAtMs: 1,
+        },
+        {
+          responseId: "opening-2",
+          interactionId: "case-opening",
+          revision: 2,
+          revisionOf: "opening-1",
+          responseKind: "objective_restatement",
+          text: "Explain the six-point EBITDA margin decline.",
+          committedAtMs: 2,
+        },
+      ],
+      rubricOutcomes: [{ criterionId: "objective", met: true }],
+      diagnostics: [],
+      questions: v2OpeningDefinition.clarificationOptions.slice(0, 2).map(
+        ({ id, response }) => ({ questionId: id, interviewerResponse: response }),
+      ),
+      authoredComparisonViewed: true as const,
+      atMs: 3,
+    };
+    const session = createCaseSession(v2OpeningDefinition);
+
+    expect(isCaseEventAllowed(session, opening, { mode: "practice", contentVersion: 2 })).toBe(true);
+    expect(isCaseEventAllowed(session, opening, { mode: "interview", contentVersion: 2 })).toBe(false);
   });
 
   it("requires an initial V2 hypothesis before investigation and an evidence-linked update before synthesis", () => {

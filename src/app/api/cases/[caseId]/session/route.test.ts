@@ -62,6 +62,28 @@ describe("case session projection", () => {
     });
   });
 
+  it("projects the requested supported mode and rejects unsupported modes", async () => {
+    const interview = await POST(
+      new Request("http://localhost/api/cases/alpinefit-profitability/session", {
+        method: "POST",
+        body: JSON.stringify({ events: [], contentVersion: 2, mode: "interview" }),
+      }),
+      { params: Promise.resolve({ caseId: "alpinefit-profitability" }) },
+    );
+    expect(interview.status).toBe(200);
+    await expect(interview.json()).resolves.toMatchObject({ caseMode: "interview" });
+
+    const unsupported = await POST(
+      new Request("http://localhost/api/cases/northstar-profitability/session", {
+        method: "POST",
+        body: JSON.stringify({ events: [], contentVersion: 1, mode: "interview" }),
+      }),
+      { params: Promise.resolve({ caseId: "northstar-profitability" }) },
+    );
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "Case mode not supported" });
+  });
+
   it("rejects malformed request JSON without throwing", async () => {
     const response = await POST(
       new Request("http://localhost/api/cases/alpinefit-profitability/session", {

@@ -19,6 +19,7 @@ import {
   isHypothesisLearningEvidenceValid,
 } from "./hypothesis";
 import { getCaseLearningCycle, type CaseCycleKind } from "./case-learning";
+import { getCaseModePolicy, type CaseRunContext } from "./case-mode";
 
 export type CaseStage =
   | "clarify"
@@ -29,6 +30,7 @@ export type CaseStage =
 
 export type CaseSession = {
   caseDefinition: CaseDefinition;
+  runContext: CaseRunContext;
   events: CaseEvent[];
   revealedFactIds: string[];
   revealedExhibitIds: string[];
@@ -187,8 +189,19 @@ export function isCorrectCalculationSubmission(
 export function isCaseEventAllowed(
   session: CaseSession,
   event: CaseEvent,
+  context: CaseRunContext = session.runContext,
 ): boolean {
   const { caseDefinition, currentStage } = session;
+  const policy = getCaseModePolicy(context.mode);
+  if (context.contentVersion !== caseDefinition.version) return false;
+  if (
+    policy.showImmediateFeedback &&
+    "authoredComparisonViewed" in event &&
+    !event.authoredComparisonViewed
+  ) return false;
+  if (!policy.allowCheckpointRetry && "responses" in event && event.responses.length > 1) {
+    return false;
+  }
   const visited = investigatedNodeIds(session.events);
   const revealedFacts = new Set(session.revealedFactIds);
 
@@ -312,6 +325,7 @@ export function isCaseEventAllowed(
         currentStage === "investigate" &&
           node &&
           (!caseDefinition.hypothesisPractice || getHypothesisEvents(session.events).length > 0) &&
+          (policy.allowBacktracking || !visited.has(event.nodeId)) &&
           node.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)),
       );
     }
@@ -367,6 +381,7 @@ export function isCaseEventAllowed(
               diagnosticCodes.has(code) &&
               (!responseId || responseIds.has(responseId)),
           ) &&
+          (!policy.allowEvidenceReview || event.insightIds.length > 0) &&
           event.insightIds.every((id) => includesId(exhibit.insights, id)),
       );
     }
@@ -444,9 +459,13 @@ export function isCaseEventAllowed(
   }
 }
 
-export function createCaseSession(caseDefinition: CaseDefinition): CaseSession {
+export function createCaseSession(
+  caseDefinition: CaseDefinition,
+  runContext: CaseRunContext = { mode: "practice", contentVersion: caseDefinition.version },
+): CaseSession {
   return {
     caseDefinition,
+    runContext,
     events: [],
     revealedFactIds: [],
     revealedExhibitIds: [],
@@ -458,8 +477,9 @@ export function createCaseSession(caseDefinition: CaseDefinition): CaseSession {
 export function replayCaseEvents(
   caseDefinition: CaseDefinition,
   events: CaseEvent[],
+  runContext: CaseRunContext = { mode: "practice", contentVersion: caseDefinition.version },
 ): CaseSession | null {
-  let session = createCaseSession(caseDefinition);
+  let session = createCaseSession(caseDefinition, runContext);
   for (const event of events) {
     const next = applyCaseEvent(session, event);
     if (next.events.length !== session.events.length + 1) return null;

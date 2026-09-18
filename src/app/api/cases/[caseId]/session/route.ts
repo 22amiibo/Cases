@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCaseDefinition } from "@/content/cases";
+import { getCaseMetadata } from "@/content/cases/metadata";
 import {
   getAvailableActions,
   getRevealedFacts,
@@ -17,13 +18,14 @@ import type {
 } from "@/core/learner-case";
 import { CaseEventSchema } from "@/core/schema";
 import { projectLearningCyclePrompt } from "@/core/learning-cycle";
+import { CaseModeSchema } from "@/core/v3-taxonomy";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> },
 ) {
   const { caseId } = await params;
-  let body: { events?: unknown[]; contentVersion?: unknown };
+  let body: { events?: unknown[]; contentVersion?: unknown; mode?: unknown };
   try {
     body = (await request.json()) as { events?: unknown[]; contentVersion?: unknown };
   } catch {
@@ -53,6 +55,16 @@ export async function POST(
       { status: 404 },
     );
   }
+  const parsedMode = CaseModeSchema.safeParse(body.mode ?? "practice");
+  const metadata = getCaseMetadata(caseId, caseDefinition.version);
+  if (!parsedMode.success || !metadata?.supportedModes.includes(parsedMode.data)) {
+    return NextResponse.json({ error: "Case mode not supported" }, { status: 400 });
+  }
+  const runContext = { mode: parsedMode.data, contentVersion: caseDefinition.version } as const;
+  const projectPrompt = (cycle: Parameters<typeof projectLearningCyclePrompt>[0]) => {
+    const prompt = projectLearningCyclePrompt(cycle);
+    return runContext.mode === "practice" ? prompt : { ...prompt, guidance: [] };
+  };
 
   const parsedEvents = body.events.map((event) => CaseEventSchema.safeParse(event));
   if (parsedEvents.some((event) => !event.success)) {
@@ -62,6 +74,7 @@ export async function POST(
   const session = replayCaseEvents(
     caseDefinition,
     parsedEvents.flatMap((parsed) => parsed.success ? [parsed.data] : []),
+    runContext,
   );
   if (!session) {
     return NextResponse.json({ error: "Invalid event history" }, { status: 400 });
@@ -78,6 +91,7 @@ export async function POST(
     session.currentStage === "recommend" || session.currentStage === "complete";
 
   const view: LearnerSessionView = {
+    caseMode: parsedMode.data,
     currentStage: session.currentStage,
     availableActions: getAvailableActions(session).map(
       ({ id, conceptId, label }) => {
@@ -107,7 +121,7 @@ export async function POST(
             series,
             categories,
             ...(interpretation
-              ? { interpretationPrompt: projectLearningCyclePrompt(interpretation) }
+              ? { interpretationPrompt: projectPrompt(interpretation) }
               : {}),
           }) satisfies LearnerExhibitDefinition,
       ),
@@ -127,7 +141,7 @@ export async function POST(
         ? {
             id,
             prompt,
-            responsePrompt: projectLearningCyclePrompt(responseCycle),
+            responsePrompt: projectPrompt(responseCycle),
             unitOptions: unitOptions ?? [unit],
           }
         : { id, prompt, unit }),
@@ -139,13 +153,13 @@ export async function POST(
           )?.interviewerResponse ?? null
         : null,
     hypothesis: session.currentStage === "investigate"
-      ? projectHypothesisPractice(caseDefinition, session.events)
+      ? projectHypothesisPractice(caseDefinition, session.events, runContext)
       : null,
     synthesis: session.currentStage === "investigate" && caseDefinition.synthesis && isSynthesisReady(session)
-      ? { prompt: projectLearningCyclePrompt(caseDefinition.synthesis.responseCycle) }
+      ? { prompt: projectPrompt(caseDefinition.synthesis.responseCycle) }
       : null,
     recommendationPrompt: session.currentStage === "recommend" && caseDefinition.recommendation.responseCycle
-      ? projectLearningCyclePrompt(caseDefinition.recommendation.responseCycle)
+      ? projectPrompt(caseDefinition.recommendation.responseCycle)
       : null,
     recommendation: recommendationVisible && !caseDefinition.recommendation.responseCycle
       ? {

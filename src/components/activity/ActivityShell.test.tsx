@@ -68,6 +68,10 @@ describe("ActivityShell", () => {
       userId: "guest-1",
       scoringVersion: "v3",
     }));
+    expect(await screen.findByRole("link", { name: "Review completed attempt" })).toHaveAttribute(
+      "href",
+      "/practice/attempts/stable-attempt-id",
+    );
     expect(window.sessionStorage.getItem("casework:v3-activity:v3-private-test:1")).toBeNull();
   });
 

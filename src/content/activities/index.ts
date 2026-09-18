@@ -49,6 +49,9 @@ export const activeActivityVersions = Object.freeze({
   "alpinefit-brainstorming-v3": 1,
   "alpinefit-hypothesis-v3": 1,
 });
+export const activeActivityDefinitions = activityDefinitions.filter(
+  ({ id, contentVersion, status }) => status === "active" && activeActivityVersions[id as keyof typeof activeActivityVersions] === contentVersion,
+);
 const activityRegistry = createActivityRegistry(activityDefinitions, activeActivityVersions);
 
 const privateTestActivity = ActivityDefinitionSchema.parse({

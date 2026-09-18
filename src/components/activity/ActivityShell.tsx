@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityEvent, CourseContext } from "@/core/activity";
 import { ActivityEventSchema } from "@/core/activity";
@@ -67,6 +68,7 @@ export function ActivityShell({
   const [events, setEvents] = useState<ActivityEvent[]>(restored?.events ?? []);
   const [view, setView] = useState(initial);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
   const phaseHeading = useRef<HTMLHeadingElement>(null);
   const saved = useRef(false);
 
@@ -175,6 +177,7 @@ export function ActivityShell({
       });
       saved.current = true;
       window.sessionStorage.removeItem(storageKey);
+      setSavedAttemptId(attemptId);
       setStatus("idle");
     } catch {
       setStatus("error");
@@ -256,6 +259,9 @@ export function ActivityShell({
           <p>Your committed work and review are complete.</p>
           {status === "error" && (
             <button type="button" onClick={() => void saveCompletion(events)}>Retry save</button>
+          )}
+          {savedAttemptId && (
+            <Link href={`/practice/attempts/${savedAttemptId}`}>Review completed attempt</Link>
           )}
         </div>
       )}

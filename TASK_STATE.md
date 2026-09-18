@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 7-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 8-12 remain gated on the mandatory Task 7 owner playtest.
 
 ## V3 planning
 
@@ -17,9 +17,9 @@ V3.0 Tasks 7-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 6 adds one complete AlpineFit activity for each flagship lab with focused
-specialized controls and deterministic strong/reasonable/weak paths. It is
-ready to commit.
+Task 7 implementation is complete. The Practice hub, four lab pages, exact
+activity launch, recent activity, and owned attempt review are ready for the
+mandatory owner learning-quality playtest.
 
 ## Completed tasks
 
@@ -37,9 +37,14 @@ ready to commit.
 - V3.0 Task 5 is committed as `126ea91`: 7 focused files / 28 tests, 70
   files / 330 tests in the full unit suite, one Playwright journey, lint,
   typecheck, and production build pass.
-- V3.0 Task 6 is complete and ready to commit: 5 focused files / 35 tests, 71
+- V3.0 Task 6 is committed as `2b81cd7`: 5 focused files / 35 tests, 71
   files / 343 tests in the full unit suite, four phone-width axe-scanned
   Playwright journeys, lint, typecheck, and production build pass.
+- V3.0 Task 7 implementation is complete: active and exact-version routes,
+  course-context validation, recent attempts, saved-attempt review, retired
+  history behavior, and preserved `/drills` compatibility are covered. The
+  full gate passes 75 test files / 352 tests, 40 Playwright journeys, lint,
+  typecheck, production build, and `git diff --check`.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -56,7 +61,8 @@ ready to commit.
 
 ## Remaining work
 
-- Execute V3.0 Task 7, then stop for the mandatory owner playtest gate.
+- Owner playtests Clarifying, Exhibit Analysis, Brainstorming, and Hypothesis
+  and records `proceed`, `revise and replaytest`, or `stop`.
 - Tasks 8-12 remain gated on a recorded `proceed` decision.
 
 ## Important decisions and invariants
@@ -119,5 +125,6 @@ ready to commit.
 
 ## Exact next action
 
-Commit Task 6, publish the four Practice routes in Task 7, then stop for the
-mandatory owner playtest gate. Do not begin Task 8 without `proceed`.
+Run the mandatory owner playtest from `/practice` and record `proceed`,
+`revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`. Do not begin
+Task 8 without `proceed`.

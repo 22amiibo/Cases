@@ -11,8 +11,8 @@ const practicePaths = [
   },
   {
     title: "Practice a skill",
-    description: "Sharpen one move at a time with short, scored drills.",
-    href: "/drills",
+    description: "Sharpen one move at a time in a focused Skill Lab.",
+    href: "/practice",
   },
   {
     title: "Practice a case",

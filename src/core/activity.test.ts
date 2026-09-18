@@ -229,6 +229,18 @@ describe("createActivityRegistry", () => {
       { "alpinefit-clarifying-v3": 3 },
     )).toThrow(/not owned by a declared activity skill/i);
   });
+
+  it("keeps a retired exact version available for history", () => {
+    const registry = createActivityRegistry(
+      [
+        validActivity({ contentVersion: 1, status: "retired" }),
+        validActivity({ contentVersion: 2 }),
+      ],
+      { "alpinefit-clarifying-v3": 2 },
+    );
+    expect(registry.get("alpinefit-clarifying-v3", 1)?.status).toBe("retired");
+    expect(registry.getActive("alpinefit-clarifying-v3")?.contentVersion).toBe(2);
+  });
 });
 
 describe("activity state transitions", () => {

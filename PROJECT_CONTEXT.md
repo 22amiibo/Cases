@@ -1,6 +1,6 @@
 # Casework Project Context
 
-Last updated: 2026-09-17
+Last updated: 2026-09-18
 
 ## Purpose
 
@@ -17,11 +17,12 @@ session.
 - Implementation plan: `/Users/noahmartz/Downloads/2026-09-15-case-interview-practice-mvp.md`
 - Product upgrade decision ledger: `PRODUCT_DECISION_LEDGER.md`
 - Approved V2 implementation plan: `CASEWORK_V2_IMPLEMENTATION_PLAN.md`
-- Local repository: `/Users/noahmartz/Desktop/Case`
+- Approved V3 implementation plan: `CASEWORK_V3_IMPLEMENTATION_PLAN.md`
+- Local repository: `/Users/noahmartz/Desktop/case`
 - GitHub repository: `https://github.com/22amiibo/Cases`
 - Base branch: `main`
-- Active implementation branch: `feature/case-practice-mvp`
-- Active worktree: `/Users/noahmartz/Desktop/Case/.worktrees/case-practice-mvp`
+- Active implementation branch: `feature/casework-v3`
+- Active worktree: `/Users/noahmartz/Desktop/case/.worktrees/casework-v3`
 
 The plan references `deep-research-report (4).md`, but that file was not
 present when implementation began. The implementation plan itself is treated
@@ -71,7 +72,26 @@ npm run build
 
 ## Progress Log
 
-### Casework V3 Task 6: four flagship activities — ready to commit
+### Casework V3 Task 7: Practice routes — awaiting owner playtest
+
+- Added `/practice`, exact lab pages for the four active flagship skills,
+  exact-version activity launch with validated optional course context, recent
+  attempts, and owned historical attempt review.
+- Successful completion links directly to its stable attempt URL. Historical
+  review loads the recorded activity version; missing content stops safely and
+  retains the committed event timeline. Existing `/drills` routes remain
+  unchanged and linked as the Legacy V1/V2 library.
+- The home Practice action now opens the V3 Skill Labs. Active discovery omits
+  draft and retired definitions while exact retired versions remain available
+  to history.
+- Validation: 75 test files / 352 tests, all 40 Playwright journeys, lint,
+  typecheck, production build, and `git diff --check` pass. The V3 browser
+  coverage includes all four labs, axe, 320px reflow, refresh, completion,
+  persistence, and saved-attempt review.
+- Mandatory state: stop for owner playtest. Task 8 has not started. Only a
+  recorded `proceed` decision opens Tasks 8-12.
+
+### Casework V3 Task 6: four flagship activities — complete
 
 - Added one active AlpineFit activity for Clarifying, Exhibit Analysis,
   Brainstorming, and Hypothesis with authored strong, reasonable, and weak paths.
@@ -86,8 +106,7 @@ npm run build
   horizontal-overflow checks.
 - Validation: 5 focused files / 35 tests, 71 files / 343 full unit tests, four
   Playwright journeys, lint, typecheck, production build, and diff check pass.
-- Next action: Task 7, publish the Practice hub, lab pages, and owned attempt
-  review, then stop for the required owner learning-quality playtest.
+- Committed as `2b81cd7` (`content: add v3 flagship skill activities`).
 
 ### Casework V3 Task 5: private activity vertical slice — ready to commit
 

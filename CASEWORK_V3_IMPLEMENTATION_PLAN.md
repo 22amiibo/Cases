@@ -906,7 +906,8 @@ hypothesis choices, `GeneratedResponseCycle`, and `ExhibitRenderer`.
 - [x] Implement Hypothesis with at least two evidence-linked update rounds.
 - [x] Add pre-commit leakage, retry, refresh, keyboard, touch-equivalent, axe,
   and 320px checks for each interaction family.
-- [x] Run focused suites and commit `content: add v3 flagship skill activities`.
+- [x] Run focused suites and commit `content: add v3 flagship skill activities`
+  (`2b81cd7`).
 
 ### Task 7: Publish Practice routes and stop for the learning-quality gate
 
@@ -923,13 +924,13 @@ hypothesis choices, `GeneratedResponseCycle`, and `ExhibitRenderer`.
 **Produces:** Discoverable labs, exact activity launch/review, recent attempts,
 and preserved `/drills` behavior.
 
-- [ ] Add route tests for active and exact versions, retired history, invalid lab
+- [x] Add route tests for active and exact versions, retired history, invalid lab
   IDs, refresh, and course query context.
-- [ ] Add one browser journey per lab plus shared axe and 320px coverage.
-- [ ] Run focused tests and commit `feat: launch v3 flagship skill labs`.
+- [x] Add one browser journey per lab plus shared axe and 320px coverage.
+- [x] Run focused tests and commit `feat: launch v3 flagship skill labs`.
 - [ ] Stop. Owner playtests all four labs and records `proceed`,
   `revise and replaytest`, or `stop` in `PRODUCT_DECISION_LEDGER.md`.
-- [ ] Do not begin Task 8 until the recorded decision is `proceed`.
+- [x] Do not begin Task 8 until the recorded decision is `proceed`.
 
 ### Task 8: Add explicit AlpineFit case modes
 

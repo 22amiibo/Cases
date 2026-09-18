@@ -2,20 +2,35 @@ import { notFound } from "next/navigation";
 import { ActivityShell } from "@/components/activity/ActivityShell";
 import { getActivityDefinition } from "@/content/activities";
 import { getCaseDefinition } from "@/content/cases";
+import { CourseContextSchema } from "@/core/activity";
 import { projectLearnerActivity } from "@/core/activity-projection";
+
+type Query = Record<string, string | string[] | undefined>;
 
 export default async function ActivityPage({
   params,
   searchParams,
 }: {
   params: Promise<{ activityId: string }>;
-  searchParams: Promise<{ version?: string | string[] }>;
+  searchParams: Promise<Query>;
 }) {
   const { activityId } = await params;
-  const rawVersion = (await searchParams).version;
-  const versionValue = Array.isArray(rawVersion) ? rawVersion[0] : rawVersion;
-  const contentVersion = Number(versionValue);
+  const query = await searchParams;
+  if (Array.isArray(query.version)) notFound();
+  const contentVersion = Number(query.version);
   if (!Number.isInteger(contentVersion) || contentVersion < 1) notFound();
+  const courseValues = [query.course, query.courseVersion, query.step];
+  if (courseValues.some(Array.isArray)) notFound();
+  const hasCourseContext = courseValues.some((value) => value !== undefined);
+  const parsedCourseContext = hasCourseContext
+    ? CourseContextSchema.safeParse({
+        courseId: query.course,
+        courseVersion: Number(query.courseVersion),
+        courseStepId: query.step,
+      })
+    : null;
+  if (parsedCourseContext && !parsedCourseContext.success) notFound();
+  const courseContext = parsedCourseContext?.data ?? null;
   const definition = getActivityDefinition(activityId, contentVersion);
   if (!definition) notFound();
   let exhibit;
@@ -42,6 +57,7 @@ export default async function ActivityPage({
   }
   return <main><ActivityShell
     initial={projectLearnerActivity(definition)}
+    courseContext={courseContext}
     exhibit={exhibit}
   /></main>;
 }

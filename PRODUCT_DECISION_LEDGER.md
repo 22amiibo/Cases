@@ -2,7 +2,7 @@
 
 Status: Accepted and binding
 Decision date: 2026-09-17  
-Last amended: 2026-09-17
+Last amended: 2026-09-18
 Decider: Product owner  
 Recorded by: Codex  
 
@@ -246,6 +246,24 @@ The missing completed-case replay/retry control remains a documented follow-up;
 the proceed decision does not represent confirmation that this control works.
 Task 12 remains bounded to the remaining twelve V2 pilot drills and must not
 silently expand into a replay-navigation redesign.
+
+### V3 Gate 7: awaiting owner playtest decision
+
+**Owner decision:** pending.
+
+The four V3.0 flagship labs are available from `/practice`: Clarifying, Exhibit
+Analysis, Brainstorming, and Hypothesis. Their implementation gate passes 75
+test files / 352 tests and all 40 Playwright journeys, including axe, 320px
+reflow, refresh recovery, answer secrecy, save retry, and attempt review.
+
+The playtest should determine whether feedback improves a second response,
+classifications are fair and specific, Exhibit's observation-to-action chain is
+clear, Brainstorming rewards structure rather than count, and Hypothesis
+updates remain tied to evidence.
+
+Record exactly `proceed`, `revise and replaytest`, or `stop` here. Task 8 and
+all later V3.0 implementation remain gated until the recorded decision is
+`proceed`.
 
 ## Wave 1 P0 Preconditions
 

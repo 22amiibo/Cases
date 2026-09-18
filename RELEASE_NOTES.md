@@ -2,8 +2,8 @@
 
 Date: 2026-09-17
 
-Status: local release candidate. Production migrations are applied; deployment
-remains pending explicit owner approval.
+Status: local release candidate. Production migrations are applied and the
+final wrong-unit retry blocker is verified; application deployment is pending.
 
 ## Included
 
@@ -18,6 +18,8 @@ remains pending explicit owner approval.
   active content is never substituted.
 - Keyboard, automated accessibility, 320/768/1440 reflow, refresh recovery,
   retry-safe persistence, and answer-secrecy release gates.
+- Immediate same-session quantitative retry after corrective wrong-unit
+  feedback; no page refresh is required.
 
 ## Data safety and rollback
 
@@ -50,6 +52,8 @@ are intentionally not invented.
 | Live migration apply | Complete, controller-confirmed: production migrations `002` and `003` were applied, and the remote migration list aligns from `001` through `003`. |
 | Transaction-scoped live RLS smoke | Complete, controller-confirmed: the owner could read the owned attempt and ordered events, cross-user reads returned no rows, and the smoke transaction was rolled back. No smoke identifiers are retained here. |
 | Credential hygiene | Complete, controller-confirmed: the temporary credential file used by the release controller was removed. |
+| Final local release gate | Complete: the wrong-unit regression failed before the fix and passed afterward; 57 test files / 271 tests, all 34 Playwright journeys, lint, typecheck, production build, and diff validation passed. |
+| Live wrong-unit retry smoke | Pending deployment. Verify corrective feedback, an immediately enabled retry, and successful completion without refresh. |
 | Live signed-in save and exact-version replay | Pending approved release smoke. Record the saved attempt ID, content version, and replay result without learner content. |
 | Production answer-secrecy inspection | Pending approved deployment. Record the inspected precommit responses and result. |
 | Rollback rehearsal | Pending approved release window. Record the V1 active-version selection and restoration result without deleting V2 rows. |

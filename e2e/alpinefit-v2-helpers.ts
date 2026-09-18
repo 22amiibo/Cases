@@ -24,10 +24,12 @@ export async function completeAlpineFitV2(
   {
     refresh = false,
     recommendationRetry = false,
+    calculationRetry = false,
     saveRecovery = false,
   }: {
     refresh?: boolean;
     recommendationRetry?: boolean;
+    calculationRetry?: boolean;
     saveRecovery?: boolean;
   } = {},
 ) {
@@ -92,8 +94,16 @@ export async function completeAlpineFitV2(
   await completeGeneratedResponse(page.getByRole("region", { name: "calculation practice" }), "Six clubs times 3,600 hours times $35 is about $756,000 annually, a material staffing opportunity.");
   await page.getByLabel("Calculated answer", { exact: true }).fill("756000");
   await page.getByRole("combobox", { name: "Unit" }).click();
-  await page.getByRole("option", { name: "$", exact: true }).click();
+  await page.getByRole("option", { name: calculationRetry ? "%" : "$", exact: true }).click();
   await page.getByRole("button", { name: "Save calculation" }).click();
+  if (calculationRetry) {
+    await expect(page.getByText("Review your calculation")).toBeVisible();
+    await expect(page.getByText("Needs correction")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save calculation" })).toBeEnabled();
+    await page.getByRole("combobox", { name: "Unit" }).click();
+    await page.getByRole("option", { name: "$", exact: true }).click();
+    await page.getByRole("button", { name: "Save calculation" }).click();
+  }
   await expect(page.getByLabel("Calculated answer", { exact: true })).toHaveCount(0);
   if (refresh) await page.reload();
 

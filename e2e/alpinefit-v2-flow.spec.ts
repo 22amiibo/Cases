@@ -39,7 +39,11 @@ test("AlpineFit V2 completes the full generated loop with refresh and retry", as
     }
   });
 
-  await completeAlpineFitV2(page, { refresh: true, recommendationRetry: true });
+  await completeAlpineFitV2(page, {
+    refresh: true,
+    recommendationRetry: true,
+    calculationRetry: true,
+  });
 
   expect(precommitBodies.some((body) => body.includes("756000"))).toBe(false);
   expect(precommitBodies.some((body) => body.includes("stabilize-staffing"))).toBe(false);

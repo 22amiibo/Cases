@@ -2,21 +2,21 @@
 
 ## Objective
 
-Complete Casework V2 implementation-plan Task 17 locally, preserving V1/V2
-separation, immutable historical content, answer secrecy, deterministic
-evaluation, and existing user work.
+Release Casework V2 after fixing the final wrong-unit retry blocker while
+preserving V1/V2 separation, immutable historical content, answer secrecy,
+deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-1. Obtain explicit owner approval for deployment and record live sign-in/save,
-   historical replay, rollback, and answer-secrecy smoke results.
+1. Deploy the verified application and complete the live wrong-unit → immediate
+   retry → successful completion smoke test.
 
 ## Current task
 
-Task 17's initial implementation is committed as `a5390a7`. Review fix round 1
-closes fail-open event parsing, inactive-case historical replay, and successful
-signed-in replay coverage. Production migrations `002` and `003` are applied;
-deployment remains outside this implementation run.
+The final V2 release blocker is fixed locally. `CaseGeneratedStep` now returns
+to its idle state after a generated event is saved, so an incorrect calculation
+can be retried immediately without refresh. Production migrations `002` and
+`003` remain applied; application deployment and live smoke are next.
 
 ## Completed tasks
 
@@ -31,11 +31,13 @@ deployment remains outside this implementation run.
   summaries, Progress replay links, release documentation, and release gates.
 - Task 17 initial implementation committed as `a5390a7` (`chore: harden and
   document casework v2 pilot`).
+- Final release fix adds a red-green component regression and extends the full
+  AlpineFit browser journey through wrong-unit feedback and same-session retry.
 
 ## Remaining work
 
-- No assigned local implementation remains.
-- Live deployment and its remaining production smoke checks require owner approval.
+- Commit the verified release fix, merge the latest `main` documentation, push
+  production, and run the live wrong-unit retry smoke.
 
 ## Important decisions and invariants
 
@@ -75,12 +77,15 @@ deployment remains outside this implementation run.
   cross-user reads returned no rows, and the transaction rolled back. The
   recoverable backup remains retained, and the temporary credential file was
   removed. No credentials or user identifiers are recorded here.
+- Final wrong-unit release fix: the regression failed with the action stuck as
+  disabled “Saving,” then passed after the success-state reset. Focused checks
+  passed 9 files / 52 tests and the complete AlpineFit browser journey. The
+  full local gate passed 57 files / 271 tests, all 34 Playwright journeys,
+  lint, typecheck, production build, and `git diff --check`.
 
 ## Known deferred issues
 
-- Live deployment requires explicit owner approval.
-- Live deployment and its sign-in/save, exact-version replay, rollback, and
-  answer-secrecy smokes remain external release gates, not local code blockers.
+- Live deployment and its production smoke remain external release gates.
 
 ## Blockers
 
@@ -88,6 +93,5 @@ deployment remains outside this implementation run.
 
 ## Exact next action
 
-Review the final V2 fix commit. Preserve the two pre-existing untracked user
-items; deployment and its remaining live smokes still require explicit owner
-approval.
+Commit the final V2 fix, preserve the two pre-existing untracked user items,
+merge the latest `main`, deploy, and verify wrong-unit retry live.

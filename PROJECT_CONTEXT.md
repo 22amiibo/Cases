@@ -71,6 +71,25 @@ npm run build
 
 ## Progress Log
 
+### V2 final wrong-unit retry release fix — locally verified
+
+- Reproduced the release blocker: after a correct number with the wrong unit,
+  corrective feedback appeared but the calculation action stayed disabled as
+  “Saving” until refresh.
+- Root cause was a missing successful-submit state transition in
+  `CaseGeneratedStep`; the shared API, evaluation, persistence, and recovery
+  contracts were already correct. The fix adds the same idle reset used by the
+  other practice submitters, with no refresh workaround.
+- Added a red-green component regression proving wrong-unit feedback,
+  immediate retry availability, and successful same-session correction. The
+  existing AlpineFit Playwright journey now covers the same integrated path
+  alongside refresh recovery, response revision, and answer secrecy.
+- Final local verification: 57 test files / 271 tests, all 34 Playwright
+  journeys, lint, typecheck, production build, and `git diff --check` pass.
+- Next action: commit, merge the latest `main`, deploy, then run the live
+  wrong-unit → immediate retry → successful completion smoke before declaring
+  V2 released.
+
 ### Post-plan case-flow remediation — complete
 
 - Legacy cases now treat an exhausted authored investigation graph as a valid

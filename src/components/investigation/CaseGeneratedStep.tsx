@@ -171,6 +171,7 @@ export function CaseGeneratedStep({
       await onEvent(payload.event);
       window.sessionStorage.removeItem(key);
       window.sessionStorage.removeItem(`${key}:checkpoint`);
+      setStatus("idle");
     } catch {
       setStatus("error");
     }

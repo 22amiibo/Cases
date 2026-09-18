@@ -46,6 +46,7 @@ export async function POST(
       : definition.hypothesisPractice.update;
     return NextResponse.json({
       reveal: revealLearningCycleAfterCommit(cycle, response.data),
+      options: definition.hypothesisPractice.options.map((option) => ({ ...option })),
     });
   } catch {
     return NextResponse.json({ error: "Invalid hypothesis commitment" }, { status: 400 });

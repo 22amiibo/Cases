@@ -173,6 +173,17 @@ export function isGeneratedCaseCycleAvailable(
 
 const canonicalConceptIds = new Set(concepts.map(({ id }) => id));
 
+export function isCorrectCalculationSubmission(
+  calculation: CaseDefinition["calculations"][number],
+  submission: { answer: number; unit?: string },
+) {
+  return withinTolerance(
+    submission.answer,
+    calculation.expectedAnswer,
+    calculation.tolerance,
+  ) && (submission.unit === undefined || submission.unit === calculation.unit);
+}
+
 export function isCaseEventAllowed(
   session: CaseSession,
   event: CaseEvent,
@@ -363,21 +374,27 @@ export function isCaseEventAllowed(
       const calculation = caseDefinition.calculations.find(
         (candidate) => candidate.id === event.taskId,
       );
+      const answerCorrect = Boolean(calculation && withinTolerance(
+        event.answer,
+        calculation.expectedAnswer,
+        calculation.tolerance,
+      ));
+      const unitCorrect = !("unit" in event) || event.unit === calculation?.unit;
       return Boolean(
         currentStage === "investigate" &&
           calculation &&
           calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)) &&
           (calculation.responseCycle
-            ? "eventSchemaVersion" in event && event.unit === calculation.unit &&
+            ? "eventSchemaVersion" in event &&
               hasGeneratedEvidence(caseDefinition, event, "calculation", event.taskId) &&
               hasExpectedSystemDiagnostic(
                 event,
-                withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
-                  ? "strong_quantitative_reasoning"
-                  : "arithmetic_error",
-                withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
-                  ? "strength"
-                  : "blocking",
+                !unitCorrect
+                  ? "unit_error"
+                  : answerCorrect
+                    ? "strong_quantitative_reasoning"
+                    : "arithmetic_error",
+                answerCorrect && unitCorrect ? "strength" : "blocking",
               )
             : !("eventSchemaVersion" in event)),
       );
@@ -505,11 +522,7 @@ export function applyCaseEvent(
 
     if (
       calculation &&
-      withinTolerance(
-        event.answer,
-        calculation.expectedAnswer,
-        calculation.tolerance,
-      )
+      isCorrectCalculationSubmission(calculation, event)
     ) {
       completedCalculationIds.push(calculation.id);
       revealedFactIds.push(calculation.evidenceFactId);

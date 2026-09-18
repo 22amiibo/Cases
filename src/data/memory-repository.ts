@@ -12,6 +12,7 @@ import type {
   PracticeRepository,
   SkillAttempt,
 } from "./repository";
+import { getCaseSkillLearningEvidence } from "./attempts";
 
 const STORAGE_KEY = "casework:practice-history";
 
@@ -135,9 +136,20 @@ function loadHistory(
 function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
   return Object.entries(attempt.skillScores).map(([skillId, score]) => {
     const parsedSkillId = SkillIdSchema.parse(skillId);
-    const learningEvidence = attempt.learningEvidence?.skillId === parsedSkillId
-      ? attempt.learningEvidence
-      : null;
+    const derived = getCaseSkillLearningEvidence(
+      attempt.events,
+      parsedSkillId,
+      {
+        contentVersion: attempt.contentVersion ?? null,
+        eventSchemaVersion: attempt.eventSchemaVersion ?? null,
+        scaffoldingLevel: attempt.scaffoldingLevel ?? null,
+      },
+    );
+    const learningEvidence = derived.learningEvidence ?? (
+      attempt.learningEvidence?.skillId === parsedSkillId
+        ? attempt.learningEvidence
+        : null
+    );
     return {
       attemptId: attempt.attemptId,
       attemptType: "case",
@@ -152,7 +164,9 @@ function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
       eventSchemaVersion: attempt.eventSchemaVersion ?? null,
       scaffoldingLevel: attempt.scaffoldingLevel ?? null,
       learningEvidence,
-      diagnostics: learningEvidence?.diagnostics ?? [],
+      diagnostics: derived.learningEvidence
+        ? derived.diagnostics
+        : learningEvidence?.diagnostics ?? [],
       caseDiagnostics: attempt.diagnostics ?? [],
     };
   });

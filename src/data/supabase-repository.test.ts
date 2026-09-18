@@ -234,7 +234,7 @@ describe("SupabasePracticeRepository", () => {
     });
   });
 
-  it("accepts V2 case event evidence without fabricating skill evidence", async () => {
+  it("derives only present per-skill evidence from stored V2 case events", async () => {
     const diagnostic = {
       code: "strong_hypothesis_update",
       source: "system",
@@ -245,7 +245,7 @@ describe("SupabasePracticeRepository", () => {
       selectCaseAttempts: vi.fn().mockResolvedValue([{
         id: "case-v2",
         user_id: "user-1",
-        skill_scores: { structure: 90, synthesis: 60 },
+        skill_scores: { clarification: 100, structure: 90 },
         feedback_codes: ["strong_hypothesis_update"],
         completed_at: "2026-01-04T00:00:00.000Z",
         scoring_version: "v2",
@@ -255,17 +255,54 @@ describe("SupabasePracticeRepository", () => {
         learning_evidence: null,
         diagnostics: [diagnostic],
       }]),
+      selectCaseEvents: vi.fn().mockResolvedValue([{
+        sequence: 0,
+        event: {
+          type: "case_opening_submitted",
+          eventSchemaVersion: 2,
+          responses: [{
+            responseId: "opening-response",
+            interactionId: "case-opening",
+            revision: 1,
+            revisionOf: null,
+            responseKind: "case_opening",
+            text: "Clarify the objective and scope.",
+            committedAtMs: 1,
+          }],
+          rubricOutcomes: [{ criterionId: "objective", met: true }],
+          diagnostics: [{
+            code: "strong_opening",
+            source: "system",
+            severity: "strength",
+            responseId: "opening-response",
+          }],
+          questions: [{ questionId: "target-metric", interviewerResponse: "Use EBITDA margin." }],
+          authoredComparisonViewed: true,
+          atMs: 2,
+        },
+      }]),
     });
     const repository = new SupabasePracticeRepository(database);
 
     const history = await repository.getSkillHistory("user-1");
 
     expect(history).toHaveLength(2);
-    expect(history.every(({ learningEvidence }) => learningEvidence === null)).toBe(true);
-    expect(history.every(({ diagnostics }) => diagnostics?.length === 0)).toBe(true);
+    expect(history.find(({ skillId }) => skillId === "clarification")).toMatchObject({
+      learningEvidence: {
+        interactionId: "case-opening",
+        skillId: "clarification",
+        responses: [{ responseId: "opening-response" }],
+      },
+      diagnostics: [{ code: "strong_opening" }],
+    });
+    expect(history.find(({ skillId }) => skillId === "structure")).toMatchObject({
+      learningEvidence: null,
+      diagnostics: [],
+    });
     expect(history.every(({ caseDiagnostics }) =>
       caseDiagnostics?.[0]?.code === "strong_hypothesis_update",
     )).toBe(true);
+    expect(database.selectCaseEvents).toHaveBeenCalledWith("user-1", "case-v2");
   });
 
   it("reads valid case events in database sequence order", async () => {

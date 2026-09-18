@@ -82,6 +82,51 @@ describe("hypothesis commitment projection", () => {
     expect(payload.reveal.criteria).toEqual([
       { id: "testable", label: "Makes a testable claim" },
     ]);
+    expect(payload.options).toEqual(definition.hypothesisPractice?.options);
+  });
+
+  it("reveals choices for the update only after its response is committed", async () => {
+    const initialEvent = {
+      type: "hypothesis_formed" as const,
+      eventSchemaVersion: 2 as const,
+      hypothesisId: "revenue-pressure",
+      evidenceIds: [] as [],
+      revisionOfResponseId: null,
+      responses: [response],
+      rubricOutcomes: [{ criterionId: "testable", met: true }],
+      diagnostics: [],
+      rationale: response.text,
+      authoredComparisonViewed: true as const,
+      atMs: 3,
+    };
+    const updateResponse = {
+      ...response,
+      responseId: "hypothesis-2",
+      interactionId: "hypothesis-update",
+      responseKind: "hypothesis_update",
+      committedAtMs: 5,
+    };
+    const result = await POST(
+      new Request("http://localhost/commit", {
+        method: "POST",
+        body: JSON.stringify({
+          contentVersion: 2,
+          events: [
+            ...events,
+            initialEvent,
+            { type: "node_investigated", nodeId: "costs", atMs: 4 },
+          ],
+          phase: "update",
+          response: updateResponse,
+        }),
+      }),
+      { params: Promise.resolve({ caseId: definition.id }) },
+    );
+
+    expect(result.status).toBe(200);
+    await expect(result.json()).resolves.toMatchObject({
+      options: definition.hypothesisPractice?.options,
+    });
   });
 
   it("does not reveal authored review before investigation or for the wrong phase", async () => {

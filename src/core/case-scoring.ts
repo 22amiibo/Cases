@@ -4,8 +4,8 @@ import {
   type CaseDefinition,
   type CaseEvent,
 } from "./schema";
-import { withinTolerance } from "./validation";
 import { frameworkSubmissionFromEvent } from "./framework-events";
+import { isCorrectCalculationSubmission } from "./case-engine";
 
 export type CaseScore = {
   clarification: number;
@@ -76,7 +76,7 @@ export function getDiscoveredFactIdsBefore(
     );
     if (
       calculation &&
-      isCorrectCalculation(calculation, event.answer, nodesBeforeCalculation)
+      isCorrectCalculation(calculation, event, nodesBeforeCalculation)
     ) {
       facts.push(calculation.evidenceFactId);
     }
@@ -87,12 +87,12 @@ export function getDiscoveredFactIdsBefore(
 
 function isCorrectCalculation(
   calculation: CaseDefinition["calculations"][number],
-  answer: number,
+  submission: { answer: number; unit?: string },
   visitedNodeIds: Set<string>,
 ) {
   return (
     calculation.prerequisiteNodeIds.every((nodeId) => visitedNodeIds.has(nodeId)) &&
-    withinTolerance(answer, calculation.expectedAnswer, calculation.tolerance)
+    isCorrectCalculationSubmission(calculation, submission)
   );
 }
 
@@ -173,7 +173,7 @@ function scoreQuantitative(
         investigatedNodeIdsBefore(events, definition, event.atMs),
       );
       return calculation &&
-        isCorrectCalculation(calculation, event.answer, nodesBeforeCalculation)
+        isCorrectCalculation(calculation, event, nodesBeforeCalculation)
         ? [calculation.id]
         : [];
     }),

@@ -13,6 +13,7 @@ import type {
   PracticeRepository,
   SkillAttempt,
 } from "./repository";
+import { getCaseSkillLearningEvidence } from "./attempts";
 
 type DrillAttemptRow = {
   id: string;
@@ -233,6 +234,14 @@ export class SupabasePracticeRepository implements PracticeRepository {
       this.database.selectDrillAttempts(userId),
       this.database.selectCaseAttempts(userId),
     ]);
+    // ponytail: one ordered-event read per V2 case; batch when history latency matters.
+    const caseEvents = new Map(await Promise.all(
+      caseRows.flatMap((row) =>
+        metadataFromRow(row, false)?.scoringVersion === "v2"
+          ? [this.getCaseEvents(userId, row.id).then((events) => [row.id, events] as const)]
+          : [],
+      ),
+    ));
 
     return [
       ...drillRows.flatMap((row) => {
@@ -255,10 +264,18 @@ export class SupabasePracticeRepository implements PracticeRepository {
         Object.entries(row.skill_scores).flatMap(([rawSkillId, score]) => {
           const skillId = SkillIdSchema.safeParse(rawSkillId);
           const metadata = metadataFromRow(row, false);
-          const learningEvidence = skillId.success &&
-            metadata?.learningEvidence?.skillId === skillId.data
-            ? metadata.learningEvidence
-            : null;
+          const derived = skillId.success && metadata?.scoringVersion === "v2"
+            ? getCaseSkillLearningEvidence(
+                caseEvents.get(row.id) ?? [],
+                skillId.data,
+                metadata,
+              )
+            : { learningEvidence: null, diagnostics: [] };
+          const learningEvidence = derived.learningEvidence ?? (
+            skillId.success && metadata?.learningEvidence?.skillId === skillId.data
+              ? metadata.learningEvidence
+              : null
+          );
           return skillId.success && metadata && Number.isFinite(score) && score >= 0 && score <= 100
             ? [{
                 attemptId: row.id,
@@ -271,7 +288,9 @@ export class SupabasePracticeRepository implements PracticeRepository {
                 completedAt: row.completed_at,
                 ...metadata,
                 learningEvidence,
-                diagnostics: learningEvidence?.diagnostics ?? [],
+                diagnostics: derived.learningEvidence
+                  ? derived.diagnostics
+                  : learningEvidence?.diagnostics ?? [],
                 caseDiagnostics: metadata.diagnostics,
               }]
             : [];

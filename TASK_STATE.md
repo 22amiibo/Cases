@@ -8,18 +8,15 @@ evaluation, and existing user work.
 
 ## Remaining task set
 
-1. Have the controller apply migrations `002` and `003` after code-fix review
-   and required approval, then run the transaction-scoped live cross-user/RLS
-   smoke.
-2. Obtain explicit owner approval for deployment and record live sign-in/save,
+1. Obtain explicit owner approval for deployment and record live sign-in/save,
    historical replay, rollback, and answer-secrecy smoke results.
 
 ## Current task
 
 Task 17's initial implementation is committed as `a5390a7`. Review fix round 1
 closes fail-open event parsing, inactive-case historical replay, and successful
-signed-in replay coverage. Production migration and deployment remain outside
-this implementation run.
+signed-in replay coverage. Production migrations `002` and `003` are applied;
+deployment remains outside this implementation run.
 
 ## Completed tasks
 
@@ -38,7 +35,7 @@ this implementation run.
 ## Remaining work
 
 - No assigned local implementation remains.
-- Live migration, deployment, and production smoke checks require owner approval.
+- Live deployment and its remaining production smoke checks require owner approval.
 
 ## Important decisions and invariants
 
@@ -71,16 +68,19 @@ this implementation run.
   typecheck, production build, and `git diff --check` passed; all 34 Playwright
   journeys passed.
 - The migration SQL contract tests passed. The controller confirmed a linked
-  dry-run containing migrations `002` and `003` and confirmed checksummed schema
-  and data backups. Transcripts, artifact locations, and checksum values remain
-  in the controller's release record.
+  dry-run containing migrations `002` and `003`, confirmed checksummed schema
+  and data backups, applied both migrations, and confirmed that the remote list
+  aligns from `001` through `003`.
+- The transaction-scoped production RLS smoke passed: owner reads succeeded,
+  cross-user reads returned no rows, and the transaction rolled back. The
+  recoverable backup remains retained, and the temporary credential file was
+  removed. No credentials or user identifiers are recorded here.
 
 ## Known deferred issues
 
-- Live deployment/migration work requires explicit owner approval.
-- Migration apply and the transaction-scoped live cross-user/RLS smoke remain
-  pending controller action; they are external release gates, not a local code
-  blocker.
+- Live deployment requires explicit owner approval.
+- Live deployment and its sign-in/save, exact-version replay, rollback, and
+  answer-secrecy smokes remain external release gates, not local code blockers.
 
 ## Blockers
 
@@ -88,7 +88,6 @@ this implementation run.
 
 ## Exact next action
 
-Review the Task 17 fix commit. The controller can then apply migrations `002`
-and `003` under the required approval and record the transaction-scoped live
-cross-user/RLS smoke in `RELEASE_NOTES.md`. Preserve the two pre-existing
-untracked user items; deployment still requires explicit owner approval.
+Review the final V2 fix commit. Preserve the two pre-existing untracked user
+items; deployment and its remaining live smokes still require explicit owner
+approval.

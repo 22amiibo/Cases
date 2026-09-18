@@ -63,9 +63,9 @@ test("a V2 hypothesis is formed, recovered, and revised with revealed evidence",
       completedCalculationIds: [],
       interviewerResponse: investigated ? "Costs grew substantially faster than revenue." : null,
       hypothesis: !formed
-        ? { phase: "initial", prompt: initialPrompt, options, currentHypothesisId: null, revisionOfResponseId: null }
+        ? { phase: "initial", prompt: initialPrompt, currentHypothesisId: null, revisionOfResponseId: null }
         : investigated && !updated
-          ? { phase: "update", prompt: updatePrompt, options, currentHypothesisId: "revenue-pressure", revisionOfResponseId: "hypothesis-1" }
+          ? { phase: "update", prompt: updatePrompt, currentHypothesisId: "revenue-pressure", revisionOfResponseId: "hypothesis-1" }
           : null,
       recommendation: null,
       synthesis: null,
@@ -76,11 +76,14 @@ test("a V2 hypothesis is formed, recovered, and revised with revealed evidence",
 
   await page.route("**/api/cases/alpinefit-profitability/hypotheses/commit", async (route) => {
     const body = route.request().postDataJSON() as { phase: "initial" | "update" };
-    await route.fulfill({ json: { reveal: {
-      criteria: [{ id: body.phase === "initial" ? "testable" : "evidence", label: body.phase === "initial" ? "Makes a testable claim" : "Links evidence to the update" }],
-      comparison: { title: "One defensible view", text: body.phase === "initial" ? "Start with cost pressure." : "Revise toward cost pressure." },
-      diagnosticRules: [],
-    } } });
+    await route.fulfill({ json: {
+      reveal: {
+        criteria: [{ id: body.phase === "initial" ? "testable" : "evidence", label: body.phase === "initial" ? "Makes a testable claim" : "Links evidence to the update" }],
+        comparison: { title: "One defensible view", text: body.phase === "initial" ? "Start with cost pressure." : "Revise toward cost pressure." },
+        diagnosticRules: [],
+      },
+      options,
+    } });
   });
 
   await page.route("**/api/cases/alpinefit-profitability/hypotheses/complete", async (route) => {

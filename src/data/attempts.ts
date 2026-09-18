@@ -13,12 +13,71 @@ import type { LearningCycleState } from "@/core/learning-cycle";
 import type { CaseAttempt, DrillAttempt } from "./repository";
 
 const progressSkillIds = new Set<SkillId>([
+  "clarification",
   "structure",
   "prioritization",
   "quantitative",
   "exhibit",
   "synthesis",
 ]);
+
+function caseEventSkillId(event: CaseEvent): V2SkillId | null {
+  if (event.type === "case_opening_submitted") return "clarification";
+  if (event.type === "exhibit_interpretation_submitted") return "exhibit";
+  if (event.type === "calculation_submitted" && "responses" in event) {
+    return "quantitative";
+  }
+  if (
+    (event.type === "synthesis_submitted" || event.type === "recommendation_submitted") &&
+    "responses" in event
+  ) return "synthesis";
+  return null;
+}
+
+export function getCaseSkillLearningEvidence(
+  events: CaseEvent[],
+  skillId: SkillId,
+  metadata: {
+    contentVersion: number | null;
+    eventSchemaVersion: number | null;
+    scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
+  },
+) {
+  if (
+    metadata.contentVersion === null ||
+    metadata.eventSchemaVersion === null ||
+    metadata.scaffoldingLevel === null
+  ) return { learningEvidence: null, diagnostics: [] };
+
+  const records = events.flatMap((event): LearningEvidenceRecord[] => {
+    if (
+      caseEventSkillId(event) !== skillId ||
+      !("responses" in event) ||
+      !("rubricOutcomes" in event) ||
+      !("diagnostics" in event)
+    ) return [];
+    return [{
+      interactionId: event.responses[0].interactionId,
+      skillId: skillId as V2SkillId,
+      scoringVersion: "v2",
+      contentVersion: metadata.contentVersion!,
+      eventSchemaVersion: metadata.eventSchemaVersion!,
+      scaffoldingLevel: metadata.scaffoldingLevel!,
+      responses: event.responses,
+      rubricOutcomes: event.rubricOutcomes,
+      diagnostics: event.diagnostics,
+    }];
+  });
+  const learningEvidence = records.reduce<LearningEvidenceRecord | null>(
+    (best, record) =>
+      !best || record.responses!.length >= best.responses!.length ? record : best,
+    null,
+  );
+  return {
+    learningEvidence,
+    diagnostics: records.flatMap((record) => record.diagnostics ?? []),
+  };
+}
 
 export function createDrillAttempt(
   attemptId: string,
@@ -155,7 +214,11 @@ export function createCaseAttempt({
 
   for (const dimension of review.scores) {
     const skillId = SkillIdSchema.safeParse(dimension.id);
-    if (!skillId.success || !progressSkillIds.has(skillId.data)) continue;
+    if (
+      !skillId.success ||
+      !progressSkillIds.has(skillId.data) ||
+      (skillId.data === "clarification" && resolvedContentVersion < 2)
+    ) continue;
     skillScores[skillId.data] = Math.round(dimension.value * 1000) / 10;
   }
 

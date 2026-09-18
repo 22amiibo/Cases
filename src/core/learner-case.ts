@@ -140,7 +140,6 @@ export type LearnerSessionView = {
   hypothesis: {
     phase: "initial" | "update";
     prompt: LearnerLearningCyclePrompt;
-    options: Array<{ id: string; label: string }>;
     currentHypothesisId: string | null;
     revisionOfResponseId: string | null;
   } | null;
@@ -437,7 +436,6 @@ export function projectHypothesisPractice(
     return {
       phase: "initial",
       prompt: projectLearningCyclePrompt(practice.initial),
-      options: practice.options.map((option) => ({ ...option })),
       currentHypothesisId: null,
       revisionOfResponseId: null,
     };
@@ -449,7 +447,6 @@ export function projectHypothesisPractice(
     return {
       phase: "update",
       prompt: projectLearningCyclePrompt(practice.update),
-      options: practice.options.map((option) => ({ ...option })),
       currentHypothesisId: getCurrentHypothesisId(events),
       revisionOfResponseId: hypothesisEvents.at(-1)?.responses.at(-1)?.responseId ?? null,
     };

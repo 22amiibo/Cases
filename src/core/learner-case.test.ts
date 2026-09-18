@@ -21,7 +21,7 @@ describe("toLearnerCaseDefinition", () => {
     expect(serialized).not.toContain('"insights"');
   });
 
-  it("projects hypothesis prompts and options without future evidence or authored comparisons", () => {
+  it("hides initial and update hypothesis options with future authored material", () => {
     const definition = CaseDefinitionSchema.parse({
       ...alpineFitContent,
       version: 2,
@@ -55,8 +55,39 @@ describe("toLearnerCaseDefinition", () => {
     });
     const initial = projectHypothesisPractice(definition, []);
     expect(initial?.phase).toBe("initial");
+    expect(initial).not.toHaveProperty("options");
     expect(JSON.stringify(initial)).not.toContain("Hidden initial comparison");
     expect(JSON.stringify(initial)).not.toContain("cost-growth");
+
+    const formed = {
+      type: "hypothesis_formed" as const,
+      eventSchemaVersion: 2 as const,
+      hypothesisId: "revenue-pressure",
+      evidenceIds: [] as [],
+      revisionOfResponseId: null,
+      responses: [{
+        responseId: "hypothesis-1",
+        interactionId: "initial-hypothesis",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "initial_hypothesis",
+        text: "Revenue pressure is testable.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "testable", met: true }],
+      diagnostics: [],
+      rationale: "Revenue pressure is testable.",
+      authoredComparisonViewed: true as const,
+      atMs: 1,
+    };
+    const update = projectHypothesisPractice(definition, [
+      formed,
+      { type: "node_investigated", nodeId: "costs", atMs: 2 },
+    ]);
+    expect(update?.phase).toBe("update");
+    expect(update).not.toHaveProperty("options");
+    expect(JSON.stringify(update)).not.toContain("Revenue pressure");
+    expect(JSON.stringify(update)).not.toContain("Cost pressure");
   });
 });
 

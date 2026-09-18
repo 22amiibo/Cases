@@ -392,7 +392,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   async function commitHypothesisResponse(
     phase: "initial" | "update",
     response: CommittedResponse,
-  ): Promise<LearningCycleReveal> {
+  ): Promise<{
+    reveal: LearningCycleReveal;
+    options: Array<{ id: string; label: string }>;
+  }> {
     const result = await fetch(`/api/cases/${caseDefinition.id}/hypotheses/commit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -404,7 +407,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       }),
     });
     if (!result.ok) throw new Error("Unable to commit hypothesis response");
-    return ((await result.json()) as { reveal: LearningCycleReveal }).reveal;
+    return result.json() as Promise<{
+      reveal: LearningCycleReveal;
+      options: Array<{ id: string; label: string }>;
+    }>;
   }
 
   async function completeHypothesis(completion: HypothesisCompletion) {

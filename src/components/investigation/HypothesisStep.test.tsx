@@ -13,10 +13,6 @@ const practice: NonNullable<LearnerSessionView["hypothesis"]> = {
     scaffoldingLevel: "beginner",
     guidance: [],
   },
-  options: [
-    { id: "revenue-pressure", label: "Revenue pressure" },
-    { id: "cost-pressure", label: "Cost pressure" },
-  ],
   currentHypothesisId: "revenue-pressure",
   revisionOfResponseId: "hypothesis-1",
 };
@@ -32,9 +28,15 @@ describe("HypothesisStep", () => {
       practice={practice}
       facts={[{ id: "cost-growth", text: "Costs grew 17%." }]}
       onCommit={vi.fn().mockResolvedValue({
-        criteria: [{ id: "evidence", label: "Links evidence to the update" }],
-        comparison: { title: "Example", text: "Revise toward costs." },
-        diagnosticRules: [],
+        reveal: {
+          criteria: [{ id: "evidence", label: "Links evidence to the update" }],
+          comparison: { title: "Example", text: "Revise toward costs." },
+          diagnosticRules: [],
+        },
+        options: [
+          { id: "revenue-pressure", label: "Revenue pressure" },
+          { id: "cost-pressure", label: "Cost pressure" },
+        ],
       })}
       onComplete={onComplete}
     />);

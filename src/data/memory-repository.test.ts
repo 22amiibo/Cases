@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { LearnerCaseReview } from "@/core/learner-case";
+import { buildProgressDashboard } from "@/core/progress-dashboard";
+import { createCaseAttempt } from "./attempts";
 import type { CaseAttempt, DrillAttempt } from "./repository";
 import { MemoryPracticeRepository } from "./memory-repository";
 
@@ -131,6 +134,89 @@ describe("MemoryPracticeRepository", () => {
     expect(history.every(({ caseDiagnostics }) =>
       caseDiagnostics?.[0]?.code === "strong_hypothesis_update",
     )).toBe(true);
+  });
+
+  it("derives clarification evidence from a real V2 case attempt for Progress", async () => {
+    const firstResponse = {
+      responseId: "opening-response-1",
+      interactionId: "case-opening",
+      revision: 1,
+      revisionOf: null,
+      responseKind: "case_opening",
+      text: "Clarify the objective and scope.",
+      committedAtMs: 1,
+    };
+    const diagnostic = {
+      code: "strong_opening" as const,
+      source: "system" as const,
+      severity: "strength" as const,
+      responseId: "opening-response-2",
+    };
+    const events: CaseAttempt["events"] = [{
+      type: "case_opening_submitted",
+      eventSchemaVersion: 2,
+      responses: [
+        firstResponse,
+        {
+          ...firstResponse,
+          responseId: "opening-response-2",
+          revision: 2,
+          revisionOf: firstResponse.responseId,
+          text: "Clarify the EBITDA-margin objective, period, and scope.",
+          committedAtMs: 2,
+        },
+      ],
+      rubricOutcomes: [{ criterionId: "objective", met: true }],
+      diagnostics: [diagnostic],
+      questions: [{ questionId: "target-metric", interviewerResponse: "Use EBITDA margin." }],
+      authoredComparisonViewed: true,
+      atMs: 3,
+    }];
+    const review: LearnerCaseReview = {
+      framework: null,
+      exhibitInterpretations: [],
+      hypotheses: [],
+      generatedResponses: [],
+      nodes: [],
+      events: [],
+      efficientPath: { label: "Cost path", nodeIds: ["costs"] },
+      scores: [{ id: "clarification", label: "Clarification", value: 1 }],
+      feedback: [],
+    };
+    const repository = new MemoryPracticeRepository();
+    await repository.saveCaseAttempt(createCaseAttempt({
+      attemptId: "case-v2-evidence",
+      userId: "guest-1",
+      caseId: "alpinefit-profitability",
+      review,
+      events,
+      completedAt: "2026-01-04T00:00:00.000Z",
+      contentVersion: 2,
+      scaffoldingLevel: "beginner",
+    }));
+
+    const history = await repository.getSkillHistory("guest-1");
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      attemptType: "case",
+      skillId: "clarification",
+      learningEvidence: {
+        interactionId: "case-opening",
+        skillId: "clarification",
+        responses: [{ responseId: "opening-response-1" }, { responseId: "opening-response-2" }],
+        rubricOutcomes: [{ criterionId: "objective", met: true }],
+        diagnostics: [diagnostic],
+      },
+      diagnostics: [diagnostic],
+    });
+    expect(buildProgressDashboard(history).v2.skills.find(
+      ({ skillId }) => skillId === "clarification",
+    )?.evidence).toMatchObject({
+      committed: 1,
+      reviewed: 1,
+      revised: 1,
+      transferred: 1,
+    });
   });
 
   it("recovers complete guest attempts from browser session storage", async () => {

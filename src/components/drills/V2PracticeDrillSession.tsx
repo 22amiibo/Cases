@@ -133,7 +133,7 @@ function HydratedV2PracticeDrillSession({
       const response = await fetch(`/api/drills/${definition.id}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responseId, submission }),
+        body: JSON.stringify({ cycle, submission }),
       });
       if (!response.ok) throw new Error("Unable to complete checkpoint");
       const evaluated = (await response.json()) as {

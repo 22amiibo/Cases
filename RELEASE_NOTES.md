@@ -2,8 +2,8 @@
 
 Date: 2026-09-17
 
-Status: local release candidate. Production migration and deployment remain
-pending explicit owner approval.
+Status: local release candidate. Production migrations are applied; deployment
+remains pending explicit owner approval.
 
 ## Included
 
@@ -23,8 +23,8 @@ pending explicit owner approval.
 
 Migrations `002_v2_learning_evidence.sql` and
 `003_case_event_evidence.sql` are additive. They preserve V1 rows and keep V2
-attempt metadata/events available under row-level security. Live migration must
-follow a confirmed backup and migration-state review.
+attempt metadata/events available under row-level security. The recoverable
+backup remains retained after migration.
 
 Rollback selects version `1` for the three pilot case IDs in
 `activeCaseVersions` and redeploys. It does not delete V2 rows or reverse the
@@ -46,9 +46,10 @@ are intentionally not invented.
 | Gate | Status and evidence |
 | --- | --- |
 | Linked migration dry-run | Complete, controller-confirmed: the linked-project dry-run included additive migrations `002_v2_learning_evidence.sql` and `003_case_event_evidence.sql`. The command transcript remains in the controller's release record. |
-| Recoverable backup | Complete, controller-confirmed: checksummed schema and data backups were created. Artifact locations and checksum values remain in the controller's release record. |
-| Live migration apply | Pending controller action after code-fix review and required approval. This implementation task did not apply migrations. |
-| Transaction-scoped live RLS smoke | Pending controller action after migration apply. Record proof that the owner can read the owned attempt and ordered events, a second user cannot read either, and the smoke transaction rolls back. |
+| Recoverable backup | Complete, controller-confirmed: checksummed schema and data backups were created and remain retained. Artifact locations and checksum values remain in the controller's release record. |
+| Live migration apply | Complete, controller-confirmed: production migrations `002` and `003` were applied, and the remote migration list aligns from `001` through `003`. |
+| Transaction-scoped live RLS smoke | Complete, controller-confirmed: the owner could read the owned attempt and ordered events, cross-user reads returned no rows, and the smoke transaction was rolled back. No smoke identifiers are retained here. |
+| Credential hygiene | Complete, controller-confirmed: the temporary credential file used by the release controller was removed. |
 | Live signed-in save and exact-version replay | Pending approved release smoke. Record the saved attempt ID, content version, and replay result without learner content. |
 | Production answer-secrecy inspection | Pending approved deployment. Record the inspected precommit responses and result. |
 | Rollback rehearsal | Pending approved release window. Record the V1 active-version selection and restoration result without deleting V2 rows. |

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDrillDefinition } from "@/content/drills";
 import { evaluateClarificationQuestions } from "@/core/clarification-drill";
+import { validateCompletedLearningCycleState } from "@/core/learning-cycle";
 import { evaluateV2Checkpoint } from "@/core/v2-drill";
 
 export async function POST(
@@ -15,10 +16,15 @@ export async function POST(
   try {
     const body = (await request.json()) as {
       questionIds?: unknown;
-      responseId?: unknown;
+      cycle?: unknown;
       submission?: unknown;
     };
-    if (typeof body.responseId !== "string") throw new Error("Invalid response");
+    const cycle = validateCompletedLearningCycleState(
+      body.cycle,
+      definition.responseCycle,
+    );
+    const responseId = cycle?.responses.at(-1)?.responseId;
+    if (!responseId) throw new Error("Invalid response");
     if (definition.skillId === "clarification") {
       if (
         !Array.isArray(body.questionIds) ||
@@ -27,11 +33,11 @@ export async function POST(
       return NextResponse.json(evaluateClarificationQuestions(
         definition,
         body.questionIds as string[],
-        body.responseId,
+        responseId,
       ));
     }
     return NextResponse.json(
-      evaluateV2Checkpoint(definition, body.submission as never, body.responseId),
+      evaluateV2Checkpoint(definition, body.submission as never, responseId),
     );
   } catch {
     return NextResponse.json({ error: "Invalid checkpoint" }, { status: 400 });

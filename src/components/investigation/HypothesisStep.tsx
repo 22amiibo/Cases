@@ -21,6 +21,8 @@ export function clearHypothesisPracticeStorage(
 ) {
   storage.removeItem(hypothesisStorageKey(caseId, "initial"));
   storage.removeItem(hypothesisStorageKey(caseId, "update"));
+  storage.removeItem(`${hypothesisStorageKey(caseId, "initial")}:options`);
+  storage.removeItem(`${hypothesisStorageKey(caseId, "update")}:options`);
 }
 
 export type HypothesisCompletion = {
@@ -41,10 +43,14 @@ export function HypothesisStep({
   caseId: string;
   practice: HypothesisPractice;
   facts: RevealedFact[];
-  onCommit: (phase: "initial" | "update", response: CommittedResponse) => Promise<LearningCycleReveal>;
+  onCommit: (phase: "initial" | "update", response: CommittedResponse) => Promise<{
+    reveal: LearningCycleReveal;
+    options: Array<{ id: string; label: string }>;
+  }>;
   onComplete: (completion: HypothesisCompletion) => Promise<void>;
 }) {
   const storageKey = hypothesisStorageKey(caseId, practice.phase);
+  const optionsStorageKey = `${storageKey}:options`;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(
       window.sessionStorage.getItem(storageKey),
@@ -52,15 +58,29 @@ export function HypothesisStep({
     );
     return restored?.phase === "complete" ? restored : null;
   });
+  const [options, setOptions] = useState<Array<{ id: string; label: string }>>(() => {
+    try {
+      return JSON.parse(window.sessionStorage.getItem(optionsStorageKey) ?? "[]") as Array<{ id: string; label: string }>;
+    } catch {
+      return [];
+    }
+  });
   const [hypothesisId, setHypothesisId] = useState(practice.currentHypothesisId ?? "");
   const [status, setStatus] = useState<"" | "retain" | "revise" | "reject">("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">("idle");
   const orderedOptions = useStableChoiceOrder(
-    practice.options,
+    options,
     `casework:choice-seed:case:${caseId}`,
     `hypothesis:${practice.phase}`,
   );
+
+  async function commitResponse(response: CommittedResponse) {
+    const committed = await onCommit(practice.phase, response);
+    setOptions(committed.options);
+    window.sessionStorage.setItem(optionsStorageKey, JSON.stringify(committed.options));
+    return committed.reveal;
+  }
 
   function toggleEvidence(id: string) {
     setEvidenceIds((current) => current.includes(id)
@@ -101,7 +121,7 @@ export function HypothesisStep({
         <GeneratedResponseCycle
           prompt={practice.prompt}
           storageKey={storageKey}
-          onCommit={(response) => onCommit(practice.phase, response)}
+          onCommit={commitResponse}
           onComplete={setCycle}
         />
       )}

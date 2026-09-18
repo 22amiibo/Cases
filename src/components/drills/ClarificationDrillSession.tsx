@@ -100,7 +100,7 @@ function HydratedClarificationDrillSession({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionIds: selectedIds,
-          responseId: cycle.responses.at(-1)?.responseId,
+          cycle,
         }),
       });
       if (!response.ok) throw new Error("Unable to complete clarification drill");

@@ -4,6 +4,8 @@ import { buildProgressDashboard } from "@/core/progress-dashboard";
 import { createCaseAttempt } from "./attempts";
 import type { CaseAttempt, DrillAttempt } from "./repository";
 import { MemoryPracticeRepository } from "./memory-repository";
+import type { ActivityAttempt } from "@/core/activity";
+import type { V3CaseAttempt } from "./v3-repository";
 
 const drillAttempt: DrillAttempt = {
   attemptId: "drill-attempt-1",
@@ -278,5 +280,98 @@ describe("MemoryPracticeRepository", () => {
     await expect(
       repository.getCaseAttempt("someone-else", "case-attempt-1"),
     ).resolves.toBeNull();
+  });
+
+  it("round-trips ordered V3 activity attempts and rejects conflicting retries", async () => {
+    const storage = window.sessionStorage;
+    storage.clear();
+    const attempt: ActivityAttempt = {
+      attemptId: "activity-attempt-1",
+      userId: "guest-1",
+      activityId: "clarifying-v3",
+      contentVersion: 1,
+      eventSchemaVersion: 3,
+      scoringVersion: "v3",
+      startedAt: "2026-09-18T12:00:00.000Z",
+      completedAt: "2026-09-18T12:05:00.000Z",
+      primarySkillId: "clarification",
+      skillEvidence: [],
+      diagnostics: [],
+      courseContext: null,
+      events: [
+        { eventId: "start", type: "activity_started", atMs: 0 },
+        { eventId: "done", type: "activity_completed", atMs: 10 },
+      ],
+    };
+    const repository = new MemoryPracticeRepository({ storage });
+    await repository.saveActivityAttempt(attempt);
+    await repository.saveActivityAttempt(attempt);
+
+    await expect(repository.listActivityAttempts("guest-1")).resolves.toEqual([attempt]);
+    await expect(repository.getActivityAttempt("guest-1", attempt.attemptId)).resolves.toEqual(attempt);
+    await expect(repository.getActivityAttempt("other", attempt.attemptId)).resolves.toBeNull();
+    await expect(repository.saveActivityAttempt({
+      ...attempt,
+      completedAt: "2026-09-18T12:06:00.000Z",
+    })).rejects.toThrow(/conflicting/i);
+    await expect(
+      new MemoryPracticeRepository({ storage }).getActivityAttempt("guest-1", attempt.attemptId),
+    ).resolves.toEqual(attempt);
+  });
+
+  it("lists owned course evidence without mutable completion counters", async () => {
+    const repository = new MemoryPracticeRepository();
+    const caseAttempt: V3CaseAttempt = {
+      attemptId: "case-v3-1",
+      userId: "guest-1",
+      caseId: "alpinefit-profitability",
+      contentVersion: 2,
+      eventSchemaVersion: 2,
+      scoringVersion: "v3",
+      scaffoldingLevel: null,
+      caseMode: "practice",
+      completedAt: "2026-09-18T12:30:00.000Z",
+      skillScores: {},
+      feedbackCodes: [],
+      skillEvidence: [],
+      diagnostics: [],
+      courseContext: {
+        courseId: "profitability-v3",
+        courseVersion: 1,
+        courseStepId: "alpinefit",
+      },
+      events: [],
+    };
+    await repository.enroll({
+      userId: "guest-1",
+      courseId: "profitability-v3",
+      courseVersion: 1,
+      startedAt: "2026-09-18T12:00:00.000Z",
+      lastActivityAt: "2026-09-18T12:10:00.000Z",
+      lastStepId: "profit-basics",
+    });
+    await repository.recordLessonViewed({
+      eventType: "lesson_viewed",
+      userId: "guest-1",
+      courseId: "profitability-v3",
+      courseVersion: 1,
+      courseStepId: "profit-basics",
+      lessonId: "profitability-basics",
+      lessonVersion: 1,
+      occurredAt: "2026-09-18T12:10:00.000Z",
+    });
+    await repository.saveV3CaseAttempt(caseAttempt);
+
+    await expect(repository.listCourseEvidence("guest-1")).resolves.toMatchObject({
+      enrollments: [{ lastStepId: "profit-basics" }],
+      lessonEvents: [{ courseStepId: "profit-basics" }],
+      caseAttempts: [{ attemptId: "case-v3-1" }],
+    });
+    await expect(repository.listCourseEvidence("other")).resolves.toEqual({
+      enrollments: [],
+      lessonEvents: [],
+      activityAttempts: [],
+      caseAttempts: [],
+    });
   });
 });

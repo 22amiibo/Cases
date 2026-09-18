@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 4-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 5-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
@@ -17,8 +17,9 @@ V3.0 Tasks 4-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 3 adds the deterministic V3 activity state machine, completion evaluator,
-and learner-safe projection. It is ready to commit.
+Task 4 adds additive V3 persistence and guest/Supabase repository adapters. It
+is ready to commit. Runtime database execution remains a pre-live migration
+gate because this worktree has no local Supabase CLI, PostgreSQL, or Docker.
 
 ## Completed tasks
 
@@ -29,8 +30,10 @@ and learner-safe projection. It is ready to commit.
   `f5b3fbf`: 3 focused files / 24 tests, lint, and typecheck pass.
 - V3.0 Task 2 contracts are committed as `7e7cd46`: 4 focused files / 20
   tests, lint, and typecheck pass.
-- V3.0 Task 3 is complete and ready to commit: 2 focused files / 16 tests,
-  64 files / 310 tests in the full unit suite, lint, and typecheck pass.
+- V3.0 Task 3 is committed as `095c8fc`: 2 focused files / 16 tests, 64 files /
+  310 tests in the full unit suite, lint, and typecheck pass.
+- V3.0 Task 4 is complete and ready to commit: 4 focused data files / 36 tests,
+  65 files / 318 tests in the full unit suite, lint, and typecheck pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -47,7 +50,7 @@ and learner-safe projection. It is ready to commit.
 
 ## Remaining work
 
-- Execute V3.0 Tasks 4-7, then stop for the mandatory owner playtest gate.
+- Execute V3.0 Tasks 5-7, then stop for the mandatory owner playtest gate.
 - Tasks 8-12 remain gated on a recorded `proceed` decision.
 
 ## Important decisions and invariants
@@ -110,5 +113,5 @@ and learner-safe projection. It is ready to commit.
 
 ## Exact next action
 
-Commit Task 3, then begin Task 4 with failing persistence and migration contract
-tests. Do not apply migration `004` or deploy without separate owner approval.
+Commit Task 4, then begin Task 5 with failing route and activity-shell tests.
+Do not apply migration `004` or deploy without separate owner approval.

@@ -14,6 +14,10 @@ const caseEventEvidenceMigrationPath = path.resolve(
   process.cwd(),
   "supabase/migrations/003_case_event_evidence.sql",
 );
+const v3MigrationPath = path.resolve(
+  process.cwd(),
+  "supabase/migrations/004_v3_learning.sql",
+);
 
 function migrationSql() {
   return readFileSync(migrationPath, "utf8")
@@ -29,6 +33,12 @@ function v2MigrationSql() {
 
 function caseEventEvidenceMigrationSql() {
   return readFileSync(caseEventEvidenceMigrationPath, "utf8")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function v3MigrationSql() {
+  return readFileSync(v3MigrationPath, "utf8")
     .toLowerCase()
     .replace(/\s+/g, " ");
 }
@@ -122,5 +132,49 @@ describe("V2 case event evidence migration", () => {
     expect(sql).toContain("learning_evidence is null or jsonb_typeof(learning_evidence) = 'object'");
     expect(sql).toContain("jsonb_typeof(diagnostics) = 'array'");
     expect(sql).not.toContain("alter table public.drill_attempts");
+  });
+});
+
+describe("V3 learning migration", () => {
+  it("is additive and creates owned activity and course evidence", () => {
+    const sql = v3MigrationSql();
+    expect(sql).not.toMatch(/drop table|truncate|delete from/);
+    for (const table of [
+      "activity_attempts",
+      "activity_events",
+      "course_enrollments",
+      "course_step_events",
+    ]) {
+      expect(sql).toContain(`create table public.${table}`);
+      expect(sql).toContain(`alter table public.${table} enable row level security`);
+      expect(sql).toMatch(new RegExp(`on public\\.${table} .*auth\\.uid\\(\\)`));
+    }
+    expect(sql).toContain(
+      "foreign key (activity_attempt_id, user_id) references public.activity_attempts(id, user_id)",
+    );
+    expect(sql).toContain("unique (activity_attempt_id, sequence)");
+    expect(sql).toContain("unique (activity_attempt_id, event_id)");
+  });
+
+  it("requires all-or-none course context and preserves explicit V1/V2/V3 case rows", () => {
+    const sql = v3MigrationSql();
+    expect(sql).toContain("num_nonnulls(course_id, course_version, course_step_id) in (0, 3)");
+    expect(sql).toContain("drop constraint if exists case_attempts_v2_metadata_check");
+    expect(sql).toContain("scoring_version = 'v1'");
+    expect(sql).toContain("scoring_version = 'v2'");
+    expect(sql).toContain("scoring_version = 'v3'");
+    expect(sql).toContain("case_mode in ('practice', 'interview')");
+  });
+
+  it("saves activity and V3 case events atomically with strict retry checks", () => {
+    const sql = v3MigrationSql();
+    for (const fn of ["save_activity_attempt_v3", "save_case_attempt_v3"]) {
+      expect(sql).toContain(`create or replace function public.${fn}`);
+    }
+    expect(sql).toContain("auth.uid() is distinct from p_user_id");
+    expect(sql).toContain("conflicting activity attempt retry");
+    expect(sql).toContain("conflicting activity event retry");
+    expect(sql).toContain("conflicting case attempt retry");
+    expect(sql).toContain("conflicting case event retry");
   });
 });

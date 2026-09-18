@@ -817,7 +817,7 @@ resource-reference validation.
 - [x] Implement pure transitions and projection with no React or repository
   imports.
 - [x] Run the two focused test files and commit
-  `feat: add deterministic v3 activity engine`.
+  `feat: add deterministic v3 activity engine` (`095c8fc`).
 
 ### Task 4: Add V3 persistence and repository adapters
 
@@ -837,15 +837,15 @@ resource-reference validation.
 **Produces:** `V3Repository`, guest and Supabase implementations, transactional
 V3 activity/case save RPCs, owned exact-attempt reads, and course evidence.
 
-- [ ] Write failing migration-contract tests for tables, composite foreign
+- [x] Write failing migration-contract tests for tables, composite foreign
   keys, uniqueness, RLS, all-or-none course context, and the V1/V2/V3 case-row
   compatibility constraint.
-- [ ] Write failing repository tests for ordered round trip, identical retry,
+- [x] Write failing repository tests for ordered round trip, identical retry,
   conflicting duplicate event rejection, cross-user absence, auth-state reset,
   and save-before-pending-clear.
-- [ ] Implement migration and adapters. Keep current V1/V2 repository methods
+- [x] Implement migration and adapters. Keep current V1/V2 repository methods
   behaviorally unchanged.
-- [ ] Run focused data tests plus `npm run typecheck`.
+- [x] Run focused data tests plus `npm run typecheck`.
 - [ ] Test the migration on a fresh database and a representative copy upgraded
   through migrations 001-003. Do not apply it to production.
 - [ ] Commit `feat: persist v3 activity and course evidence`.

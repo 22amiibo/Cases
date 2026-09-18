@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { ActivityAttemptSchema, type ActivityAttempt } from "@/core/activity";
 import {
   CaseEventSchema,
   DiagnosticOutcomeSchema,
@@ -14,6 +15,15 @@ import type {
   SkillAttempt,
 } from "./repository";
 import { getCaseSkillLearningEvidence } from "./attempts";
+import {
+  CourseEnrollmentSchema,
+  CourseStepEventSchema,
+  V3CaseAttemptSchema,
+  type CourseEnrollment,
+  type CourseStepEvent,
+  type V3CaseAttempt,
+  type V3Repository,
+} from "./v3-repository";
 
 type DrillAttemptRow = {
   id: string;
@@ -46,6 +56,30 @@ type CaseAttemptRow = {
 };
 
 type CaseEventRow = { sequence: number; event: unknown };
+type ActivityEventRow = { sequence: number; event: unknown };
+type ActivityAttemptRow = {
+  id: string;
+  user_id: string;
+  activity_id: string;
+  content_version: number;
+  event_schema_version: number;
+  scoring_version: string;
+  primary_skill_id: string;
+  skill_evidence: unknown;
+  diagnostics: unknown;
+  course_id: string | null;
+  course_version: number | null;
+  course_step_id: string | null;
+  started_at: string;
+  completed_at: string;
+};
+type V3CaseAttemptRow = CaseAttemptRow & {
+  case_mode: string | null;
+  skill_evidence: unknown;
+  course_id: string | null;
+  course_version: number | null;
+  course_step_id: string | null;
+};
 
 export type DrillAttemptInsert = DrillAttemptRow & {
   id: string;
@@ -58,6 +92,13 @@ export type CaseAttemptInsert = CaseAttemptRow & {
   case_id: string;
   events: CaseAttempt["events"];
 };
+export type ActivityAttemptInsert = ActivityAttemptRow & {
+  events: ActivityAttempt["events"];
+};
+export type V3CaseAttemptInsert = V3CaseAttemptRow & {
+  case_id: string;
+  events: V3CaseAttempt["events"];
+};
 
 export interface PracticeDatabaseClient {
   insertDrillAttempt(row: DrillAttemptInsert): Promise<void>;
@@ -66,6 +107,16 @@ export interface PracticeDatabaseClient {
   selectCaseAttempts(userId: string): Promise<CaseAttemptRow[]>;
   selectCaseAttempt(userId: string, attemptId: string): Promise<CaseAttemptRow | null>;
   selectCaseEvents(userId: string, attemptId: string): Promise<CaseEventRow[]>;
+  insertActivityAttempt(row: ActivityAttemptInsert): Promise<void>;
+  selectActivityAttempts(userId: string): Promise<ActivityAttemptRow[]>;
+  selectActivityAttempt(userId: string, attemptId: string): Promise<ActivityAttemptRow | null>;
+  selectActivityEvents(userId: string, attemptId: string): Promise<ActivityEventRow[]>;
+  insertV3CaseAttempt(row: V3CaseAttemptInsert): Promise<void>;
+  selectV3CaseAttempts(userId: string): Promise<V3CaseAttemptRow[]>;
+  upsertCourseEnrollment(enrollment: CourseEnrollment): Promise<void>;
+  insertCourseStepEvent(event: CourseStepEvent): Promise<void>;
+  selectCourseEnrollments(userId: string): Promise<unknown[]>;
+  selectCourseStepEvents(userId: string): Promise<unknown[]>;
 }
 
 export class SupabaseDatabaseClient implements PracticeDatabaseClient {
@@ -136,6 +187,125 @@ export class SupabaseDatabaseClient implements PracticeDatabaseClient {
     if (error) throw error;
     return (data ?? []) as CaseEventRow[];
   }
+
+  async insertActivityAttempt(row: ActivityAttemptInsert) {
+    const { error } = await this.client.rpc("save_activity_attempt_v3", {
+      p_attempt_id: row.id,
+      p_user_id: row.user_id,
+      p_activity_id: row.activity_id,
+      p_content_version: row.content_version,
+      p_event_schema_version: row.event_schema_version,
+      p_primary_skill_id: row.primary_skill_id,
+      p_skill_evidence: row.skill_evidence,
+      p_diagnostics: row.diagnostics,
+      p_course_id: row.course_id,
+      p_course_version: row.course_version,
+      p_course_step_id: row.course_step_id,
+      p_started_at: row.started_at,
+      p_completed_at: row.completed_at,
+      p_events: row.events,
+    });
+    if (error) throw error;
+  }
+
+  async selectActivityAttempts(userId: string) {
+    const { data, error } = await this.client.from("activity_attempts")
+      .select("id, user_id, activity_id, content_version, event_schema_version, scoring_version, primary_skill_id, skill_evidence, diagnostics, course_id, course_version, course_step_id, started_at, completed_at")
+      .eq("user_id", userId);
+    if (error) throw error;
+    return (data ?? []) as ActivityAttemptRow[];
+  }
+
+  async selectActivityAttempt(userId: string, attemptId: string) {
+    const { data, error } = await this.client.from("activity_attempts")
+      .select("id, user_id, activity_id, content_version, event_schema_version, scoring_version, primary_skill_id, skill_evidence, diagnostics, course_id, course_version, course_step_id, started_at, completed_at")
+      .eq("user_id", userId).eq("id", attemptId).maybeSingle();
+    if (error) throw error;
+    return data as ActivityAttemptRow | null;
+  }
+
+  async selectActivityEvents(userId: string, attemptId: string) {
+    const { data, error } = await this.client.from("activity_events")
+      .select("sequence, event").eq("user_id", userId)
+      .eq("activity_attempt_id", attemptId).order("sequence", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as ActivityEventRow[];
+  }
+
+  async insertV3CaseAttempt(row: V3CaseAttemptInsert) {
+    const { error } = await this.client.rpc("save_case_attempt_v3", {
+      p_attempt_id: row.id,
+      p_user_id: row.user_id,
+      p_case_id: row.case_id,
+      p_skill_scores: row.skill_scores,
+      p_feedback_codes: row.feedback_codes,
+      p_events: row.events,
+      p_completed_at: row.completed_at,
+      p_content_version: row.content_version,
+      p_event_schema_version: row.event_schema_version,
+      p_scaffolding_level: row.scaffolding_level,
+      p_case_mode: row.case_mode,
+      p_skill_evidence: row.skill_evidence,
+      p_diagnostics: row.diagnostics,
+      p_course_id: row.course_id,
+      p_course_version: row.course_version,
+      p_course_step_id: row.course_step_id,
+    });
+    if (error) throw error;
+  }
+
+  async selectV3CaseAttempts(userId: string) {
+    const { data, error } = await this.client.from("case_attempts")
+      .select("id, user_id, case_id, skill_scores, feedback_codes, completed_at, scoring_version, content_version, event_schema_version, scaffolding_level, learning_evidence, diagnostics, case_mode, skill_evidence, course_id, course_version, course_step_id")
+      .eq("user_id", userId).eq("scoring_version", "v3");
+    if (error) throw error;
+    return (data ?? []) as V3CaseAttemptRow[];
+  }
+
+  async upsertCourseEnrollment(enrollment: CourseEnrollment) {
+    const { error } = await this.client.from("course_enrollments").upsert({
+      user_id: enrollment.userId,
+      course_id: enrollment.courseId,
+      course_version: enrollment.courseVersion,
+      started_at: enrollment.startedAt,
+      last_activity_at: enrollment.lastActivityAt,
+      last_step_id: enrollment.lastStepId,
+    }, { onConflict: "user_id,course_id,course_version" });
+    if (error) throw error;
+  }
+
+  async insertCourseStepEvent(event: CourseStepEvent) {
+    const { error } = await this.client.from("course_step_events").upsert({
+      user_id: event.userId,
+      course_id: event.courseId,
+      course_version: event.courseVersion,
+      course_step_id: event.courseStepId,
+      event_type: event.eventType,
+      lesson_id: event.lessonId,
+      lesson_version: event.lessonVersion,
+      occurred_at: event.occurredAt,
+    }, {
+      onConflict: "user_id,course_id,course_version,course_step_id,event_type",
+      ignoreDuplicates: true,
+    });
+    if (error) throw error;
+  }
+
+  async selectCourseEnrollments(userId: string) {
+    const { data, error } = await this.client.from("course_enrollments")
+      .select("user_id, course_id, course_version, started_at, last_activity_at, last_step_id")
+      .eq("user_id", userId);
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async selectCourseStepEvents(userId: string) {
+    const { data, error } = await this.client.from("course_step_events")
+      .select("user_id, course_id, course_version, course_step_id, event_type, lesson_id, lesson_version, occurred_at")
+      .eq("user_id", userId);
+    if (error) throw error;
+    return data ?? [];
+  }
 }
 
 function metadataFromRow(
@@ -189,7 +359,7 @@ const CaseSkillScoresSchema = z.partialRecord(
   z.number().finite().min(0).max(100),
 );
 
-export class SupabasePracticeRepository implements PracticeRepository {
+export class SupabasePracticeRepository implements PracticeRepository, V3Repository {
   constructor(private readonly database: PracticeDatabaseClient) {}
 
   async saveDrillAttempt(attempt: DrillAttempt): Promise<void> {
@@ -334,6 +504,155 @@ export class SupabasePracticeRepository implements PracticeRepository {
       events,
       ...metadata,
     };
+  }
+
+  async saveActivityAttempt(attempt: ActivityAttempt) {
+    const parsed = ActivityAttemptSchema.parse(attempt);
+    await this.database.insertActivityAttempt({
+      id: parsed.attemptId,
+      user_id: parsed.userId,
+      activity_id: parsed.activityId,
+      content_version: parsed.contentVersion,
+      event_schema_version: parsed.eventSchemaVersion,
+      scoring_version: parsed.scoringVersion,
+      primary_skill_id: parsed.primarySkillId,
+      skill_evidence: parsed.skillEvidence,
+      diagnostics: parsed.diagnostics,
+      course_id: parsed.courseContext?.courseId ?? null,
+      course_version: parsed.courseContext?.courseVersion ?? null,
+      course_step_id: parsed.courseContext?.courseStepId ?? null,
+      started_at: parsed.startedAt,
+      completed_at: parsed.completedAt,
+      events: parsed.events,
+    });
+  }
+
+  async getActivityAttempt(userId: string, attemptId: string) {
+    const row = await this.database.selectActivityAttempt(userId, attemptId);
+    if (!row || row.user_id !== userId || row.id !== attemptId) return null;
+    return this.activityAttemptFromRow(row);
+  }
+
+  async listActivityAttempts(userId: string) {
+    const rows = await this.database.selectActivityAttempts(userId);
+    const attempts = await Promise.all(rows.flatMap((row) =>
+      row.user_id === userId ? [this.activityAttemptFromRow(row)] : [],
+    ));
+    return attempts.sort((left, right) => right.completedAt.localeCompare(left.completedAt));
+  }
+
+  async saveV3CaseAttempt(attempt: V3CaseAttempt) {
+    const parsed = V3CaseAttemptSchema.parse(attempt);
+    await this.database.insertV3CaseAttempt({
+      id: parsed.attemptId,
+      user_id: parsed.userId,
+      case_id: parsed.caseId,
+      skill_scores: parsed.skillScores,
+      feedback_codes: parsed.feedbackCodes,
+      completed_at: parsed.completedAt,
+      scoring_version: parsed.scoringVersion,
+      content_version: parsed.contentVersion,
+      event_schema_version: parsed.eventSchemaVersion,
+      scaffolding_level: parsed.scaffoldingLevel,
+      learning_evidence: null,
+      diagnostics: parsed.diagnostics,
+      case_mode: parsed.caseMode,
+      skill_evidence: parsed.skillEvidence,
+      course_id: parsed.courseContext?.courseId ?? null,
+      course_version: parsed.courseContext?.courseVersion ?? null,
+      course_step_id: parsed.courseContext?.courseStepId ?? null,
+      events: parsed.events,
+    });
+  }
+
+  async enroll(enrollment: CourseEnrollment) {
+    await this.database.upsertCourseEnrollment(CourseEnrollmentSchema.parse(enrollment));
+  }
+
+  async recordLessonViewed(event: CourseStepEvent) {
+    await this.database.insertCourseStepEvent(CourseStepEventSchema.parse(event));
+  }
+
+  async listCourseEvidence(userId: string) {
+    const [enrollmentRows, lessonRows, activityAttempts, caseRows] = await Promise.all([
+      this.database.selectCourseEnrollments(userId),
+      this.database.selectCourseStepEvents(userId),
+      this.listActivityAttempts(userId),
+      this.database.selectV3CaseAttempts(userId),
+    ]);
+    const enrollments = enrollmentRows.map((row) => CourseEnrollmentSchema.parse({
+      userId: (row as Record<string, unknown>).user_id,
+      courseId: (row as Record<string, unknown>).course_id,
+      courseVersion: (row as Record<string, unknown>).course_version,
+      startedAt: (row as Record<string, unknown>).started_at,
+      lastActivityAt: (row as Record<string, unknown>).last_activity_at,
+      lastStepId: (row as Record<string, unknown>).last_step_id,
+    }));
+    const lessonEvents = lessonRows.map((row) => CourseStepEventSchema.parse({
+      eventType: (row as Record<string, unknown>).event_type,
+      userId: (row as Record<string, unknown>).user_id,
+      courseId: (row as Record<string, unknown>).course_id,
+      courseVersion: (row as Record<string, unknown>).course_version,
+      courseStepId: (row as Record<string, unknown>).course_step_id,
+      lessonId: (row as Record<string, unknown>).lesson_id,
+      lessonVersion: (row as Record<string, unknown>).lesson_version,
+      occurredAt: (row as Record<string, unknown>).occurred_at,
+    }));
+    // ponytail: one ordered-event read per V3 case; batch when course history latency matters.
+    const caseAttempts = await Promise.all(caseRows.flatMap((row) =>
+      row.user_id === userId ? [this.v3CaseAttemptFromRow(row)] : [],
+    ));
+    return { enrollments, lessonEvents, activityAttempts, caseAttempts };
+  }
+
+  private async activityAttemptFromRow(row: ActivityAttemptRow) {
+    const events = (await this.database.selectActivityEvents(row.user_id, row.id))
+      .sort((left, right) => left.sequence - right.sequence)
+      .map(({ event }) => event);
+    return ActivityAttemptSchema.parse({
+      attemptId: row.id,
+      userId: row.user_id,
+      activityId: row.activity_id,
+      contentVersion: row.content_version,
+      eventSchemaVersion: row.event_schema_version,
+      scoringVersion: row.scoring_version,
+      primarySkillId: row.primary_skill_id,
+      skillEvidence: row.skill_evidence,
+      diagnostics: row.diagnostics,
+      courseContext: row.course_id === null ? null : {
+        courseId: row.course_id,
+        courseVersion: row.course_version,
+        courseStepId: row.course_step_id,
+      },
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      events,
+    });
+  }
+
+  private async v3CaseAttemptFromRow(row: V3CaseAttemptRow) {
+    const events = await this.getCaseEvents(row.user_id, row.id);
+    return V3CaseAttemptSchema.parse({
+      attemptId: row.id,
+      userId: row.user_id,
+      caseId: row.case_id,
+      contentVersion: row.content_version,
+      eventSchemaVersion: row.event_schema_version,
+      scoringVersion: row.scoring_version,
+      scaffoldingLevel: row.scaffolding_level,
+      caseMode: row.case_mode,
+      completedAt: row.completed_at,
+      skillScores: row.skill_scores,
+      feedbackCodes: row.feedback_codes,
+      skillEvidence: row.skill_evidence,
+      diagnostics: row.diagnostics,
+      courseContext: row.course_id === null ? null : {
+        courseId: row.course_id,
+        courseVersion: row.course_version,
+        courseStepId: row.course_step_id,
+      },
+      events,
+    });
   }
 }
 

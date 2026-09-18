@@ -6,6 +6,7 @@ import {
   ScaffoldingLevelSchema,
   SkillIdSchema,
 } from "@/core/schema";
+import { ActivityAttemptSchema } from "@/core/activity";
 import type {
   CaseAttempt,
   DrillAttempt,
@@ -13,6 +14,15 @@ import type {
   SkillAttempt,
 } from "./repository";
 import { getCaseSkillLearningEvidence } from "./attempts";
+import {
+  CourseEnrollmentSchema,
+  CourseStepEventSchema,
+  V3CaseAttemptSchema,
+  type CourseEnrollment,
+  type CourseStepEvent,
+  type V3CaseAttempt,
+  type V3Repository,
+} from "./v3-repository";
 
 const STORAGE_KEY = "casework:practice-history";
 
@@ -102,6 +112,10 @@ const CaseAttemptSchema = z.object({
 const StoredHistorySchema = z.object({
   drillAttempts: z.array(DrillAttemptSchema),
   caseAttempts: z.array(CaseAttemptSchema),
+  activityAttempts: z.array(ActivityAttemptSchema).default([]),
+  v3CaseAttempts: z.array(V3CaseAttemptSchema).default([]),
+  courseEnrollments: z.array(CourseEnrollmentSchema).default([]),
+  courseStepEvents: z.array(CourseStepEventSchema).default([]),
 });
 
 type StoredHistory = z.infer<typeof StoredHistorySchema>;
@@ -113,7 +127,14 @@ type MemoryPracticeRepositoryOptions = {
 };
 
 function emptyHistory(): StoredHistory {
-  return { drillAttempts: [], caseAttempts: [] };
+  return {
+    drillAttempts: [],
+    caseAttempts: [],
+    activityAttempts: [],
+    v3CaseAttempts: [],
+    courseEnrollments: [],
+    courseStepEvents: [],
+  };
 }
 
 function loadHistory(
@@ -172,7 +193,7 @@ function toCaseSkillHistory(attempt: CaseAttempt): SkillAttempt[] {
   });
 }
 
-export class MemoryPracticeRepository implements PracticeRepository {
+export class MemoryPracticeRepository implements PracticeRepository, V3Repository {
   private history: StoredHistory;
   private readonly storage?: SessionStorage;
   private readonly storageKey: string;
@@ -248,6 +269,80 @@ export class MemoryPracticeRepository implements PracticeRepository {
         candidate.userId === userId && candidate.attemptId === attemptId,
     );
     return attempt ? { ...attempt, events: [...attempt.events] } : null;
+  }
+
+  async saveActivityAttempt(attempt: z.infer<typeof ActivityAttemptSchema>) {
+    const parsed = ActivityAttemptSchema.parse(attempt);
+    this.saveImmutable(this.history.activityAttempts, parsed);
+  }
+
+  async getActivityAttempt(userId: string, attemptId: string) {
+    return this.history.activityAttempts.find(
+      (attempt) => attempt.userId === userId && attempt.attemptId === attemptId,
+    ) ?? null;
+  }
+
+  async listActivityAttempts(userId: string) {
+    return this.history.activityAttempts
+      .filter((attempt) => attempt.userId === userId)
+      .sort((left, right) => right.completedAt.localeCompare(left.completedAt));
+  }
+
+  async saveV3CaseAttempt(attempt: V3CaseAttempt) {
+    const parsed = V3CaseAttemptSchema.parse(attempt);
+    this.saveImmutable(this.history.v3CaseAttempts, parsed);
+  }
+
+  async enroll(enrollment: CourseEnrollment) {
+    const parsed = CourseEnrollmentSchema.parse(enrollment);
+    const index = this.history.courseEnrollments.findIndex((candidate) =>
+      candidate.userId === parsed.userId &&
+      candidate.courseId === parsed.courseId &&
+      candidate.courseVersion === parsed.courseVersion,
+    );
+    if (index < 0) this.history.courseEnrollments.push(parsed);
+    else this.history.courseEnrollments[index] = parsed;
+    this.persist();
+  }
+
+  async recordLessonViewed(event: CourseStepEvent) {
+    const parsed = CourseStepEventSchema.parse(event);
+    const enrolled = this.history.courseEnrollments.some((candidate) =>
+      candidate.userId === parsed.userId &&
+      candidate.courseId === parsed.courseId &&
+      candidate.courseVersion === parsed.courseVersion,
+    );
+    if (!enrolled) throw new Error("Course enrollment not found");
+    const existing = this.history.courseStepEvents.find((candidate) =>
+      candidate.userId === parsed.userId &&
+      candidate.courseId === parsed.courseId &&
+      candidate.courseVersion === parsed.courseVersion &&
+      candidate.courseStepId === parsed.courseStepId &&
+      candidate.eventType === parsed.eventType,
+    );
+    if (existing && JSON.stringify(existing) !== JSON.stringify(parsed)) {
+      throw new Error("Conflicting course step event retry");
+    }
+    if (!existing) this.history.courseStepEvents.push(parsed);
+    this.persist();
+  }
+
+  async listCourseEvidence(userId: string) {
+    return {
+      enrollments: this.history.courseEnrollments.filter((item) => item.userId === userId),
+      lessonEvents: this.history.courseStepEvents.filter((item) => item.userId === userId),
+      activityAttempts: await this.listActivityAttempts(userId),
+      caseAttempts: this.history.v3CaseAttempts.filter((item) => item.userId === userId),
+    };
+  }
+
+  private saveImmutable<T extends { attemptId: string }>(items: T[], item: T) {
+    const existing = items.find(({ attemptId }) => attemptId === item.attemptId);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(item)) {
+      throw new Error(`Conflicting attempt retry: ${item.attemptId}`);
+    }
+    if (!existing) items.push(item);
+    this.persist();
   }
 
   private persist() {

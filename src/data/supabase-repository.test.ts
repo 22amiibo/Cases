@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CaseAttempt, DrillAttempt } from "./repository";
+import type { ActivityAttempt } from "@/core/activity";
 import {
   SupabasePracticeRepository,
   type PracticeDatabaseClient,
@@ -40,6 +41,16 @@ function client(overrides: Partial<PracticeDatabaseClient> = {}) {
     selectCaseAttempts: vi.fn().mockResolvedValue([]),
     selectCaseAttempt: vi.fn().mockResolvedValue(null),
     selectCaseEvents: vi.fn().mockResolvedValue([]),
+    insertActivityAttempt: vi.fn().mockResolvedValue(undefined),
+    selectActivityAttempts: vi.fn().mockResolvedValue([]),
+    selectActivityAttempt: vi.fn().mockResolvedValue(null),
+    selectActivityEvents: vi.fn().mockResolvedValue([]),
+    insertV3CaseAttempt: vi.fn().mockResolvedValue(undefined),
+    selectV3CaseAttempts: vi.fn().mockResolvedValue([]),
+    upsertCourseEnrollment: vi.fn().mockResolvedValue(undefined),
+    insertCourseStepEvent: vi.fn().mockResolvedValue(undefined),
+    selectCourseEnrollments: vi.fn().mockResolvedValue([]),
+    selectCourseStepEvents: vi.fn().mockResolvedValue([]),
     ...overrides,
   } satisfies PracticeDatabaseClient;
 }
@@ -478,5 +489,58 @@ describe("SupabasePracticeRepository", () => {
 
     expect(history).toHaveLength(1);
     expect(history[0].skillId).toBe("quantitative");
+  });
+
+  it("writes V3 activity attempts atomically and reads owned events in sequence order", async () => {
+    const attempt: ActivityAttempt = {
+      attemptId: "00000000-0000-4000-8000-000000000003",
+      userId: "user-1",
+      activityId: "clarifying-v3",
+      contentVersion: 1,
+      eventSchemaVersion: 3,
+      scoringVersion: "v3",
+      startedAt: "2026-09-18T12:00:00.000Z",
+      completedAt: "2026-09-18T12:05:00.000Z",
+      primarySkillId: "clarification",
+      skillEvidence: [],
+      diagnostics: [],
+      courseContext: null,
+      events: [
+        { eventId: "start", type: "activity_started", atMs: 0 },
+        { eventId: "done", type: "activity_completed", atMs: 10 },
+      ],
+    };
+    const database = client({
+      insertActivityAttempt: vi.fn().mockResolvedValue(undefined),
+      selectActivityAttempt: vi.fn().mockResolvedValue({
+        id: attempt.attemptId,
+        user_id: "user-1",
+        activity_id: "clarifying-v3",
+        content_version: 1,
+        event_schema_version: 3,
+        scoring_version: "v3",
+        primary_skill_id: "clarification",
+        skill_evidence: [],
+        diagnostics: [],
+        course_id: null,
+        course_version: null,
+        course_step_id: null,
+        started_at: attempt.startedAt,
+        completed_at: attempt.completedAt,
+      }),
+      selectActivityEvents: vi.fn().mockResolvedValue([
+        { sequence: 1, event: attempt.events[1] },
+        { sequence: 0, event: attempt.events[0] },
+      ]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await repository.saveActivityAttempt(attempt);
+    await expect(repository.getActivityAttempt("user-1", attempt.attemptId)).resolves.toEqual(attempt);
+    expect(database.insertActivityAttempt).toHaveBeenCalledWith(expect.objectContaining({
+      id: attempt.attemptId,
+      scoring_version: "v3",
+      events: attempt.events,
+    }));
   });
 });

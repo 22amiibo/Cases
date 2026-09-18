@@ -71,6 +71,23 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 4: additive persistence and repositories — ready to commit
+
+- Added migration `004_v3_learning.sql` for immutable activity attempts/events,
+  course enrollment/evidence, and V3 case metadata without rewriting V1/V2 rows.
+- Added strict transactional retry checks for V3 activity and case RPCs, owned
+  RLS policies, complete course-context constraints, and ordered event keys.
+- Added shared V3 repository contracts plus guest session-storage and Supabase
+  adapters for activity attempts, V3 cases, enrollments, and lesson evidence.
+- Focused validation: 4 files / 36 tests. Full unit validation: 65 files / 318
+  tests. Lint, typecheck, and diff check pass.
+- The worktree has no Supabase CLI, PostgreSQL, or Docker runtime. Fresh and
+  representative-upgrade database execution remains required before any live
+  migration approval; migration contract tests are green and production was
+  not touched.
+- Next action: Task 5, prove one private activity through routes and the shared
+  shell before publishing flagship content.
+
 ### Casework V3 Task 3: deterministic activity engine — ready to commit
 
 - Added a pure state machine for the shared activity flow, interaction-specific
@@ -81,6 +98,7 @@ npm run build
   legal reveal points.
 - Focused validation: 2 files / 16 tests. Full unit validation: 64 files / 310
   tests. Lint and typecheck pass.
+- Committed as `095c8fc` (`feat: add deterministic v3 activity engine`).
 - Next action: Task 4, add the local V3 migration and repository adapters without
   applying migration `004` to production.
 

@@ -71,6 +71,19 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 0: compatibility baseline — ready to commit
+
+- Owner authorized V3.0 implementation on 2026-09-18.
+- Created isolated branch `feature/casework-v3` at reviewed plan commit
+  `10f3fcb` in `.worktrees/casework-v3`.
+- Added representative compatibility coverage for all six active case versions,
+  V1/V2 evidence parsing, V1/V2 replay projection, and version-separated
+  attempt history.
+- Fresh baseline: 58 test files / 276 tests, all 34 Playwright journeys, lint,
+  typecheck, production build, and `git diff --check` pass.
+- Next action: Task 1, add V3 taxonomies and exact sidecar case metadata without
+  widening legacy schemas.
+
 ### Casework V3 implementation plan — draft for owner review
 
 - Reconciled the proposed V3 roadmap with the released V2 baseline at
@@ -79,9 +92,8 @@ npm run build
 - The draft limits detailed implementation planning to V3.0, keeps V3.1 and
   V3.2 behind production-evidence gates, preserves legacy schemas, and adds the
   missing immutable course-step evidence contract.
-- V3 implementation, migration, and deployment remain unauthorized.
-- Next action: owner review of the V3.0 scope and plan. If approved, create a
-  clean V3 branch/worktree and execute Task 0 only.
+- V3.0 implementation was authorized on 2026-09-18. Production migration and
+  deployment remain separately gated.
 
 ### V2 final wrong-unit retry release fix — deployed
 

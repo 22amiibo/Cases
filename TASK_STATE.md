@@ -2,29 +2,29 @@
 
 ## Objective
 
-Release Casework V2 after fixing the final wrong-unit retry blocker while
-preserving V1/V2 separation, immutable historical content, answer secrecy,
-deterministic evaluation, and existing user work.
+Implement the approved Casework V3.0 Profitability learning loop while
+preserving released V1/V2 behavior, immutable historical content, answer
+secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-None. V2 is released.
+V3.0 Tasks 1-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
-`CASEWORK_V3_IMPLEMENTATION_PLAN.md` is a draft for owner review. It reconciles
-the V3 proposal with the released V2 baseline and provides an executable V3.0
-task sequence. It does not authorize implementation, migration, or deployment.
+`CASEWORK_V3_IMPLEMENTATION_PLAN.md` was approved for V3.0 implementation on
+2026-09-18. Production migration and deployment remain separately gated.
 
 ## Current task
 
-The final V2 release blocker is fixed and deployed. `CaseGeneratedStep` now
-returns to its idle state after a generated event is saved, so an incorrect
-calculation can be retried immediately without refresh. Production migrations
-`002` and `003` remain applied, and the production wrong-unit smoke passed.
+Task 0 freezes the released compatibility baseline before V3 contracts are
+added. The isolated `feature/casework-v3` worktree starts from `10f3fcb`.
 
 ## Completed tasks
 
+- V3.0 Task 0 compatibility coverage and full baseline gate are complete and
+  ready to commit: 58 test files / 276 tests, 34 Playwright journeys, lint,
+  typecheck, production build, and diff check pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -103,6 +103,5 @@ calculation can be retried immediately without refresh. Production migrations
 
 ## Exact next action
 
-Preserve the two pre-existing untracked user items. Review
-`CASEWORK_V3_IMPLEMENTATION_PLAN.md`; no V3 implementation begins without
-explicit owner approval.
+Commit Task 0, then begin Task 1 with failing V3 taxonomy and exact case-metadata
+tests. Do not apply migration `004` or deploy without separate owner approval.

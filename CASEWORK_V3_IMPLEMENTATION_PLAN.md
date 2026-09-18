@@ -4,9 +4,8 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task by task. Track work with the checkboxes in this file.
 
-Status: Draft for owner review. Planning only. This document does not authorize
-implementation, database migration, deployment, or changes to the released V2
-product.
+Status: Approved for V3.0 implementation on 2026-09-18. Production database
+migration and deployment remain separately gated.
 
 Prepared: 2026-09-17
 
@@ -37,8 +36,9 @@ Postgres/RLS, Vitest, Testing Library, Playwright, and axe.
 - The active worktree may contain the pre-existing untracked paths
   `src/content/drills/quantitative 2.json` and `supabase/.temp/`. Never edit,
   stage, delete, or commit them.
-- Before implementation, the owner must approve V3.0 and a clean V3 branch and
-  worktree must be created from the released baseline.
+- The owner authorized V3.0 implementation on 2026-09-18. Work runs on
+  `feature/casework-v3` in `.worktrees/casework-v3` from the reviewed plan
+  commit `10f3fcb`.
 - Each production migration and deployment requires separate owner approval.
 - New V3 activity, lesson, and course definitions start at `contentVersion: 3`.
   Reused V2 lessons and AlpineFit retain their recorded version 2.
@@ -727,15 +727,15 @@ untracked paths.
 **Produces:** A clean V3 branch, recorded baseline commit, active case-version
 map, migration list, test counts, and representative V1/V2 parse/replay hashes.
 
-- [ ] After owner approval, create a V3 branch/worktree from `c9dde86` or the
+- [x] After owner approval, create a V3 branch/worktree from `c9dde86` or the
   newer explicitly approved production commit.
-- [ ] Assert the six active case IDs and versions: AlpineFit 2, NorthStar 1,
+- [x] Assert the six active case IDs and versions: AlpineFit 2, NorthStar 1,
   FleetFix 1, PayPilot 2, GoldenLoaf 2, MorningJet 1.
-- [ ] Add representative V1 and V2 attempt/event parsing fixtures and replay
+- [x] Add representative V1 and V2 attempt/event parsing fixtures and replay
   output fixtures. Hash stable authored definitions only if the serialization
   order is controlled.
-- [ ] Run `npm test -- src/core/v3-compatibility.test.ts` and confirm green.
-- [ ] Run the full V2 gate and record exact counts in `PROJECT_CONTEXT.md`.
+- [x] Run `npm test -- src/core/v3-compatibility.test.ts` and confirm green.
+- [x] Run the full V2 gate and record exact counts in `PROJECT_CONTEXT.md`.
 - [ ] Commit `test: freeze v3 compatibility baseline`.
 
 ### Task 1: Add V3 taxonomies without widening legacy schemas

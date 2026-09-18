@@ -177,6 +177,26 @@ describe("scoreCase", () => {
     expect(score.recommendation).toBe(0);
   });
 
+  it("credits synthesis after every authored investigation is exhausted", () => {
+    const investigations: CaseEvent[] = alpineFit.investigationNodes.map(
+      ({ id }, index) => ({
+        type: "node_investigated",
+        nodeId: id,
+        atMs: index + 1,
+      }),
+    );
+
+    expect(scoreCase(alpineFit, [
+      ...investigations,
+      {
+        type: "synthesis_submitted",
+        evidenceIds: ["labor-growth", "turnover-link"],
+        nextStepNodeId: "no-further-investigation",
+        atMs: 100,
+      },
+    ]).synthesis).toBe(1);
+  });
+
   it("gives a legitimate authored alternate path the same credit", () => {
     const costFirst = scoreCase(alpineFit, strongPath());
     const revenueThenCost = scoreCase(

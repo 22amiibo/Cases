@@ -38,6 +38,8 @@ const IdentifierSchema = z
   .min(1)
   .regex(/^[a-z0-9]+(?:[a-z0-9_-]*[a-z0-9])?$/, "Use a stable slug ID");
 
+export const NO_FURTHER_INVESTIGATION = "no-further-investigation";
+
 export const CommittedResponseSchema = z.object({
   responseId: IdentifierSchema,
   interactionId: IdentifierSchema,

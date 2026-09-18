@@ -1,5 +1,9 @@
 import { scoreFramework } from "./framework-scoring";
-import type { CaseDefinition, CaseEvent } from "./schema";
+import {
+  NO_FURTHER_INVESTIGATION,
+  type CaseDefinition,
+  type CaseEvent,
+} from "./schema";
 import { withinTolerance } from "./validation";
 import { frameworkSubmissionFromEvent } from "./framework-events";
 
@@ -228,7 +232,15 @@ export function isValidSynthesisSubmission(
   event: Extract<CaseEvent, { type: "synthesis_submitted" }>,
 ) {
   const nodeIds = new Set(definition.investigationNodes.map((node) => node.id));
-  if (!nodeIds.has(event.nextStepNodeId)) return false;
+  const visitedBeforeSynthesis = new Set(
+    investigatedNodeIdsBefore(events, definition, event.atMs),
+  );
+  const noFurtherInvestigation =
+    event.nextStepNodeId === NO_FURTHER_INVESTIGATION &&
+    definition.investigationNodes.every(({ id }) =>
+      visitedBeforeSynthesis.has(id),
+    );
+  if (!nodeIds.has(event.nextStepNodeId) && !noFurtherInvestigation) return false;
 
   const discoveredFacts = getDiscoveredFactIdsBefore(
     definition,

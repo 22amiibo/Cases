@@ -94,4 +94,75 @@ describe("InvestigationPanel grouped actions", () => {
       .toHaveLength(2);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledOnce());
   });
+
+  it("links a completed case to its saved replay", async () => {
+    window.sessionStorage.setItem(
+      "casework:guest-session:alpinefit-profitability",
+      JSON.stringify({
+        contentVersion: 2,
+        events: [{
+          type: "framework_submitted",
+          eventSchemaVersion: 2,
+          branches: [{ conceptId: "revenue", children: [] }],
+          priorityConceptId: "revenue",
+          rationale: "Start with revenue.",
+          atMs: 1,
+        }],
+        clarificationComplete: true,
+        clarificationDraftIds: [],
+      }),
+    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ...view, currentStage: "complete" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    render(<InvestigationPanel caseDefinition={caseDefinition} />);
+
+    expect(
+      await screen.findByRole("link", { name: "Review case replay" }),
+    ).toHaveAttribute("href", "/cases/alpinefit-profitability/review");
+  });
+
+  it("reloads an empty workspace when practicing a completed case again", async () => {
+    window.sessionStorage.setItem(
+      "casework:guest-session:alpinefit-profitability",
+      JSON.stringify({
+        contentVersion: 2,
+        events: [{
+          type: "framework_submitted",
+          eventSchemaVersion: 2,
+          branches: [{ conceptId: "revenue", children: [] }],
+          priorityConceptId: "revenue",
+          rationale: "Start with revenue.",
+          atMs: 1,
+        }],
+        clarificationComplete: true,
+        clarificationDraftIds: [],
+      }),
+    );
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ...view, currentStage: "complete" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(view), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    render(<InvestigationPanel caseDefinition={caseDefinition} />);
+    await screen.findByRole("heading", { name: "Recommendation recorded" });
+    screen.getByRole("button", { name: "Practice case again" }).click();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const request = fetchMock.mock.calls[1][1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toMatchObject({ events: [] });
+  });
 });

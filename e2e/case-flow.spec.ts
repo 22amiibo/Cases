@@ -140,6 +140,59 @@ test("the legacy no-calculation case can synthesize and complete", async ({ page
     riskId: "customer-pushback",
     nextStepId: "renewal-pilot",
   });
+
+  await page.goto("/cases/northstar-profitability");
+  await page.getByRole("link", { name: "Review case replay" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your case review" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Return to case" }).click();
+  await page.getByRole("button", { name: "Practice case again" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Ask the useful questions first" }),
+  ).toBeVisible();
+});
+
+test("NorthStar can synthesize after exhausting every investigation", async ({ page }) => {
+  await page.goto("/cases/northstar-profitability");
+  await page
+    .getByLabel("Which performance measure should we explain?")
+    .check();
+  await page.getByRole("button", { name: "Continue to framework" }).click();
+  await page.getByLabel("Major area to add").selectOption("materials");
+  await page.getByRole("button", { name: "Add major area" }).click();
+  await page.getByLabel("Major area to add").selectOption("price");
+  await page.getByRole("button", { name: "Add major area" }).click();
+  await page.getByRole("button", { name: "Submit framework" }).click();
+
+  for (const action of [
+    "Understand revenue performance",
+    "Check shipment volume",
+    "Inspect realized pricing",
+    "Break down unit costs",
+    "Inspect direct labor",
+    "Inspect material and freight inputs",
+    "Review customer contract terms",
+    "Assess customer concentration",
+    "Compare repricing mechanisms",
+    "Map upcoming renewals",
+  ]) {
+    await page.getByRole("button", { name: action }).click();
+  }
+
+  await expect(
+    page.getByText("All authored investigations are complete."),
+  ).toBeVisible();
+  await expect(page.getByLabel("Next investigation")).toHaveCount(0);
+  await page.getByRole("checkbox", { name: /Input Inflation/ }).check();
+  await page.getByRole("checkbox", { name: /Annual Repricing/ }).check();
+  await expect(
+    page.getByRole("button", { name: "Move to recommendation" }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Move to recommendation" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make your recommendation" }),
+  ).toBeVisible();
 });
 
 test("guest can recover a failed AlpineFit V2 save without a duplicate attempt", async ({ page }) => {

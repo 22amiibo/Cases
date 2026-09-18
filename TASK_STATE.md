@@ -38,7 +38,8 @@ Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited
 - Historical attempts resolve their recorded content version.
 - Scratchpad content remains browser-local and is never persisted.
 - Reuse the shared V2 learning-cycle, case, and repository contracts; add no speculative abstractions or dependencies.
-- The completed-case replay/retry entry-point issue is deferred and outside Task 12 scope.
+- Completed cases expose explicit replay and fresh-practice entry points.
+- Exhausting every authored investigation is a valid path to synthesis; it must not require a nonexistent next investigation.
 - Do not stage or edit pre-existing `supabase/.temp/` or `src/content/drills/quantitative 2.json`.
 
 ## Verification already performed
@@ -49,10 +50,10 @@ Assigned Tasks 12–16 are complete, committed, verified, and acceptance-audited
 - Task 15 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 29 Playwright journeys passed, including exact Learn routing, answer secrecy, save retry, axe, and phone reflow checks.
 - Task 16 focused gate: 17 Progress core tests and 2 recommendation component tests passed; lint and typecheck passed; all 4 Progress Playwright journeys passed for guest/signed-in and empty/sparse/dense history behavior.
 - Task 16 fresh full gate: 53 test files / 253 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 31 Playwright journeys passed.
+- Post-plan case-flow remediation: 53 test files / 256 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 32 Playwright journeys passed, including exhausted NorthStar synthesis plus completed-case replay and fresh restart.
 
 ## Known deferred issues
 
-- Completed-case replay/retry entry point remains missing; the owner explicitly allowed Task 12 despite this.
 - Live deployment/migration work is outside Tasks 12–16.
 
 ## Blockers

@@ -71,6 +71,22 @@ npm run build
 
 ## Progress Log
 
+### Post-plan case-flow remediation — complete
+
+- Legacy cases now treat an exhausted authored investigation graph as a valid
+  synthesis state. The learner sees a completion message instead of an empty,
+  required “Next investigation” menu; the engine and scorer accept the explicit
+  no-further-investigation marker only after every authored node was visited.
+- Completed cases now provide explicit “Review case replay” and “Practice case
+  again” actions. Fresh practice clears the prior attempt identity, event
+  history, timers, evidence, and workspace before loading a new session.
+- Added unit, component, and browser regressions for exhausted NorthStar
+  synthesis, replay navigation, and clean restart behavior.
+- Fresh verification: 53 test files / 256 tests, lint, typecheck, production
+  build, and `git diff --check` pass; all 32 Playwright journeys pass.
+- The pre-existing untracked `supabase/.temp/` and
+  `src/content/drills/quantitative 2.json` remain untouched.
+
 ### Casework V2 Task 16: Diagnostic Progress coaching — complete
 
 - V2 diagnostics now aggregate by stable code, evidence source, skill, first
@@ -184,9 +200,9 @@ npm run build
   journeys pass. Browser coverage includes URL selection and refresh, answer
   secrecy, keyboard semantics, automated accessibility, and 320px reflow.
 - The completed-case replay/retry entry-point issue reported at the owner gate
-  remains deferred; Task 12 did not alter case logic, scoring, persistence, or
-  replay semantics. `supabase/.temp/` and `src/content/drills/quantitative 2.json`
-  remain untracked and untouched.
+  was deferred at this task boundary and resolved by the later post-plan
+  case-flow remediation. Task 12 itself did not alter case logic, scoring,
+  persistence, or replay semantics.
 - Next action: stop at the Task 12 commit boundary. Task 13 (PayPilot V2) has not
   started and requires a separate continuation instruction.
 
@@ -910,7 +926,6 @@ npm run build
 Assigned Tasks 12–16 are implemented, committed, and fully verified. Task 17
 remains the next plan task and was intentionally not started in this run.
 
-The owner could not complete the final manual replay because the completed-case
-screen exposed no replay or retry entry point. That product issue remains
-deferred and must not be treated as verified merely because the owner allowed
-Task 12 to proceed or because Task 12's automated checks pass.
+The completed-case replay/retry entry point and the exhausted-investigation
+NorthStar dead end are resolved and covered by unit, component, and browser
+regressions. Live deployment remains outside this local implementation run.

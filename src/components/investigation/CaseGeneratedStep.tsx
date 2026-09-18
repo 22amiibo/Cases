@@ -12,7 +12,11 @@ import {
   type LearningCycleReveal,
   type LearningCycleState,
 } from "@/core/learning-cycle";
-import type { CaseEvent, CommittedResponse } from "@/core/schema";
+import {
+  NO_FURTHER_INVESTIGATION,
+  type CaseEvent,
+  type CommittedResponse,
+} from "@/core/schema";
 import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
 import styles from "./HypothesisStep.module.css";
 
@@ -145,7 +149,11 @@ export function CaseGeneratedStep({
       : kind === "calculation"
         ? { answer: Number(answer), unit }
         : kind === "synthesis"
-          ? { evidenceIds: selectedIds, nextStepNodeId }
+          ? {
+              evidenceIds: selectedIds,
+              nextStepNodeId:
+                nextStepNodeId || NO_FURTHER_INVESTIGATION,
+            }
           : { decisionId, evidenceIds: selectedIds, riskId, nextStepId };
     setStatus("saving");
     try {
@@ -173,7 +181,9 @@ export function CaseGeneratedStep({
     : kind === "calculation"
       ? Number.isFinite(Number(answer)) && answer.trim() !== "" && Boolean(unit)
       : kind === "synthesis"
-        ? selectedIds.length > 0 && Boolean(nextStepNodeId)
+        ? selectedIds.length > 0 && (
+            orderedActions.length === 0 || Boolean(nextStepNodeId)
+          )
         : Boolean(decisionId && selectedIds.length > 0 && riskId && nextStepId);
 
   return (
@@ -184,7 +194,7 @@ export function CaseGeneratedStep({
         <div className={styles.form}>
           {kind === "opening" && <fieldset><legend>Choose the questions you would ask</legend>{orderedQuestionOptions.map((choice) => <label key={choice.id}><input type="checkbox" checked={selectedIds.includes(choice.id)} onChange={() => toggle(choice.id, 4)} />{choice.label}</label>)}</fieldset>}
           {kind === "calculation" && <><label>Calculated answer<input aria-label="Calculated answer" inputMode="decimal" value={answer} onChange={(event) => setAnswer(event.target.value)} /></label><ChoiceListbox label="Unit" value={unit} placeholder="Choose a unit" options={orderedUnits} onChange={setUnit} /></>}
-          {kind === "synthesis" && <><fieldset><legend>Evidence supporting your synthesis</legend>{facts.map((fact) => <label key={fact.id}><input type="checkbox" checked={selectedIds.includes(fact.id)} onChange={() => toggle(fact.id)} />{fact.text}</label>)}</fieldset><label>Next investigation<select value={nextStepNodeId} onChange={(event) => setNextStepNodeId(event.target.value)}><option value="">Choose a next step</option>{orderedActions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label></>}
+          {kind === "synthesis" && <><fieldset><legend>Evidence supporting your synthesis</legend>{facts.map((fact) => <label key={fact.id}><input type="checkbox" checked={selectedIds.includes(fact.id)} onChange={() => toggle(fact.id)} />{fact.text}</label>)}</fieldset>{orderedActions.length > 0 ? <label>Next investigation<select value={nextStepNodeId} onChange={(event) => setNextStepNodeId(event.target.value)}><option value="">Choose a next step</option>{orderedActions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label> : <p role="status">All authored investigations are complete. Continue when your evidence is ready.</p>}</>}
           {kind === "recommendation" && <><label>Decision<select value={decisionId} onChange={(event) => setDecisionId(event.target.value)}><option value="">Choose a decision</option>{orderedDecisions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><fieldset><legend>Supporting evidence</legend>{facts.map((fact) => <label key={fact.id}><input type="checkbox" checked={selectedIds.includes(fact.id)} onChange={() => toggle(fact.id)} />{fact.text}</label>)}</fieldset><label>Risk<select value={riskId} onChange={(event) => setRiskId(event.target.value)}><option value="">Choose a risk</option>{orderedRisks.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><label>Next step<select value={nextStepId} onChange={(event) => setNextStepId(event.target.value)}><option value="">Choose a next step</option>{orderedNextSteps.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label></>}
           <button type="button" disabled={!canComplete || status === "saving"} onClick={() => void complete()}>{status === "saving" ? "Saving" : `Save ${kind}`}</button>
           {status === "error" && <p role="alert">This step was not saved. Try again.</p>}

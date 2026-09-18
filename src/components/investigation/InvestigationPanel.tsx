@@ -28,6 +28,7 @@ import type {
 } from "@/core/learner-case";
 import {
   CaseEventSchema,
+  NO_FURTHER_INVESTIGATION,
   type CaseEvent,
   type FrameworkSubmission,
 } from "@/core/schema";
@@ -344,11 +345,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   }
 
   function submitSynthesis() {
-    if (!nextStepNodeId || synthesisEvidenceIds.length === 0) return;
+    const nextInvestigation = nextStepNodeId || (
+      availableActions.length === 0 ? NO_FURTHER_INVESTIGATION : ""
+    );
+    if (!nextInvestigation || synthesisEvidenceIds.length === 0) return;
     void record({
       type: "synthesis_submitted",
       evidenceIds: synthesisEvidenceIds,
-      nextStepNodeId,
+      nextStepNodeId: nextInvestigation,
       atMs: timestamp(),
     }).catch(() => undefined);
   }
@@ -449,11 +453,18 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
     clearCaseCycleStorage(window.sessionStorage, caseDefinition.id);
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
+    elapsedOffset.current = 0;
+    startedAt.current = null;
+    caseAttemptId.current = null;
     initialEvents.current = emptyWorkspace.events;
     setWorkspace(emptyWorkspace);
+    setSynthesisEvidenceIds([]);
+    setNextStepNodeId("");
+    setCalculationFeedback(null);
     setView(null);
     setViewStatus("loading");
     setSessionExpired(false);
+    void loadView(emptyWorkspace.events).catch(() => undefined);
   }
 
   if (sessionExpired) {
@@ -743,6 +754,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 Your complete event history is saved in this browser for replay
                 and review.
               </p>
+              <div className={styles.completionActions}>
+                <Link href={`/cases/${caseDefinition.id}/review`}>
+                  Review case replay
+                </Link>
+                <button type="button" onClick={startFreshCase}>
+                  Practice case again
+                </button>
+              </div>
             </StepCard>
           )}
         </section>
@@ -886,24 +905,34 @@ function SynthesisStep({
           </label>
         ))}
       </div>
-      <label className={styles.selectLabel}>
-        Next investigation
-        <select
-          value={nextStepNodeId}
-          onChange={(event) => onNextStepChange(event.target.value)}
-        >
-          <option value="">Choose an investigation</option>
-          {actions.map((action) => (
-            <option value={action.id} key={action.id}>
-              {action.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {actions.length > 0 ? (
+        <label className={styles.selectLabel}>
+          Next investigation
+          <select
+            value={nextStepNodeId}
+            onChange={(event) => onNextStepChange(event.target.value)}
+          >
+            <option value="">Choose an investigation</option>
+            {actions.map((action) => (
+              <option value={action.id} key={action.id}>
+                {action.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p role="status">
+          All authored investigations are complete. Continue when your evidence
+          is ready.
+        </p>
+      )}
       <button
         type="button"
         className={styles.primaryButton}
-        disabled={evidenceIds.length === 0 || !nextStepNodeId}
+        disabled={
+          evidenceIds.length === 0 ||
+          (actions.length > 0 && !nextStepNodeId)
+        }
         onClick={onSubmit}
       >
         Move to recommendation

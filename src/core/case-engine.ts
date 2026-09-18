@@ -1,5 +1,10 @@
 import concepts from "@/content/concepts.json";
-import type { CaseDefinition, CaseEvent, DiagnosticOutcome } from "./schema";
+import {
+  NO_FURTHER_INVESTIGATION,
+  type CaseDefinition,
+  type CaseEvent,
+  type DiagnosticOutcome,
+} from "./schema";
 import { withinTolerance } from "./validation";
 import {
   flattenFrameworkConceptIds,
@@ -390,7 +395,12 @@ export function isCaseEventAllowed(
             ))) &&
         new Set(event.evidenceIds).size === event.evidenceIds.length &&
         event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
-        getAvailableActions(session).some(({ id }) => id === event.nextStepNodeId)
+        (getAvailableActions(session).some(
+          ({ id }) => id === event.nextStepNodeId,
+        ) || (
+          event.nextStepNodeId === NO_FURTHER_INVESTIGATION &&
+          caseDefinition.investigationNodes.every(({ id }) => visited.has(id))
+        ))
       );
     case "recommendation_submitted":
       return (

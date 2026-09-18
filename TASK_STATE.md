@@ -78,9 +78,11 @@ calculation can be retried immediately without refresh. Production migrations
 - Final wrong-unit release fix: the regression failed with the action stuck as
   disabled “Saving,” then passed after the success-state reset. Focused checks
   passed 9 files / 52 tests and the complete AlpineFit browser journey. The
-  full local gate passed 57 files / 271 tests, all 34 Playwright journeys,
+  full local gate passed 57 files / 272 tests, all 34 Playwright journeys,
   lint, typecheck, production build, and `git diff --check`.
-- Production deployment `a4c3f97` exposed the V2 API shape. The live AlpineFit
+- A directly related replay regression now proves repeated calculation attempts
+  render without duplicate React keys.
+- The production release exposed the V2 API shape. The live AlpineFit
   journey then passed wrong-unit grading, visible corrective feedback,
   immediately enabled retry, and successful correction without refresh.
 

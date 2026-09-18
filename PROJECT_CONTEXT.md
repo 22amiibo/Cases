@@ -84,9 +84,12 @@ npm run build
   immediate retry availability, and successful same-session correction. The
   existing AlpineFit Playwright journey now covers the same integrated path
   alongside refresh recovery, response revision, and answer secrecy.
-- Final local verification: 57 test files / 271 tests, all 34 Playwright
+- The retry journey also exposed duplicate React keys for repeated calculation
+  attempts in replay. A focused red-green regression now keeps every retry
+  entry independently keyed and rendered.
+- Final local verification: 57 test files / 272 tests, all 34 Playwright
   journeys, lint, typecheck, production build, and `git diff --check` pass.
-- Production commit `a4c3f97` is live at `https://cases-pi-five.vercel.app`.
+- The final production release is live at `https://cases-pi-five.vercel.app`.
   The production AlpineFit journey graded the wrong unit incorrect, displayed
   corrective feedback, enabled retry immediately, and accepted the corrected
   unit without refresh. Its precommit session responses contained neither the

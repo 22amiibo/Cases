@@ -142,8 +142,8 @@ export function CaseReplay({ review }: CaseReplayProps) {
         </section>
       )}
 
-      {review.generatedResponses.map((step) => (
-        <section className={styles.frameworkReview} key={`${step.kind}-${step.label}`}>
+      {review.generatedResponses.map((step, index) => (
+        <section className={styles.frameworkReview} key={`${step.kind}-${step.label}-${index}`}>
           <span>{step.kind.replaceAll("_", " ")}</span>
           <h2>{step.label}</h2>
           <ol>

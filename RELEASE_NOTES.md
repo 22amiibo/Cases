@@ -20,6 +20,7 @@ wrong-unit feedback → immediate retry → successful completion smoke passed.
   retry-safe persistence, and answer-secrecy release gates.
 - Immediate same-session quantitative retry after corrective wrong-unit
   feedback; no page refresh is required.
+- Repeated quantitative attempts retain distinct entries in case replay.
 
 ## Data safety and rollback
 
@@ -52,8 +53,8 @@ are intentionally not invented.
 | Live migration apply | Complete, controller-confirmed: production migrations `002` and `003` were applied, and the remote migration list aligns from `001` through `003`. |
 | Transaction-scoped live RLS smoke | Complete, controller-confirmed: the owner could read the owned attempt and ordered events, cross-user reads returned no rows, and the smoke transaction was rolled back. No smoke identifiers are retained here. |
 | Credential hygiene | Complete, controller-confirmed: the temporary credential file used by the release controller was removed. |
-| Final local release gate | Complete: the wrong-unit regression failed before the fix and passed afterward; 57 test files / 271 tests, all 34 Playwright journeys, lint, typecheck, production build, and diff validation passed. |
-| Production application deployment | Complete: commit `a4c3f97` reached `https://cases-pi-five.vercel.app` and exposed the V2 session API shape. |
+| Final local release gate | Complete: the wrong-unit regression failed before the fix and passed afterward; 57 test files / 272 tests, all 34 Playwright journeys, lint, typecheck, production build, and diff validation passed. |
+| Production application deployment | Complete: the final release build reached `https://cases-pi-five.vercel.app` and exposed the V2 session API shape. |
 | Live wrong-unit retry smoke | Complete: production graded the wrong unit incorrect, displayed corrective feedback, enabled retry immediately, and accepted the corrected unit without refresh. |
 | Live signed-in save and exact-version replay | Pending approved release smoke. Record the saved attempt ID, content version, and replay result without learner content. |
 | Production answer-secrecy inspection | Complete for the AlpineFit release journey: precommit session responses contained neither the numeric answer nor recommendation decision. |

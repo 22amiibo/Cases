@@ -194,6 +194,38 @@ describe("ReviewSession framework recovery", () => {
 });
 
 describe("CaseReplay investigation groups", () => {
+  it("renders repeated calculation attempts without duplicate review keys", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const calculationStep: LearnerCaseReview["generatedResponses"][number] = {
+      kind: "calculation",
+      label: "Calculate the annual expense",
+      responses: [{
+        responseId: "calculation-response",
+        interactionId: "calculation-cycle",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "calculation",
+        text: "Six clubs times hours times premium.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [],
+      diagnostics: [],
+      details: ["Answer: 756000 %"],
+    };
+
+    render(<CaseReplay review={{
+      ...review,
+      generatedResponses: [
+        calculationStep,
+        { ...calculationStep, details: ["Answer: 756000 $"] },
+      ],
+    }} />);
+
+    expect(screen.getByText("Answer: 756000 %")).toBeVisible();
+    expect(screen.getByText("Answer: 756000 $")).toBeVisible();
+    expect(consoleError.mock.calls.flat().join(" ")).not.toContain("same key");
+  });
+
   it("groups AlpineFit nodes in authored order while preserving status and prerequisite text", () => {
     render(
       <CaseReplay

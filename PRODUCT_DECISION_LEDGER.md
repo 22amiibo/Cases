@@ -220,6 +220,18 @@ authored V2 choice. The fallback is now version-gated to V1 and a browser
 regression confirms it stays hidden while AlpineFit's generated synthesis is
 not ready. This correction does not open Task 12; the re-playtest gate remains.
 
+The owner then requested clearer information architecture for AlpineFit's
+investigation choices and replay graph. AlpineFit V2 now authors three
+display-only categories: Revenue, Operating Costs, and Labor & Staffing. A
+shared grouped-list renderer uses those labels in the live investigation and
+replay, preserves authored order, derives visual indentation from the existing
+prerequisite graph, and retains useful “After X” text. Category metadata is
+optional and is not read by the case engine or scoring. V1 and other cases do
+not receive invented categories. Automated invariants confirm that all
+prerequisites, scoring inputs, critical/root-cause flags, values, evidence, and
+replay events are unchanged. This remains a Stage-One replay correction and
+does not authorize Task 12.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

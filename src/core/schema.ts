@@ -249,6 +249,7 @@ export const InvestigationNodeSchema = z.object({
   id: IdentifierSchema,
   conceptId: IdentifierSchema,
   label: z.string().min(1),
+  displayCategory: z.string().min(1).optional(),
   interviewerResponse: z.string().min(1),
   factIds: z.array(IdentifierSchema).min(1),
   exhibitIds: z.array(IdentifierSchema).default([]),

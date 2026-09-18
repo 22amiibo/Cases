@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
 import { CaseEventSchema } from "@/core/schema";
+import { InvestigationGroups } from "@/components/investigation/InvestigationGroups";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import styles from "./review.module.css";
 
@@ -25,9 +26,12 @@ export function CaseReplay({ review }: CaseReplayProps) {
           Each branch is shown from the authoritative case graph after your
           {review.events.length} recorded investigation moves were scored.
         </p>
-        <ol className={styles.graph}>
-          {review.nodes.map((node) => (
-            <li className={styles[node.state]} key={node.id}>
+        <InvestigationGroups
+          items={review.nodes}
+          listClassName={styles.graph}
+          getItemClassName={(node) => styles[node.state]}
+          renderItem={(node) => (
+            <>
               <span>{stateLabel(node.state)}</span>
               <strong>{node.label}</strong>
               {node.prerequisiteNodeIds.length > 0 && (
@@ -37,13 +41,13 @@ export function CaseReplay({ review }: CaseReplayProps) {
                       (id) =>
                         review.nodes.find((candidate) => candidate.id === id)
                           ?.label ?? id,
-                    )
+                  )
                     .join(" → ")}
                 </small>
               )}
-            </li>
-          ))}
-        </ol>
+            </>
+          )}
+        />
       </section>
 
       <div className={styles.analysis}>

@@ -50,6 +50,8 @@ export type LearnerReplayNode = {
   id: string;
   label: string;
   prerequisiteNodeIds: string[];
+  displayCategory?: string;
+  displayDepth: number;
   state: "visited" | "unvisited" | "critical-found" | "critical-missed";
 };
 
@@ -121,7 +123,14 @@ export type LearnerCaseDefinition = Pick<
 
 export type LearnerSessionView = {
   currentStage: CaseStage;
-  availableActions: Array<{ id: string; conceptId: string; label: string }>;
+  availableActions: Array<{
+    id: string;
+    conceptId: string;
+    label: string;
+    displayCategory?: string;
+    displayDepth?: number;
+    prerequisiteLabels?: string[];
+  }>;
   facts: RevealedFact[];
   exhibits: LearnerExhibitDefinition[];
   interpretedExhibitIds: string[];
@@ -149,6 +158,45 @@ export type StoredCaseWorkspace = {
   clarificationComplete: boolean;
   clarificationDraftIds: string[];
 };
+
+export function projectInvestigationDisplay(
+  definition: CaseDefinition,
+  node: CaseDefinition["investigationNodes"][number],
+) {
+  const nodesById = new Map(
+    definition.investigationNodes.map((candidate) => [candidate.id, candidate]),
+  );
+
+  function depthWithinCategory(
+    current: CaseDefinition["investigationNodes"][number],
+    visited: Set<string>,
+  ): number {
+    if (!current.displayCategory || visited.has(current.id)) return 0;
+    const nextVisited = new Set(visited).add(current.id);
+    const sameCategoryParents = current.prerequisiteNodeIds
+      .map((id) => nodesById.get(id))
+      .filter(
+        (parent): parent is CaseDefinition["investigationNodes"][number] =>
+          parent?.displayCategory === current.displayCategory,
+      );
+    if (sameCategoryParents.length === 0) return 0;
+    return 1 + Math.max(
+      ...sameCategoryParents.map((parent) =>
+        depthWithinCategory(parent, nextVisited),
+      ),
+    );
+  }
+
+  return {
+    ...(node.displayCategory
+      ? { displayCategory: node.displayCategory }
+      : {}),
+    displayDepth: depthWithinCategory(node, new Set()),
+    prerequisiteLabels: node.prerequisiteNodeIds.map(
+      (id) => nodesById.get(id)?.label ?? id,
+    ),
+  };
+}
 
 function projectGeneratedCaseResponses(
   definition: CaseDefinition,
@@ -347,6 +395,7 @@ export function toLearnerCaseReview(
       id: node.id,
       label: node.label,
       prerequisiteNodeIds: node.prerequisiteNodeIds,
+      ...projectInvestigationDisplay(definition, node),
       state: visitedNodeIds.has(node.id)
         ? node.critical
           ? "critical-found"

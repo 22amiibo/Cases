@@ -20,6 +20,36 @@ describe("AlpineFit V2", () => {
     expect(definition?.recommendation.responseCycle?.scaffoldingLevel).toBe("beginner");
   });
 
+  it("adds display-only investigation categories without changing authored graph logic", () => {
+    const legacy = getCaseDefinition("alpinefit-profitability", 1)!;
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+
+    expect(
+      definition.investigationNodes.map(({ id, displayCategory }) => [
+        id,
+        displayCategory,
+      ]),
+    ).toEqual([
+      ["revenue", "Revenue"],
+      ["price", "Revenue"],
+      ["volume", "Revenue"],
+      ["costs", "Operating Costs"],
+      ["fixed_cost", "Operating Costs"],
+      ["variable_cost", "Operating Costs"],
+      ["labor", "Labor & Staffing"],
+      ["materials", "Operating Costs"],
+      ["overtime", "Labor & Staffing"],
+      ["vacancies", "Labor & Staffing"],
+      ["turnover", "Labor & Staffing"],
+    ]);
+    expect(
+      definition.investigationNodes.map(({ displayCategory, ...node }) => {
+        void displayCategory;
+        return node;
+      }),
+    ).toEqual(legacy.investigationNodes);
+  });
+
   it("does not reveal opening choices before the generated response is committed", () => {
     const definition = getCaseDefinition("alpinefit-profitability", 2);
     expect(definition).toBeDefined();

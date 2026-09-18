@@ -58,7 +58,10 @@ export async function completeAlpineFitV2(
   await completeGeneratedResponse(page, "Revenue economics may be compressing margin; test price and volume against cost growth.");
   await page.getByRole("region", { name: "initial hypothesis" }).getByRole("combobox").selectOption("revenue-economics");
   await page.getByRole("button", { name: "Start investigation" }).click();
-  await expect(page.getByRole("button", { name: "Break down operating costs" })).toBeVisible();
+  const revenueGroup = page.getByRole("region", { name: "Revenue" });
+  const operatingCostsGroup = page.getByRole("region", { name: "Operating Costs" });
+  await expect(revenueGroup.getByRole("button", { name: "Understand revenue performance" })).toBeVisible();
+  await expect(operatingCostsGroup.getByRole("button", { name: "Break down operating costs" })).toBeVisible();
   if (refresh) await page.reload();
 
   await page.getByRole("button", { name: "Break down operating costs" }).click();
@@ -75,7 +78,8 @@ export async function completeAlpineFitV2(
   if (refresh) await page.reload();
 
   await page.getByRole("button", { name: "Inspect variable costs" }).click();
-  await expect(page.getByRole("button", { name: "Inspect club labor" })).toBeVisible();
+  const laborGroup = page.getByRole("region", { name: "Labor & Staffing" });
+  await expect(laborGroup.getByRole("button", { name: "Inspect club labor" })).toContainText("After Inspect variable costs");
   await expect(page.getByLabel("Next investigation")).toHaveCount(0);
   await page.getByRole("button", { name: "Inspect club labor" }).click();
   await page.getByRole("button", { name: "Inspect overtime usage" }).click();
@@ -134,4 +138,7 @@ export async function completeAlpineFitV2(
     await page.getByRole("button", { name: "Retry saving completed case" }).click();
   }
   await expect(page.getByRole("heading", { name: "Your case review" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Revenue" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Operating Costs" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Labor & Staffing" })).toBeVisible();
 }

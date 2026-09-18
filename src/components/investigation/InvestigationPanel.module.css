@@ -244,18 +244,38 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 10px;
+  list-style: none;
+}
+
+.actionList li,
+.actionList button {
+  min-width: 0;
 }
 
 .actionList button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
   min-height: 54px;
   color: #294c3b;
   background: transparent;
   text-align: left;
 }
 
+.actionList button small {
+  color: #647168;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .actionList button:hover {
   color: #fffdf6;
   background: #294c3b;
+}
+
+.actionList button:hover small {
+  color: inherit;
 }
 
 .interviewer {

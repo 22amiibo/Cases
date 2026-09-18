@@ -9,6 +9,7 @@ import {
 import {
   toLearnerCaseReview,
   projectHypothesisPractice,
+  projectInvestigationDisplay,
 } from "@/core/learner-case";
 import type {
   LearnerExhibitDefinition,
@@ -75,7 +76,17 @@ export async function POST(
   const view: LearnerSessionView = {
     currentStage: session.currentStage,
     availableActions: getAvailableActions(session).map(
-      ({ id, conceptId, label }) => ({ id, conceptId, label }),
+      ({ id, conceptId, label }) => {
+        const node = caseDefinition.investigationNodes.find(
+          (candidate) => candidate.id === id,
+        )!;
+        return {
+          id,
+          conceptId,
+          label,
+          ...projectInvestigationDisplay(caseDefinition, node),
+        };
+      },
     ),
     facts: getRevealedFacts(session),
     exhibits: caseDefinition.exhibits

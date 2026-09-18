@@ -99,11 +99,20 @@ npm run build
   empty “Next investigation” menu. The fallback is now restricted to V1;
   AlpineFit remains in investigation until its V2 synthesis prerequisites are
   complete. The focused AlpineFit browser regression passes.
-- Verification: 47 unit/component files and 205 tests pass; typecheck, lint,
+- A subsequent owner replay request replaced AlpineFit's flat investigation and
+  replay lists with reusable business-category sections for Revenue, Operating
+  Costs, and Labor & Staffing. Optional display metadata controls only section
+  labels and prerequisite-derived indentation. Authored node order, graph
+  fields, availability, evidence, scoring, critical-node states, and replay
+  events remain unchanged. V1 and cases without authored categories retain an
+  ungrouped list.
+- Verification: 48 unit/component files and 209 tests pass; typecheck, lint,
   production build, and all 24 Playwright journeys pass with no skips. Browser
   coverage includes stable order after refresh, educational wrong-answer
-  feedback, walkthrough focus/reopening, scratchpad behavior, axe, and 320px
-  reflow.
+  feedback, grouped AlpineFit investigation and replay sections, prerequisite
+  labels, walkthrough focus/reopening, scratchpad behavior, axe, and 320px
+  reflow. A graph-invariant regression confirms that V2 categories add no case
+  logic changes.
 - `supabase/.temp/` remains untracked and untouched.
 - Mandatory state: stop for owner re-playtest. Task 12 has not started. Only an
   explicit post-re-playtest `proceed` decision may open Task 12; `revise again`

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
-import { ReviewSession } from "./CaseReplay";
+import { CaseReplay, ReviewSession } from "./CaseReplay";
 
 const review: LearnerCaseReview = {
   framework: {
@@ -85,5 +85,79 @@ describe("ReviewSession framework recovery", () => {
       events: [frameworkEvent],
       contentVersion: 2,
     });
+  });
+});
+
+describe("CaseReplay investigation groups", () => {
+  it("groups AlpineFit nodes in authored order while preserving status and prerequisite text", () => {
+    render(
+      <CaseReplay
+        review={{
+          ...review,
+          nodes: [
+            {
+              id: "revenue",
+              label: "Understand revenue performance",
+              prerequisiteNodeIds: [],
+              state: "visited",
+              displayCategory: "Revenue",
+              displayDepth: 0,
+            },
+            {
+              id: "price",
+              label: "Check membership pricing",
+              prerequisiteNodeIds: ["revenue"],
+              state: "unvisited",
+              displayCategory: "Revenue",
+              displayDepth: 1,
+            },
+            {
+              id: "costs",
+              label: "Break down operating costs",
+              prerequisiteNodeIds: [],
+              state: "critical-found",
+              displayCategory: "Operating Costs",
+              displayDepth: 0,
+            },
+            {
+              id: "variable_cost",
+              label: "Inspect variable costs",
+              prerequisiteNodeIds: ["costs"],
+              state: "critical-found",
+              displayCategory: "Operating Costs",
+              displayDepth: 1,
+            },
+            {
+              id: "labor",
+              label: "Inspect club labor",
+              prerequisiteNodeIds: ["variable_cost"],
+              state: "critical-missed",
+              displayCategory: "Labor & Staffing",
+              displayDepth: 0,
+            },
+          ],
+        }}
+      />,
+    );
+
+    const revenue = screen.getByRole("region", { name: "Revenue" });
+    expect(
+      within(revenue).getAllByRole("listitem").map((item) => item.textContent),
+    ).toEqual([
+      "visitedUnderstand revenue performance",
+      "unvisitedCheck membership pricingAfter Understand revenue performance",
+    ]);
+    expect(
+      within(screen.getByRole("region", { name: "Operating Costs" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "critical foundBreak down operating costs",
+      "critical foundInspect variable costsAfter Break down operating costs",
+    ]);
+    expect(
+      within(screen.getByRole("region", { name: "Labor & Staffing" }))
+        .getByText("critical missed"),
+    ).toBeVisible();
   });
 });

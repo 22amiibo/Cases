@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import concepts from "@/content/concepts.json";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { CalculationTask } from "@/components/math/CalculationTask";
-import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { QuantitativeFeedbackPanel } from "@/components/practice/QuantitativeFeedbackPanel";
 import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
@@ -41,6 +40,7 @@ import {
 import { Scratchpad } from "./Scratchpad";
 import { CaseGeneratedStep, clearCaseCycleStorage } from "./CaseGeneratedStep";
 import { CaseWalkthrough } from "./CaseWalkthrough";
+import { InvestigationGroups } from "./InvestigationGroups";
 import styles from "./InvestigationPanel.module.css";
 
 type InvestigationPanelProps = {
@@ -268,11 +268,6 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
-  const orderedAvailableActions = useStableChoiceOrder(
-    availableActions,
-    `casework:choice-seed:case:${caseDefinition.id}:${caseDefinition.version}`,
-    "investigation-actions",
-  );
   const selectedClarificationIds = useMemo(
     () => new Set(clarificationDraftIds),
     [clarificationDraftIds],
@@ -611,11 +606,12 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   Select one of the available branches to reveal the next piece
                   of authored evidence.
                 </p>
-                <div className={styles.actionList}>
-                  {orderedAvailableActions.map((action) => (
+                <InvestigationGroups
+                  items={availableActions}
+                  listClassName={styles.actionList}
+                  renderItem={(action) => (
                     <button
                       type="button"
-                      key={action.id}
                       onClick={() => {
                         void record({
                           type: "node_investigated",
@@ -624,10 +620,15 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                         }).catch(() => undefined);
                       }}
                     >
-                      {action.label}
+                      <span>{action.label}</span>
+                      {(action.prerequisiteLabels?.length ?? 0) > 0 && (
+                        <small>
+                          After {action.prerequisiteLabels?.join(" → ")}
+                        </small>
+                      )}
                     </button>
-                  ))}
-                </div>
+                  )}
+                />
               </StepCard>
 
               {interviewerResponse && (

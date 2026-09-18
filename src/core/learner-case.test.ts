@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
+import { getCaseDefinition } from "@/content/cases";
 import { CaseDefinitionSchema } from "./schema";
 import { projectHypothesisPractice, toLearnerCaseDefinition, toLearnerCaseReview } from "./learner-case";
 import type { CaseEvent } from "./schema";
@@ -60,6 +61,31 @@ describe("toLearnerCaseDefinition", () => {
 });
 
 describe("toLearnerCaseReview", () => {
+  it("projects AlpineFit display groups and prerequisite-derived indentation in authored order", () => {
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+    const review = toLearnerCaseReview(definition, []);
+
+    expect(
+      review.nodes.map(({ id, displayCategory, displayDepth }) => ({
+        id,
+        displayCategory,
+        displayDepth,
+      })),
+    ).toEqual([
+      { id: "revenue", displayCategory: "Revenue", displayDepth: 0 },
+      { id: "price", displayCategory: "Revenue", displayDepth: 1 },
+      { id: "volume", displayCategory: "Revenue", displayDepth: 1 },
+      { id: "costs", displayCategory: "Operating Costs", displayDepth: 0 },
+      { id: "fixed_cost", displayCategory: "Operating Costs", displayDepth: 1 },
+      { id: "variable_cost", displayCategory: "Operating Costs", displayDepth: 1 },
+      { id: "labor", displayCategory: "Labor & Staffing", displayDepth: 0 },
+      { id: "materials", displayCategory: "Operating Costs", displayDepth: 2 },
+      { id: "overtime", displayCategory: "Labor & Staffing", displayDepth: 1 },
+      { id: "vacancies", displayCategory: "Labor & Staffing", displayDepth: 1 },
+      { id: "turnover", displayCategory: "Labor & Staffing", displayDepth: 2 },
+    ]);
+  });
+
   it("replays V2 hierarchy, sibling order, priority, and rationale exactly", () => {
     const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
     const branches = [

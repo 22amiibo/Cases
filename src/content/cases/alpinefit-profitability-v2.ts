@@ -129,10 +129,28 @@ const exhibitCycles = {
   ),
 } as const;
 
+const investigationCategories: Record<string, string> = {
+  revenue: "Revenue",
+  price: "Revenue",
+  volume: "Revenue",
+  costs: "Operating Costs",
+  fixed_cost: "Operating Costs",
+  variable_cost: "Operating Costs",
+  materials: "Operating Costs",
+  labor: "Labor & Staffing",
+  overtime: "Labor & Staffing",
+  vacancies: "Labor & Staffing",
+  turnover: "Labor & Staffing",
+};
+
 const alpineFitV2Content = {
   ...v1,
   version: 2,
   completeLearningLoop: true,
+  investigationNodes: v1.investigationNodes.map((node) => ({
+    ...node,
+    displayCategory: investigationCategories[node.id],
+  })),
   opening: {
     responseCycle: opening,
     recommendedQuestionCount: 3,

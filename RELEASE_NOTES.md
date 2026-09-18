@@ -11,7 +11,8 @@ deployment have not been performed and require separate owner approval.
 
 - Shared primary navigation with the exact destinations Learn, Practice,
   Cases, and Progress; current-section state, keyboard use, and responsive
-  behavior are covered at 320px, 768px, and 1440px.
+  behavior are covered at 320px, 768px, and 1440px. One shared axe pass covers
+  all four primary destinations, including the Cases inventory.
 - Four flagship Skill Labs with three reviewed repetitions each: Clarifying,
   Exhibit Analysis, Brainstorming, and Hypothesis.
 - AlpineFit Practice and Interview modes with server-enforced policy and no
@@ -33,14 +34,23 @@ Published metadata remains available for later expansion.
 - `npm run lint`: passed.
 - `npm run typecheck`: passed.
 - `npm test`: 90 files / 480 tests passed.
-- `npm run test:e2e`: all 59 Playwright journeys passed.
+- `npm run test:e2e`: all 60 Playwright journeys passed at their authored
+  viewports. The representative V3 route matrix separately passed at 320px,
+  768px, and 1440px.
 - `npm run build`: passed; 22 static pages generated and all V3 routes included.
 - `git diff --check`: passed.
 - Pre-commit network inspection checks AlpineFit activity and case responses
   for selected hidden authored feedback, diagnostic codes, and option outcome
   mappings.
-- Built-client inspection checked 23 browser chunks; selected server-only
-  authored feedback, criterion, and completed-case answer strings were absent.
+- After `npm run build`, `npm run check:answer-secrecy` recursively scans
+  `.next/static/chunks/**/*.js` for these three exact server-only authored
+  markers:
+  - Activity feedback: `You connected the labor outlier to margin pressure and a focused next cut.`
+  - Evaluation criterion: `Connects labor growth to margin pressure`
+  - Completed-case answer: `Stabilize staffing in the six high-overtime clubs through faster hiring and targeted retention while tightening overtime controls.`
+  The command fails if a marker is missing from its authored source or appears
+  in a browser chunk. The final production build contained 23 browser chunks;
+  all three markers were absent.
 - Static migration tests verify additive 001→004 ordering, V1/V2/V3 row
   compatibility branches, all V3 ownership-policy read/write clauses, and the
   caller identity guard in each V3 transactional save function.
@@ -48,8 +58,9 @@ Published metadata remains available for later expansion.
 The full browser gate exposed one stale recovery assertion that still read the
 legacy `caseAttempts` array after AlpineFit became an explicit V3-mode attempt.
 The regression now verifies one retry-safe `v3CaseAttempts` Practice record.
-Response-body secrecy listeners also wait for completed requests or read a
-document before navigation so the checks cannot race navigation.
+Response-body secrecy checks read intercepted API bodies before delivering
+them to the page, or read a document before navigation, so refreshes cannot
+discard a body before inspection.
 
 ### Remaining production gate
 

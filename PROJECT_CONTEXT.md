@@ -57,7 +57,8 @@ as the approved specification unless that report is later supplied.
 
 ## Workflow and Quality Gates
 
-- Work on the isolated `feature/case-practice-mvp` branch, not `main`.
+- Work in the active branch and worktree listed under Source of Truth, not
+  `main`.
 - Follow red-green-refactor for product behavior.
 - Use the commit messages prescribed by the implementation plan after each task.
 - Before release, run:
@@ -89,21 +90,25 @@ npm run build
   completion, exact course-context evidence, guest continuation, signed-in
   cross-device continuation, and capstone debrief.
 - Task 12 adds shared Learn, Practice, Cases, and Progress navigation plus
-  focused keyboard, axe, 320/768/1440 reflow, network answer-secrecy, migration
-  ordering, and RLS contract coverage. `/drills` compatibility is preserved.
+  focused keyboard coverage, axe scans of each primary destination, a
+  representative V3 route matrix at 320/768/1440, network answer-secrecy,
+  migration ordering, and RLS contract coverage. `/drills` compatibility is
+  preserved.
 - No inventory filters were added: four V3.0 lab cards and six mostly unique
   case metadata combinations do not provide a useful filtering set yet.
 - Targeted pre-commit traffic checks keep selected authored feedback,
-  diagnostics, and option outcome mappings out of learner responses. Targeted
-  production-bundle inspection checked 23 browser chunks and found no selected
-  server-only authored feedback, criterion, or completed-case answer strings.
+  diagnostics, and option outcome mappings out of learner responses. The
+  reproducible `npm run check:answer-secrecy` check scans built browser chunks
+  for three exact server-only authored markers; `RELEASE_NOTES.md` records the
+  marker classes and strings.
 - This worktree has no PostgreSQL, `psql`, Supabase CLI, or Docker runtime.
   Static additive-migration and RLS policy checks pass, but a real fresh apply,
   representative 001→004 upgrade, and transaction-scoped RLS execution remain
   required in an isolated database before production approval.
-- Final local gate: lint and typecheck passed; 90 unit/component files / 480
-  tests passed; all 59 Playwright journeys passed; production build and
-  `git diff --check` passed. Exact evidence is recorded in `RELEASE_NOTES.md`.
+- The final local gate passed lint, typecheck, 90 unit/component files / 480
+  tests, all 60 Playwright journeys at their authored viewports, production
+  build, and the repeatable answer-secrecy scan across 23 browser chunks.
+  Review-round evidence is recorded in `RELEASE_NOTES.md`.
 - Rollback disables V3 active content and the V3 navigation without deleting
   immutable V3 attempts.
 - Next action: stop for separate owner authorization. Do not apply migration

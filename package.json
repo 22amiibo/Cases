@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:answer-secrecy": "node scripts/check-client-answer-secrecy.mjs",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",

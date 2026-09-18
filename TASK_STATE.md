@@ -18,6 +18,11 @@ works by keyboard, and reflows without horizontal overflow at 320px, 768px,
 and 1440px. `/drills` and its deep links remain available as the Legacy V1/V2
 library.
 
+The full browser suite runs each journey at its authored viewport. A separate
+representative V3 route matrix checks horizontal overflow at 320px, 768px, and
+1440px, while one shared axe pass covers each primary destination, including
+the Cases inventory.
+
 No inventory filters were added. V3.0 has four lab groupings with three
 activities each and six cases whose case-type and industry combinations are
 mostly unique; filtering that inventory would add controls without helping a
@@ -54,9 +59,9 @@ available for a later release with a larger published inventory.
 - Targeted network checks confirm pre-commit V3 activity/case responses do not
   expose selected authored evaluation strings, diagnostic codes, or option
   outcome mappings.
-- Targeted built-client inspection confirms selected server-only authored
-  feedback, criterion, and completed-case answer strings are absent from 23
-  browser chunks.
+- `npm run check:answer-secrecy` reproducibly scans every built browser chunk
+  for three exact server-only authored feedback, criterion, and completed-case
+  answer markers and fails on a leak.
 - Migration contract tests verify the additive 001→004 order, V1/V2/V3 row
   branches, V3 table ownership policies, and caller identity checks in both V3
   transactional save functions.

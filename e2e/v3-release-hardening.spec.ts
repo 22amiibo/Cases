@@ -31,12 +31,17 @@ for (const viewport of [
     for (const [label, href] of primaryDestinations) {
       await page.goto(href);
       await expect(navigation.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     }
-
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 }
+
+test("primary destinations have no automated accessibility violations", async ({ page }) => {
+  for (const [, href] of primaryDestinations) {
+    await page.goto(href);
+    expect((await new AxeBuilder({ page }).analyze()).violations, href).toEqual([]);
+  }
+});
 
 test("pre-commit V3 responses keep authored evaluation material server-side", async ({ page }) => {
   const activityResponse = await page.goto("/practice/activities/alpinefit-exhibit-v3?version=1");

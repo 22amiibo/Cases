@@ -1049,8 +1049,8 @@ enrollment/continue behavior, and derived completion.
   scoped RLS tests. No local PostgreSQL, `psql`, Supabase CLI, or Docker runtime
   is available; additive/RLS SQL contracts are covered locally and executable
   database verification remains a pre-deployment gate.
-- [x] Run V1/V2 compatibility fixtures and all V3.0 browser journeys at 320px,
-  768px, and 1440px.
+- [x] Run the full V1/V2/V3 browser suite at each journey's authored viewport,
+  plus a representative V3 route overflow matrix at 320px, 768px, and 1440px.
 - [x] Run `npm run lint`, `npm run typecheck`, `npm test`,
   `npm run test:e2e`, `npm run build`, and `git diff --check` on a clean checkout.
 - [x] Record exact evidence. Commit `chore: harden casework v3 profitability loop`.

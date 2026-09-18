@@ -56,13 +56,11 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 320, height: 900 });
   const revealBodies: Array<{ url: string; body: string }> = [];
-  const responseReads: Promise<void>[] = [];
-  page.on("requestfinished", (request) => {
-    if (/\/api\/cases\/alpinefit-profitability\/(?:session|cycle\/(?:commit|complete)|hypotheses\/(?:commit|complete)|exhibits\/[^/]+\/commit)/.test(request.url())) {
-      responseReads.push(request.response().then(async (response) => {
-        if (response) revealBodies.push({ url: response.url(), body: await response.text() });
-      }));
-    }
+  await page.route(/\/api\/cases\/alpinefit-profitability\/(?:session|cycle\/(?:commit|complete)|hypotheses\/(?:commit|complete)|exhibits\/[^/]+\/commit)/, async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    revealBodies.push({ url: response.url(), body });
+    await route.fulfill({ response, body });
   });
 
   await page.goto("/cases/alpinefit-profitability?mode=interview");
@@ -75,7 +73,6 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
     calculationRetry: true,
     saveRecovery: true,
   });
-  await Promise.all(responseReads);
 
   const precompletionBodies = revealBodies
     .filter(({ body }) => !body.includes('"review":{'))

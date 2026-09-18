@@ -320,6 +320,22 @@ describe("chronological debrief", () => {
     expect(screen.getByText(/"answer": 17/)).toBeVisible();
   });
 
+  it("renders an exhibit once at its reveal and links it from later interpretation evidence", async () => {
+    const { buildCaseReplayTimeline } = await import("@/core/replay-timeline");
+    const { getCaseDefinition } = await import("@/content/cases");
+    const timeline = buildCaseReplayTimeline(getCaseDefinition("alpinefit-profitability", 2)!, { events: [
+      { type: "node_investigated", nodeId: "costs", atMs: 1 },
+      { type: "exhibit_insight_submitted", exhibitId: "cost-category", insightIds: ["labor-outlier"], atMs: 2 },
+    ] });
+    render(<CaseReplay review={{ ...review, timeline }} />);
+    const exhibit = screen.getByRole("table", { name: "Operating cost by category data ($m)" });
+    expect(within(exhibit).getByRole("row", { name: "Club labor 18.1 24.3" })).toBeInTheDocument();
+    const interpretation = document.getElementById("case-event-2")!;
+    expect(within(interpretation).getByRole("link", { name: /Operating cost by category/ })).toHaveAttribute("href", "#case-exhibit-cost-category");
+    expect(screen.getAllByRole("table", { name: "Operating cost by category data ($m)" })).toHaveLength(1);
+    expect(document.getElementById("case-exhibit-cost-category")).toContainElement(exhibit);
+  });
+
   it("links diagnostic claims to the real event, labels reflections, and offers a working skill lab", async () => {
     const { buildCaseReplayTimeline } = await import("@/core/replay-timeline");
     const { getCaseDefinition } = await import("@/content/cases");

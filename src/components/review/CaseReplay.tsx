@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { LearnerCaseReview, LearnerSessionView } from "@/core/learner-case";
 import { CaseEventSchema, type CaseEvent } from "@/core/schema";
 import { diagnosticDefinitions, type DiagnosticCode } from "@/core/diagnostics";
+import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import { InvestigationGroups } from "@/components/investigation/InvestigationGroups";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
@@ -105,10 +106,10 @@ export function CaseReplay({ review }: CaseReplayProps) {
             <h3>Event {entry.eventNumber}: {entry.decision}</h3>
             <p>Elapsed: {(entry.atMs / 1000).toFixed(1)} seconds</p>
             <details><summary>Evidence available before this decision ({entry.availableEvidence.length})</summary>
-              <ul>{entry.availableEvidence.map((fact) => <li key={fact.id}>{fact.text} <a href={`#case-event-${fact.eventNumber}`}>Revealed at event {fact.eventNumber}</a></li>)}</ul>
+              <ul>{entry.availableEvidence.map((fact) => <li key={fact.id}>{fact.exhibit ? <a href={`#case-exhibit-${fact.exhibit.id}`}>{fact.text}</a> : fact.text} <a href={`#case-event-${fact.eventNumber}`}>Revealed at event {fact.eventNumber}</a></li>)}</ul>
               {entry.availableEvidence.length === 0 && <p>No investigation evidence had been revealed yet.</p>}
             </details>
-            {entry.revealedEvidence.length > 0 && <div><strong>New evidence after this move</strong><ul>{entry.revealedEvidence.map((fact) => <li key={fact.id}>{fact.text}</li>)}</ul></div>}
+            {entry.revealedEvidence.length > 0 && <div><strong>New evidence after this move</strong><ul>{entry.revealedEvidence.map((fact) => <li key={fact.id}>{fact.text}{fact.exhibit && <div id={`case-exhibit-${fact.exhibit.id}`} tabIndex={-1}><ExhibitRenderer definition={fact.exhibit} revealed /></div>}</li>)}</ul></div>}
             {entry.responses.map((response) => <p key={response.responseId}>Your response · Revision {response.revision}: {response.text}</p>)}
             {entry.citedEvidenceIds.length > 0 && <p>Cited evidence: {entry.citedEvidenceIds.join(", ")}</p>}
             {entry.unavailableEvidenceIds.length > 0 && <p>Not yet available: {entry.unavailableEvidenceIds.join(", ")}</p>}

@@ -1,7 +1,9 @@
 import type { CaseDefinition, CaseEvent, CommittedResponse, DiagnosticOutcome } from "./schema";
+import type { LearnerExhibitDefinition } from "./learner-case";
+import { projectLearnerExhibit } from "./learner-exhibit";
 import { isCorrectCalculationSubmission } from "./case-engine";
 
-export type ReplayEvidence = { id: string; text: string; eventNumber: number };
+export type ReplayEvidence = { id: string; text: string; eventNumber: number; exhibit?: LearnerExhibitDefinition };
 export type CaseReplayEntry = {
   eventNumber: number;
   atMs: number;
@@ -30,10 +32,12 @@ export function buildCaseReplayTimeline(
     const citedEvidenceIds = "evidenceIds" in event ? [...event.evidenceIds] : [];
     let decision = event.type.replaceAll("_", " ");
     let revealIds: string[] = [];
+    let revealExhibitIds: string[] = [];
     if (event.type === "node_investigated") {
       const node = definition.investigationNodes.find(({ id }) => id === event.nodeId);
       decision = node?.label ?? event.nodeId;
       revealIds = node?.factIds ?? [];
+      revealExhibitIds = node?.exhibitIds ?? [];
     } else if (event.type === "calculation_submitted") {
       const calculation = definition.calculations.find(({ id }) => id === event.taskId);
       decision = `${calculation?.prompt ?? event.taskId}: ${event.answer}${"unit" in event ? ` ${event.unit}` : ""}`;
@@ -63,7 +67,7 @@ export function buildCaseReplayTimeline(
     const contraryEvidenceWithoutUpdate = availableEvidence.filter((fact) =>
       fact.eventNumber > lastHypothesisEvent && contraryIds.includes(fact.id),
     );
-    const revealedEvidence = revealIds.flatMap((id) => {
+    const revealedEvidence: ReplayEvidence[] = revealIds.flatMap((id) => {
       const fact = definition.facts.find((candidate) => candidate.id === id);
       if (!fact || evidence.has(id)) return [];
       const text = attempt.caseMode === "interview" && event.type === "calculation_submitted"
@@ -73,6 +77,15 @@ export function buildCaseReplayTimeline(
       evidence.set(id, revealed);
       return [revealed];
     });
+    for (const exhibitId of revealExhibitIds) {
+      const exhibit = definition.exhibits.find(({ id }) => id === exhibitId);
+      const id = `exhibit:${exhibitId}`;
+      if (exhibit && !evidence.has(id)) {
+        const revealed = { id, text: `${exhibit.title} (${exhibit.type.replaceAll("_", " ")})`, eventNumber, exhibit: projectLearnerExhibit(exhibit) };
+        evidence.set(id, revealed);
+        revealedEvidence.push(revealed);
+      }
+    }
     const answeredQuestionIds = event.type === "clarification_selected" ? [event.clarificationId]
       : event.type === "case_opening_submitted" ? event.questions.map(({ questionId }) => questionId) : [];
     for (const questionId of answeredQuestionIds) {

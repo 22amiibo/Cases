@@ -17,6 +17,7 @@ import type {
   LearnerSessionView,
 } from "@/core/learner-case";
 import { CaseEventSchema } from "@/core/schema";
+import { projectLearnerExhibit } from "@/core/learner-exhibit";
 import { projectLearningCyclePrompt } from "@/core/learning-cycle";
 import { CaseModeSchema } from "@/core/v3-taxonomy";
 
@@ -121,18 +122,11 @@ export async function POST(
     exhibits: caseDefinition.exhibits
       .filter((exhibit) => session.revealedExhibitIds.includes(exhibit.id))
       .map(
-        ({ id, title, type, unit, columns, rows, series, categories, interpretation }) =>
+        (exhibit) =>
           ({
-            id,
-            title,
-            type,
-            unit,
-            columns,
-            rows,
-            series,
-            categories,
-            ...(interpretation
-              ? { interpretationPrompt: projectPrompt(interpretation) }
+            ...projectLearnerExhibit(exhibit),
+            ...(exhibit.interpretation
+              ? { interpretationPrompt: projectPrompt(exhibit.interpretation) }
               : {}),
           }) satisfies LearnerExhibitDefinition,
       ),

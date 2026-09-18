@@ -19,10 +19,42 @@ describe("chronological replay", () => {
     ] });
     expect(timeline[0].availableEvidence).toEqual([]);
     expect(timeline[0].unavailableEvidenceIds).toEqual(["cost-growth"]);
-    expect(timeline[1].revealedEvidence).toEqual([{ id: "cost-growth", text: "Operating costs grew 17%, substantially faster than revenue.", eventNumber: 2 }]);
-    expect(timeline[2].availableEvidence.map(({ id }) => id)).toEqual(["cost-growth"]);
+    expect(timeline[1].revealedEvidence).toEqual([{ id: "cost-growth", text: "Operating costs grew 17%, substantially faster than revenue.", eventNumber: 2 }, expect.objectContaining({ id: "exhibit:cost-category", eventNumber: 2 })]);
+    expect(timeline[2].availableEvidence.map(({ id }) => id)).toEqual(["cost-growth", "exhibit:cost-category"]);
     expect(timeline[2].unavailableEvidenceIds).toEqual([]);
     expect(timeline[0].nextDecision).toBe(timeline[1].decision);
+  });
+
+  it.each([1, 2])("preserves version %i exhibits at their reveal without advancing later facts or exhibits", (version) => {
+    const historical = getCaseDefinition("alpinefit-profitability", version)!;
+    const timeline = buildCaseReplayTimeline(historical, { events: [
+      { type: "node_investigated", nodeId: "costs", atMs: 1 },
+      { type: "exhibit_interpretation_submitted", exhibitId: "cost-category", atMs: 1,
+        eventSchemaVersion: 2, authoredComparisonViewed: false, insightIds: [], rubricOutcomes: [], diagnostics: [],
+        responses: [{ responseId: "interpretation-1", interactionId: "cost-interpretation", revision: 1, revisionOf: null,
+          responseKind: "exhibit_interpretation", text: "Labor increased faster than occupancy.", committedAtMs: 1 }],
+      },
+      { type: "node_investigated", nodeId: "variable_cost", atMs: 2 },
+      { type: "node_investigated", nodeId: "labor", atMs: 3 },
+      { type: "node_investigated", nodeId: "overtime", atMs: 4 },
+    ] });
+    expect(timeline[0].availableEvidence).toEqual([]);
+    const exhibit = timeline[0].revealedEvidence.find(({ id }) => id === "exhibit:cost-category");
+    expect(exhibit).toMatchObject({ eventNumber: 1, exhibit: {
+      id: "cost-category", title: "Operating cost by category", type: "grouped_bar", unit: "$m",
+      columns: ["Category", "Prior year", "Current year"],
+      rows: [["Club labor", 18.1, 24.3], ["Occupancy", 15.2, 15.6], ["Amenities", 4.7, 5.1], ["Corporate", 5.3, 5.5]],
+      categories: ["Club labor", "Occupancy", "Amenities", "Corporate"],
+      series: [{ name: "Prior year", data: [18.1, 15.2, 4.7, 5.3] }, { name: "Current year", data: [24.3, 15.6, 5.1, 5.5] }],
+    } });
+    expect(timeline[1].availableEvidence.map(({ id }) => id)).toEqual(["cost-growth", "exhibit:cost-category"]);
+    expect(timeline[1].availableEvidence).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "labor-growth" })]));
+    expect(timeline[1].availableEvidence).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "exhibit:location-turnover" })]));
+    expect(timeline[4].revealedEvidence.some(({ id }) => id === "exhibit:location-turnover")).toBe(true);
+    expect(exhibit?.exhibit).not.toHaveProperty("sourceFactIds");
+    expect(exhibit?.exhibit).not.toHaveProperty("insights");
+    expect(exhibit?.exhibit).not.toHaveProperty("interpretation");
+    expect(exhibit?.exhibit).not.toHaveProperty("interpretationPrompt");
   });
 
   it("keeps exact-version clarification context available only after its answer", () => {

@@ -512,6 +512,9 @@ test("signed-in V3 Interview replay preserves mode, evidence timing, and accessi
   expect(ownedReads.every((value) => value === "eq.user-1")).toBe(true);
   await expect(page.getByRole("heading", { name: "Chronological replay" })).toBeVisible();
   await expect(page.getByRole("region", { name: "What went well" })).toBeVisible();
+  const costExhibit = page.getByRole("table", { name: "Operating cost by category data ($m)" });
+  await expect(costExhibit.getByRole("row", { name: "Club labor 18.1 24.3" })).toBeVisible();
+  await expect(costExhibit).toHaveCount(1);
   const improve = page.getByRole("region", { name: "What to improve" });
   await expect(improve).toBeVisible();
   const citation = page.getByRole("region", { name: "What went well" }).getByRole("link", { name: /^Event / }).first();

@@ -795,7 +795,7 @@ resource-reference validation.
 - [x] Add one test-only definition in the test file, not public content.
 - [x] Run `npm test -- src/core/activity.test.ts src/core/course.test.ts
   src/content/versioned-registry.test.ts`.
-- [ ] Commit `feat: define versioned v3 activity contracts`.
+- [x] Commit `feat: define versioned v3 activity contracts` (`7e7cd46`).
 
 ### Task 3: Implement the pure activity engine and learner projection
 
@@ -809,14 +809,14 @@ resource-reference validation.
 **Produces:** `createActivityState`, `applyActivityEvent`,
 `projectLearnerActivity`, and `evaluateActivityCompletion`.
 
-- [ ] Write failing tests for the legal outer flow, illegal transition
+- [x] Write failing tests for the legal outer flow, illegal transition
   rejection, event ordering, retry revision linkage, deterministic completion,
   and unknown version failure.
-- [ ] Write leakage tests that recursively inspect the pre-commit projection for
+- [x] Write leakage tests that recursively inspect the pre-commit projection for
   authored answers, strengths, classifications, and diagnostic outcomes.
-- [ ] Implement pure transitions and projection with no React or repository
+- [x] Implement pure transitions and projection with no React or repository
   imports.
-- [ ] Run the two focused test files and commit
+- [x] Run the two focused test files and commit
   `feat: add deterministic v3 activity engine`.
 
 ### Task 4: Add V3 persistence and repository adapters

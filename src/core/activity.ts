@@ -12,6 +12,7 @@ import {
   SkillLabIdSchema,
   V3SkillIdSchema,
 } from "./v3-taxonomy";
+import { getV3DiagnosticDefinition } from "./v3-diagnostics";
 
 const uniqueIds = (
   values: readonly string[],
@@ -414,3 +415,365 @@ export type ActivityAttempt = z.infer<typeof ActivityAttemptSchema>;
 export type CourseContext = z.infer<typeof CourseContextSchema>;
 export type V3DiagnosticOutcome = z.infer<typeof V3DiagnosticOutcomeSchema>;
 export type V3SkillEvidence = z.infer<typeof V3SkillEvidenceSchema>;
+
+export type ActivityPhase =
+  | "context"
+  | "interaction"
+  | "feedback"
+  | "takeaway"
+  | "complete";
+
+export type ActivityState = {
+  activityId: string;
+  contentVersion: number;
+  phase: ActivityPhase;
+  reviewStep: "self_check" | "comparison" | "decision" | null;
+  outcomeId: string | null;
+  takeawayViewed: boolean;
+  events: ActivityEvent[];
+};
+
+export function createActivityState(
+  definition: ActivityDefinition,
+): ActivityState {
+  return {
+    activityId: definition.id,
+    contentVersion: definition.contentVersion,
+    phase: "context",
+    reviewStep: null,
+    outcomeId: null,
+    takeawayViewed: false,
+    events: [],
+  };
+}
+
+function fail(event: ActivityEvent, state: ActivityState): never {
+  throw new Error(`${event.type} is not legal during ${state.phase}`);
+}
+
+function commitType(interaction: ActivityDefinition["interaction"]) {
+  switch (interaction.type) {
+    case "single_select":
+    case "multi_select":
+      return "selection_committed";
+    case "ranking":
+      return "ranking_committed";
+    case "categorization":
+      return "categorization_committed";
+    case "generated_response":
+      return "generated_response_committed";
+    case "brainstorm_builder":
+      return "brainstorm_committed";
+    case "hypothesis_sequence":
+      return "hypothesis_committed";
+    case "exhibit_chain":
+      return "exhibit_committed";
+  }
+}
+
+function weakestOutcome(
+  outcomeIds: string[],
+  selectedOutcomeIds: string[],
+) {
+  const indexes = selectedOutcomeIds.map((id) => outcomeIds.indexOf(id));
+  if (indexes.some((index) => index < 0)) {
+    throw new Error("Interaction result references an unknown outcome");
+  }
+  return outcomeIds[Math.max(...indexes)];
+}
+
+function previousCommits(state: ActivityState, type: ActivityEvent["type"]) {
+  return state.events.filter((event) => event.type === type);
+}
+
+function evaluateCommit(
+  definition: ActivityDefinition,
+  state: ActivityState,
+  event: ActivityEvent,
+): Pick<ActivityState, "phase" | "reviewStep" | "outcomeId"> {
+  const { interaction } = definition;
+  if (event.type !== commitType(interaction)) {
+    throw new Error(
+      `${event.type} cannot commit a ${interaction.type} interaction`,
+    );
+  }
+  if (!("interactionId" in event) || event.interactionId !== interaction.interactionId) {
+    throw new Error("Activity event belongs to a different interaction");
+  }
+
+  if (
+    (interaction.type === "single_select" || interaction.type === "multi_select") &&
+    event.type === "selection_committed"
+  ) {
+    if (interaction.type === "single_select" && event.selectedIds.length !== 1) {
+      throw new Error("Single select requires exactly one choice");
+    }
+    const selected = event.selectedIds.map((id) => {
+      const option = interaction.options.find((candidate) => candidate.id === id);
+      if (!option) throw new Error(`Unknown selection: ${id}`);
+      return option.outcomeId;
+    });
+    return {
+      phase: "feedback",
+      reviewStep: "decision",
+      outcomeId: weakestOutcome(interaction.outcomeIds, selected),
+    };
+  }
+
+  if (interaction.type === "ranking" && event.type === "ranking_committed") {
+    if (
+      event.orderedIds.length !== interaction.items.length ||
+      new Set(event.orderedIds).size !== event.orderedIds.length ||
+      event.orderedIds.some((id) => !interaction.items.some((item) => item.id === id))
+    ) throw new Error("Ranking must contain every item exactly once");
+    return {
+      phase: "feedback",
+      reviewStep: "decision",
+      outcomeId: event.orderedIds.every((id, index) => id === interaction.strongOrder[index])
+        ? interaction.outcomeIds[0]
+        : interaction.outcomeIds.at(-1)!,
+    };
+  }
+
+  if (
+    interaction.type === "categorization" &&
+    event.type === "categorization_committed"
+  ) {
+    const placements = new Map(event.placements.map((placement) => [placement.itemId, placement.categoryId]));
+    const strong = interaction.items.every((item) =>
+      item.acceptedCategoryIds.includes(placements.get(item.id) ?? ""),
+    );
+    return {
+      phase: "feedback",
+      reviewStep: "decision",
+      outcomeId: strong ? interaction.outcomeIds[0] : interaction.outcomeIds.at(-1)!,
+    };
+  }
+
+  if (
+    interaction.type === "generated_response" &&
+    event.type === "generated_response_committed"
+  ) {
+    const priorResponses = previousCommits(state, "generated_response_committed")
+      .map((candidate) => candidate.type === "generated_response_committed"
+        ? candidate.response
+        : null)
+      .filter((response) => response !== null);
+    const previous = priorResponses.at(-1);
+    const expectedRevision = priorResponses.length + 1;
+    if (
+      event.response.revision !== expectedRevision ||
+      event.response.revisionOf !== (previous?.responseId ?? null)
+    ) throw new Error("Generated revision must link to the preceding response");
+    return { phase: "feedback", reviewStep: "self_check", outcomeId: null };
+  }
+
+  if (
+    interaction.type === "brainstorm_builder" &&
+    event.type === "brainstorm_committed"
+  ) {
+    const categories = new Set(event.placements.map(({ categoryId }) => categoryId));
+    const knownIdeas = new Set(interaction.ideas.map(({ id }) => id));
+    const strong =
+      categories.size >= interaction.minimumCategoryCoverage &&
+      event.priorityIdeaIds.length <= interaction.maximumPriorityIdeas &&
+      event.priorityIdeaIds.every((id) => knownIdeas.has(id));
+    return {
+      phase: "feedback",
+      reviewStep: "decision",
+      outcomeId: strong ? interaction.outcomeIds[0] : interaction.outcomeIds.at(-1)!,
+    };
+  }
+
+  if (
+    interaction.type === "hypothesis_sequence" &&
+    event.type === "hypothesis_committed"
+  ) {
+    const prior = previousCommits(state, "hypothesis_committed");
+    const hypothesisIds = new Set(interaction.hypotheses.map(({ id }) => id));
+    if (prior.length === 0) {
+      if (
+        event.status !== "form" ||
+        !event.hypothesisId ||
+        !hypothesisIds.has(event.hypothesisId) ||
+        event.evidenceIds.length > 0
+      ) throw new Error("Initial hypothesis event is invalid");
+      return { phase: "interaction", reviewStep: null, outcomeId: null };
+    }
+    const step = interaction.evidenceSteps[prior.length - 1];
+    if (
+      !step ||
+      event.status === "form" ||
+      event.stepId !== step.id ||
+      !event.evidenceIds.includes(step.evidenceId) ||
+      (event.status === "reject" ? event.hypothesisId !== null : !event.hypothesisId)
+    ) throw new Error("Hypothesis update does not match the revealed evidence step");
+    const contradicted = event.hypothesisId
+      ? step.contradictedHypothesisIds.includes(event.hypothesisId)
+      : false;
+    const isFinal = prior.length === interaction.evidenceSteps.length;
+    return {
+      phase: isFinal ? "feedback" : "interaction",
+      reviewStep: isFinal ? "decision" : null,
+      outcomeId: isFinal
+        ? contradicted && event.status === "retain"
+          ? interaction.outcomeIds.at(-1)!
+          : interaction.outcomeIds[0]
+        : null,
+    };
+  }
+
+  if (interaction.type === "exhibit_chain" && event.type === "exhibit_committed") {
+    const commits = previousCommits(state, "exhibit_committed");
+    const stages = ["observe", "prioritize", "interpret", "act"] as const;
+    if (event.stage !== stages[commits.length]) {
+      throw new Error("Exhibit stages must be committed in order");
+    }
+    if (
+      (event.stage === "observe" || event.stage === "interpret") &&
+      !event.response
+    ) throw new Error(`${event.stage} requires a committed response`);
+    if (event.stage !== "act") {
+      return { phase: "interaction", reviewStep: null, outcomeId: null };
+    }
+    const selectedOutcomes = [
+      ...commits,
+      event,
+    ].flatMap((candidate) => {
+      if (candidate.type !== "exhibit_committed") return [];
+      const options = candidate.stage === "act"
+        ? interaction.actionOptions
+        : interaction.observationOptions;
+      return candidate.selectedIds.map((id) => {
+        const option = options.find((choice) => choice.id === id);
+        if (!option) throw new Error(`Unknown exhibit choice: ${id}`);
+        return option.outcomeId;
+      });
+    });
+    return {
+      phase: "feedback",
+      reviewStep: "decision",
+      outcomeId: weakestOutcome(interaction.outcomeIds, selectedOutcomes),
+    };
+  }
+
+  throw new Error(`Unsupported ${interaction.type} commit`);
+}
+
+export function applyActivityEvent(
+  definition: ActivityDefinition,
+  state: ActivityState,
+  event: ActivityEvent,
+): ActivityState {
+  if (
+    state.activityId !== definition.id ||
+    state.contentVersion !== definition.contentVersion
+  ) throw new Error("Activity state belongs to another content version");
+  if (state.events.some(({ eventId }) => eventId === event.eventId)) {
+    throw new Error(`Duplicate activity event ID: ${event.eventId}`);
+  }
+  const lastAtMs = state.events.at(-1)?.atMs ?? -1;
+  if (event.atMs < lastAtMs) throw new Error("Activity event time cannot decrease");
+
+  let next: Omit<ActivityState, "events">;
+  if (state.phase === "context") {
+    if (event.type !== "activity_started") return fail(event, state);
+    next = { ...state, phase: "interaction" };
+  } else if (state.phase === "interaction") {
+    const commit = evaluateCommit(definition, state, event);
+    next = { ...state, ...commit };
+  } else if (state.phase === "feedback") {
+    if (state.reviewStep === "self_check") {
+      if (
+        event.type !== "self_check_committed" ||
+        event.interactionId !== definition.interaction.interactionId ||
+        definition.interaction.type !== "generated_response"
+      ) return fail(event, state);
+      const criteria = definition.interaction.responseCycle.criteria.map(({ id }) => id);
+      if (
+        event.outcomes.length !== criteria.length ||
+        new Set(event.outcomes.map(({ criterionId }) => criterionId)).size !== criteria.length ||
+        event.outcomes.some(({ criterionId }) => !criteria.includes(criterionId))
+      ) throw new Error("Self-check must answer every criterion exactly once");
+      next = {
+        ...state,
+        outcomeId: event.outcomes.every(({ met }) => met)
+          ? definition.interaction.outcomeIds[0]
+          : definition.interaction.outcomeIds.at(-1)!,
+        reviewStep: "comparison",
+      };
+    } else if (state.reviewStep === "comparison") {
+      if (
+        event.type !== "authored_comparison_viewed" ||
+        event.interactionId !== definition.interaction.interactionId
+      ) return fail(event, state);
+      next = { ...state, reviewStep: "decision" };
+    } else {
+      if (
+        event.type !== "retry_decided" ||
+        event.interactionId !== definition.interaction.interactionId
+      ) return fail(event, state);
+      next = event.decision === "retry"
+        ? { ...state, phase: "interaction", reviewStep: null, outcomeId: null }
+        : { ...state, phase: "takeaway", reviewStep: null };
+    }
+  } else if (state.phase === "takeaway") {
+    if (event.type === "takeaway_viewed" && !state.takeawayViewed) {
+      next = { ...state, takeawayViewed: true };
+    } else if (event.type === "activity_completed" && state.takeawayViewed) {
+      next = { ...state, phase: "complete" };
+    } else {
+      return fail(event, state);
+    }
+  } else {
+    return fail(event, state);
+  }
+
+  return { ...next, events: [...state.events, event] };
+}
+
+export function evaluateActivityCompletion(
+  definition: ActivityDefinition,
+  state: ActivityState,
+) {
+  if (state.phase !== "complete" || !state.outcomeId) {
+    throw new Error("Activity is not complete");
+  }
+  const feedback = definition.feedback.paths.find(({ id }) => id === state.outcomeId);
+  if (!feedback) throw new Error(`Missing feedback path: ${state.outcomeId}`);
+  const source = definition.interaction.type === "generated_response"
+    ? "self_assessment" as const
+    : "system" as const;
+  const diagnostics = feedback.diagnosticCodes.map((code) => {
+    const diagnostic = getV3DiagnosticDefinition(code);
+    if (!diagnostic) throw new Error(`Unknown V3 diagnostic code: ${code}`);
+    return {
+      code,
+      skillId: diagnostic.skillId,
+      source,
+      severity: diagnostic.severity,
+    };
+  });
+  const retryOrTransfer = state.events.some(
+    (event) => event.type === "retry_decided" && event.decision === "retry",
+  );
+  return {
+    outcomeId: state.outcomeId,
+    feedback,
+    diagnostics,
+    skillEvidence: [{
+      skillId: definition.primarySkillId,
+      source: "activity" as const,
+      contextId: definition.id,
+      difficulty: definition.difficulty,
+      reviewed: true,
+      retryOrTransfer,
+      objectiveChecks: [{
+        id: state.outcomeId,
+        passed: feedback.classification === "strong" ||
+          feedback.classification === "reasonable",
+      }],
+      diagnosticCodes: feedback.diagnosticCodes,
+    }],
+  };
+}

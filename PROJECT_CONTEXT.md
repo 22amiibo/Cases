@@ -71,7 +71,20 @@ npm run build
 
 ## Progress Log
 
-### Casework V3 Task 2: activity, diagnostic, and course contracts — ready to commit
+### Casework V3 Task 3: deterministic activity engine — ready to commit
+
+- Added a pure state machine for the shared activity flow, interaction-specific
+  commit validation, generated-response revision linkage, retry history, and
+  deterministic completion evidence.
+- Added a learner-safe projection that withholds authored answers, future
+  evidence, classifications, diagnostics, feedback, and takeaways until their
+  legal reveal points.
+- Focused validation: 2 files / 16 tests. Full unit validation: 64 files / 310
+  tests. Lint and typecheck pass.
+- Next action: Task 4, add the local V3 migration and repository adapters without
+  applying migration `004` to production.
+
+### Casework V3 Task 2: activity, diagnostic, and course contracts — complete
 
 - Added the V3.0 activity definition, event, evidence, attempt, and feedback
   contracts for exactly the eight interaction variants needed by the four
@@ -83,6 +96,7 @@ npm run build
   draft/retired definitions, course references resolve exact resources, and
   invalid case modes or diagnostic ownership fail closed.
 - Focused validation: 4 files / 20 tests, lint, and typecheck pass.
+- Committed as `7e7cd46` (`feat: define versioned v3 activity contracts`).
 - Next action: Task 3, implement the pure activity state machine, deterministic
   evaluation, and learner-safe projection from these contracts.
 

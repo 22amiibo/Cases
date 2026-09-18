@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createActivityRegistry } from "@/content/activities";
 import {
+  applyActivityEvent,
   ActivityAttemptSchema,
   ActivityDefinitionSchema,
   ActivityEventSchema,
+  createActivityState,
+  evaluateActivityCompletion,
 } from "./activity";
 
 function validActivity(overrides: Record<string, unknown> = {}) {
@@ -217,5 +220,231 @@ describe("createActivityRegistry", () => {
       [activity],
       { "alpinefit-clarifying-v3": 3 },
     )).toThrow(/not owned by a declared activity skill/i);
+  });
+});
+
+describe("activity state transitions", () => {
+  const definition = () => ActivityDefinitionSchema.parse(validActivity());
+  const event = (
+    type: string,
+    atMs: number,
+    values: Record<string, unknown> = {},
+  ) => ActivityEventSchema.parse({
+    eventId: `event-${atMs}`,
+    type,
+    atMs,
+    ...values,
+  });
+
+  it("completes the legal outer flow and derives deterministic evidence", () => {
+    const activity = definition();
+    let state = createActivityState(activity);
+    expect(state.phase).toBe("context");
+    state = applyActivityEvent(activity, state, event("activity_started", 0));
+    state = applyActivityEvent(activity, state, event("selection_committed", 1, {
+      interactionId: "opening-question",
+      selectedIds: ["objective"],
+    }));
+    expect(state).toMatchObject({ phase: "feedback", outcomeId: "strong" });
+    state = applyActivityEvent(activity, state, event("retry_decided", 2, {
+      interactionId: "opening-question",
+      decision: "continue",
+    }));
+    state = applyActivityEvent(activity, state, event("takeaway_viewed", 3));
+    state = applyActivityEvent(activity, state, event("activity_completed", 4));
+
+    expect(state.phase).toBe("complete");
+    expect(evaluateActivityCompletion(activity, state)).toMatchObject({
+      outcomeId: "strong",
+      diagnostics: [{
+        code: "strong_opening",
+        skillId: "clarification",
+        source: "system",
+        severity: "strength",
+      }],
+      skillEvidence: [{
+        skillId: "clarification",
+        source: "activity",
+        contextId: "alpinefit-clarifying-v3",
+        reviewed: true,
+        retryOrTransfer: false,
+      }],
+    });
+  });
+
+  it("rejects illegal phases, decreasing time, and mismatched interaction events", () => {
+    const activity = definition();
+    const context = createActivityState(activity);
+    expect(() => applyActivityEvent(
+      activity,
+      context,
+      event("activity_completed", 0),
+    )).toThrow(/not legal during context/i);
+    const started = applyActivityEvent(
+      activity,
+      context,
+      event("activity_started", 10),
+    );
+    expect(() => applyActivityEvent(
+      activity,
+      started,
+      event("ranking_committed", 9, {
+        interactionId: "opening-question",
+        orderedIds: ["objective", "history"],
+      }),
+    )).toThrow(/event time/i);
+    expect(() => applyActivityEvent(
+      activity,
+      started,
+      event("ranking_committed", 11, {
+        interactionId: "opening-question",
+        orderedIds: ["objective", "history"],
+      }),
+    )).toThrow(/single_select/i);
+  });
+
+  it("preserves a retry and uses the latest reviewed outcome", () => {
+    const activity = definition();
+    let state = applyActivityEvent(
+      activity,
+      createActivityState(activity),
+      event("activity_started", 0),
+    );
+    state = applyActivityEvent(activity, state, event("selection_committed", 1, {
+      interactionId: "opening-question",
+      selectedIds: ["history"],
+    }));
+    state = applyActivityEvent(activity, state, event("retry_decided", 2, {
+      interactionId: "opening-question",
+      decision: "retry",
+    }));
+    expect(state.phase).toBe("interaction");
+    state = applyActivityEvent(activity, state, event("selection_committed", 3, {
+      interactionId: "opening-question",
+      selectedIds: ["objective"],
+    }));
+    state = applyActivityEvent(activity, state, event("retry_decided", 4, {
+      interactionId: "opening-question",
+      decision: "continue",
+    }));
+    state = applyActivityEvent(activity, state, event("takeaway_viewed", 5));
+    state = applyActivityEvent(activity, state, event("activity_completed", 6));
+
+    expect(state.events).toHaveLength(7);
+    expect(evaluateActivityCompletion(activity, state)).toMatchObject({
+      outcomeId: "strong",
+      skillEvidence: [{ retryOrTransfer: true }],
+    });
+  });
+
+  it("requires generated retries to link sequential response revisions", () => {
+    const activity = ActivityDefinitionSchema.parse(validActivity({
+      interaction: {
+        type: "generated_response",
+        interactionId: "opening-response",
+        responseCycle: {
+          interactionId: "opening-response",
+          responseKind: "case_opening",
+          prompt: "Restate the objective.",
+          scaffoldingLevel: "beginner",
+          guidance: [],
+          criteria: [{ id: "objective", label: "Restates the objective" }],
+          comparison: { title: "Example", text: "A focused opening." },
+          diagnosticRules: [],
+        },
+        outcomeIds: ["strong", "weak"],
+      },
+    }));
+    const responseEvent = (atMs: number, response: Record<string, unknown>) =>
+      event("generated_response_committed", atMs, {
+        interactionId: "opening-response",
+        response: {
+          interactionId: "opening-response",
+          responseKind: "case_opening",
+          text: "A focused opening.",
+          committedAtMs: atMs,
+          ...response,
+        },
+      });
+    let state = applyActivityEvent(
+      activity,
+      createActivityState(activity),
+      event("activity_started", 0),
+    );
+    state = applyActivityEvent(activity, state, responseEvent(1, {
+      responseId: "response-1",
+      revision: 1,
+      revisionOf: null,
+    }));
+    state = applyActivityEvent(activity, state, event("self_check_committed", 2, {
+      interactionId: "opening-response",
+      outcomes: [{ criterionId: "objective", met: false }],
+    }));
+    state = applyActivityEvent(activity, state, event("authored_comparison_viewed", 3, {
+      interactionId: "opening-response",
+    }));
+    state = applyActivityEvent(activity, state, event("retry_decided", 4, {
+      interactionId: "opening-response",
+      decision: "retry",
+    }));
+
+    expect(() => applyActivityEvent(activity, state, responseEvent(5, {
+      responseId: "response-2",
+      revision: 2,
+      revisionOf: "missing-response",
+    }))).toThrow(/preceding response/i);
+    expect(applyActivityEvent(activity, state, responseEvent(5, {
+      responseId: "response-2",
+      revision: 2,
+      revisionOf: "response-1",
+    })).phase).toBe("feedback");
+  });
+
+  it("requires each generated-response criterion exactly once", () => {
+    const activity = ActivityDefinitionSchema.parse(validActivity({
+      interaction: {
+        type: "generated_response",
+        interactionId: "opening-response",
+        responseCycle: {
+          interactionId: "opening-response",
+          responseKind: "case_opening",
+          prompt: "Restate the objective.",
+          scaffoldingLevel: "beginner",
+          guidance: [],
+          criteria: [
+            { id: "objective", label: "Restates the objective" },
+            { id: "scope", label: "Defines the scope" },
+          ],
+          comparison: { title: "Example", text: "A focused opening." },
+          diagnosticRules: [],
+        },
+        outcomeIds: ["strong", "weak"],
+      },
+    }));
+    let state = applyActivityEvent(
+      activity,
+      createActivityState(activity),
+      event("activity_started", 0),
+    );
+    state = applyActivityEvent(activity, state, event("generated_response_committed", 1, {
+      interactionId: "opening-response",
+      response: {
+        responseId: "response-1",
+        interactionId: "opening-response",
+        responseKind: "case_opening",
+        revision: 1,
+        revisionOf: null,
+        text: "We need to understand the decline and define the scope.",
+        committedAtMs: 1,
+      },
+    }));
+
+    expect(() => applyActivityEvent(activity, state, event("self_check_committed", 2, {
+      interactionId: "opening-response",
+      outcomes: [
+        { criterionId: "objective", met: true },
+        { criterionId: "objective", met: false },
+      ],
+    }))).toThrow(/exactly once/);
   });
 });

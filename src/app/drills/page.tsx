@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { drillBanks, drillSkillIds, type DrillSkillId } from "@/content/drills";
+import {
+  drillBanks,
+  drillSkillIds,
+  type DrillSkillId,
+} from "@/content/drills";
 import styles from "./drills.module.css";
 
 const skillCopy: Record<
@@ -68,8 +72,8 @@ export default function DrillsPage() {
               </div>
               <span className={styles.count}>
                 {skillId === "clarification"
-                  ? "1 V2 pilot rep →"
-                  : `1 V2 rep · ${drillBanks[skillId].length} legacy →`}
+                  ? "3 V2 pilot reps →"
+                  : `3 V2 reps · ${drillBanks[skillId].length} legacy →`}
               </span>
             </Link>
           );

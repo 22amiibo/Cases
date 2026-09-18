@@ -127,7 +127,7 @@ function HydratedClarificationDrillSession({
 
   return (
     <section className={styles.session}>
-      <div className={styles.progress}><span>clarification</span><span>V2 · 01 rep</span></div>
+      <div className={styles.progress}><span>clarification</span><span>V2 practice</span></div>
       <div className={styles.prompt}>
         <p>Case opening</p>
         <h1>{definition.title}</h1>

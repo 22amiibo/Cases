@@ -54,6 +54,7 @@ describe("ClarificationDrillSession", () => {
       />,
     );
 
+    expect(screen.getByText("V2 practice")).toBeVisible();
     expect(screen.queryByText(clarificationV2Definition.questionOptions[0].label)).toBeNull();
     await user.type(screen.getByLabelText("Your response"), "Explain the margin decline and what to do.");
     await user.click(screen.getByRole("button", { name: "Commit response" }));

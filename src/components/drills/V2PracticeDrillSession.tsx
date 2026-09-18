@@ -167,7 +167,7 @@ function HydratedV2PracticeDrillSession({
 
   return (
     <section className={styles.session}>
-      <div className={styles.progress}><span>{definition.skillId}</span><span>V2 · 01 rep</span></div>
+      <div className={styles.progress}><span>{definition.skillId}</span><span>V2 practice</span></div>
       <div className={styles.prompt}>
         <p>Focused practice</p>
         <div><h1>{definition.title}</h1><p>{definition.scenario}</p></div>

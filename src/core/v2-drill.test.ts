@@ -5,6 +5,7 @@ import {
   evaluateV2Checkpoint,
   projectV2PracticeDrill,
   revealV2PracticeAfterCommit,
+  type V2CheckpointSubmission,
 } from "./v2-drill";
 
 function definition(skillId: V2PracticeDrillDefinition["skillId"]) {
@@ -45,9 +46,9 @@ describe("V2 practice drills", () => {
     expect(serialized).not.toContain("correctNextStepId");
   });
 
-  it("evaluates every checkpoint deterministically and ties diagnostics to the response", () => {
-    const cases: Array<[V2PracticeDrillDefinition["skillId"], unknown, string]> = [
-      ["structure", {
+  it("evaluates every authored checkpoint deterministically and ties diagnostics to the response", () => {
+    const cases: Array<{ id: string; submission: V2CheckpointSubmission; code: string }> = [
+      { id: "alpinefit-structure-v2", submission: {
         branches: [
           { conceptId: "revenue", children: [] },
           { conceptId: "fixed_cost", children: [] },
@@ -55,18 +56,53 @@ describe("V2 practice drills", () => {
         ],
         priorityConceptId: "variable_cost",
         rationale: "Costs grew faster than revenue.",
-      }, "strong_structure"],
-      ["prioritization", { optionId: "cost-breakdown" }, "strong_priority"],
-      ["quantitative", { answer: 756000, unit: "$" }, "strong_quantitative_reasoning"],
-      ["exhibit", { optionId: "labor-outlier" }, "strong_exhibit_chain"],
-      ["synthesis", {
+      }, code: "strong_structure" },
+      { id: "alpinefit-prioritization-v2", submission: { optionId: "cost-breakdown" }, code: "strong_priority" },
+      { id: "alpinefit-quantitative-v2", submission: { answer: 756000, unit: "$" }, code: "strong_quantitative_reasoning" },
+      { id: "alpinefit-exhibit-v2", submission: { optionId: "labor-outlier" }, code: "strong_exhibit_chain" },
+      { id: "alpinefit-synthesis-v2", submission: {
         evidenceIds: ["overtime-spike", "turnover-link"],
         nextStepId: "staffing-pilot",
-      }, "strong_synthesis"],
+      }, code: "strong_synthesis" },
+      { id: "quickcart-structure-v2", submission: {
+        branches: [
+          { conceptId: "demand", children: [] },
+          { conceptId: "courier_capacity", children: [] },
+          { conceptId: "dispatch_process", children: [] },
+        ],
+        priorityConceptId: "courier_capacity",
+        rationale: "The decline is concentrated during evening peaks.",
+      }, code: "strong_structure" },
+      { id: "verdant-structure-v2", submission: {
+        branches: [
+          { conceptId: "market_attractiveness", children: [] },
+          { conceptId: "customer_demand", children: [] },
+          { conceptId: "unit_economics", children: [] },
+        ],
+        priorityConceptId: "customer_demand",
+        rationale: "Weak customer demand could stop the launch.",
+      }, code: "strong_structure" },
+      { id: "meridian-prioritization-v2", submission: { optionId: "step-conversion" }, code: "strong_priority" },
+      { id: "urbaneats-prioritization-v2", submission: { optionId: "repeat-by-segment" }, code: "strong_priority" },
+      { id: "harborcart-quantitative-v2", submission: { answer: 768000, unit: "$" }, code: "strong_quantitative_reasoning" },
+      { id: "northwind-quantitative-v2", submission: { answer: 672000, unit: "$" }, code: "strong_quantitative_reasoning" },
+      { id: "beacon-exhibit-v2", submission: { optionId: "loss-making-mix" }, code: "strong_exhibit_chain" },
+      { id: "cedarcare-exhibit-v2", submission: { optionId: "rate-improved" }, code: "strong_exhibit_chain" },
+      { id: "aeroparts-synthesis-v2", submission: {
+        evidenceIds: ["supplier-share", "defect-tripled", "assembly-stable"],
+        nextStepId: "dual-source",
+      }, code: "strong_synthesis" },
+      { id: "brightlearn-synthesis-v2", submission: {
+        evidenceIds: ["retention-lift", "cost-increase", "single-channel"],
+        nextStepId: "second-channel",
+      }, code: "strong_synthesis" },
     ];
 
-    cases.forEach(([skillId, submission, code]) => {
-      expect(evaluateV2Checkpoint(definition(skillId), submission as never, "response-1"))
+    expect(cases).toHaveLength(v2PracticeDefinitions.length);
+    cases.forEach(({ id, submission, code }) => {
+      const item = v2PracticeDefinitions.find((candidate) => candidate.id === id);
+      expect(item, `Missing authored checkpoint case for ${id}`).toBeDefined();
+      expect(evaluateV2Checkpoint(item!, submission, "response-1"))
         .toMatchObject({ diagnostics: [{ code, source: "system", severity: "strength", responseId: "response-1" }] });
     });
   });

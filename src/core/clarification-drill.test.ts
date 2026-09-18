@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { clarificationV2Definition as definition } from "@/content/drills";
+import {
+  clarificationV2Definition as definition,
+  clarificationV2Definitions,
+} from "@/content/drills";
 import {
   evaluateClarificationQuestions,
   projectClarificationDrill,
@@ -46,6 +49,28 @@ describe("V2 clarification drill", () => {
       definition.questionOptions[2].response,
     ]);
     expect(result.diagnostics.map(({ code }) => code)).toEqual(["strong_opening"]);
+  });
+
+  it.each(clarificationV2Definitions)("evaluates the authored high-value set for $id", (item) => {
+    const highValueIds = item.questionOptions
+      .filter(({ highValue }) => highValue)
+      .map(({ id }) => id)
+      .slice(0, item.recommendedQuestionCount);
+    const result = evaluateClarificationQuestions(item, highValueIds, response.responseId);
+
+    expect(highValueIds.length).toBeGreaterThanOrEqual(item.minimumHighValueQuestions);
+    expect(result.responses).toEqual(highValueIds.map((questionId) => ({
+      questionId,
+      response: item.questionOptions.find(({ id }) => id === questionId)!.response,
+    })));
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: "strong_opening",
+        source: "system",
+        severity: "strength",
+        responseId: response.responseId,
+      }),
+    ]);
   });
 
   it("diagnoses low-value selection and overload independently", () => {

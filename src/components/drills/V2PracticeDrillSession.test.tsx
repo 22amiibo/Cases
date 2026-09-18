@@ -45,6 +45,7 @@ describe("V2PracticeDrillSession", () => {
       createAttemptId={() => "attempt-1"}
     />);
 
+    expect(screen.getByText("V2 practice")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Submit your numeric result" })).toBeNull();
     await user.type(screen.getByLabelText("Your response"), "Six clubs times hours times premium times months.");
     await user.click(screen.getByRole("button", { name: "Commit response" }));

@@ -232,6 +232,21 @@ prerequisites, scoring inputs, critical/root-cause flags, values, evidence, and
 replay events are unchanged. This remains a Stage-One replay correction and
 does not authorize Task 12.
 
+### Post-Task-11 gate record: proceed
+
+**Owner decision:** `proceed`.
+
+The owner could not complete another manual replay because the completed-case
+screen reported that the event history was saved for replay and review but did
+not expose a replay or retry entry point. The owner explicitly classified the
+investigation-grouping change as minor and authorized Task 12 to begin despite
+that blocked re-playtest.
+
+The missing completed-case replay/retry control remains a documented follow-up;
+the proceed decision does not represent confirmation that this control works.
+Task 12 remains bounded to the remaining twelve V2 pilot drills and must not
+silently expand into a replay-navigation redesign.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

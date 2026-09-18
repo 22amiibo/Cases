@@ -4,7 +4,9 @@ import quantitativeContent from "./quantitative.json";
 import exhibitContent from "./exhibit.json";
 import synthesisContent from "./synthesis.json";
 import clarificationV2Content from "./clarification-v2.json";
+import clarificationV2TransferContent from "./clarification-v2-transfer.json";
 import v2PilotContent from "./v2-pilot.json";
+import v2TransferContent from "./v2-transfer.json";
 import {
   DrillDefinitionSchema,
   V2ClarificationDrillDefinitionSchema,
@@ -13,6 +15,9 @@ import {
   type V2DrillDefinition,
 } from "@/core/schema";
 import { createVersionedRegistry } from "@/content/versioned-registry";
+import { validateV2DrillSet } from "./v2-validation";
+
+export { validateV2DrillSet } from "./v2-validation";
 
 export const drillSkillIds = [
   "structure",
@@ -39,14 +44,21 @@ export const drillBanks: Record<LegacyDrillSkillId, DrillDefinition[]> = {
   synthesis: parseBank(synthesisContent),
 };
 
-export const clarificationV2Definition =
-  V2ClarificationDrillDefinitionSchema.parse(clarificationV2Content);
+export const clarificationV2Definitions =
+  V2ClarificationDrillDefinitionSchema.array().parse([
+    clarificationV2Content,
+    ...clarificationV2TransferContent,
+  ]);
+export const clarificationV2Definition = clarificationV2Definitions[0];
 export const v2PracticeDefinitions =
-  V2PracticeDrillDefinitionSchema.array().parse(v2PilotContent);
-export const v2DrillDefinitions: V2DrillDefinition[] = [
-  clarificationV2Definition,
+  V2PracticeDrillDefinitionSchema.array().parse([
+    ...v2PilotContent,
+    ...v2TransferContent,
+  ]);
+export const v2DrillDefinitions: V2DrillDefinition[] = validateV2DrillSet([
+  ...clarificationV2Definitions,
   ...v2PracticeDefinitions,
-];
+]);
 
 const v1Drills = Object.values(drillBanks).flat();
 const v2Drills: V2DrillDefinition[] = v2DrillDefinitions;

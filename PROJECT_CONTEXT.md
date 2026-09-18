@@ -71,6 +71,43 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 12: Complete diagnostic drill pilot — complete
+
+- Added twelve immutable V2 transfer reps—two per skill—without editing the
+  original six Task 9 definitions. The pilot now contains exactly three reps
+  for each of clarification, structure, prioritization, quantitative, exhibit,
+  and synthesis (18 total).
+- Reviewed the transfer content in two six-rep passes. The first set uses
+  CedarCare clinic access, QuickCart delivery reliability, Meridian onboarding,
+  HarborCart free shipping, Beacon channel mix, and AeroParts supplier risk.
+  The second uses StreamWave retention, Verdant market entry, UrbanEats rollout,
+  Northwind pricing, CedarCare complaint rates, and BrightLearn onboarding.
+  Contexts, response kinds, criterion patterns, and checkpoint demands vary;
+  the additions are not renamed or renumbered copies.
+- Added set-level validation for duplicate definition IDs, interaction IDs, and
+  reasoning-template signatures, plus an exact three-reps-per-skill contract.
+  Evaluator coverage now exercises every authored checkpoint and all three
+  clarification question sets.
+- Added reusable URL-addressable rep selection on every V2 skill page. Selected
+  reps survive refresh, remain keyboard-accessible, preserve pre-commit answer
+  secrecy, and reflow from three columns to one at phone width. The selector is
+  data-driven and does not special-case AlpineFit or alter drill evaluation.
+- RED evidence: the content contract initially found 6 rather than 18 reps and
+  no duplicate-template validator; component tests found the old hard-coded
+  single-rep label; the browser test found no rep navigation. The browser
+  accessibility test also exposed a 4.06:1 selected-label contrast regression,
+  fixed with a selected-state text color and reverified at the same checkpoint.
+- Final verification: 48 unit/component files and 233 tests pass; lint,
+  typecheck, production build, and `git diff --check` pass; all 25 Playwright
+  journeys pass. Browser coverage includes URL selection and refresh, answer
+  secrecy, keyboard semantics, automated accessibility, and 320px reflow.
+- The completed-case replay/retry entry-point issue reported at the owner gate
+  remains deferred; Task 12 did not alter case logic, scoring, persistence, or
+  replay semantics. `supabase/.temp/` and `src/content/drills/quantitative 2.json`
+  remain untracked and untouched.
+- Next action: stop at the Task 12 commit boundary. Task 13 (PayPilot V2) has not
+  started and requires a separate continuation instruction.
+
 ### Post-Task-11 owner playtest remediation — complete
 
 - The first owner playtest recorded `revise and replaytest`; it did not authorize
@@ -788,8 +825,11 @@ npm run build
 
 ## Next Action
 
-Do not begin Task 12 or any later implementation. The owner must now re-playtest
-the remediated six V2 reps and AlpineFit V2, assess the learning-quality criteria
-in `CASEWORK_V2_IMPLEMENTATION_PLAN.md`, and record an explicit `proceed`,
-`revise again`, or `stop` decision in this context and the decision ledger.
-Automated verification cannot pass this gate.
+Task 12 is complete and verified. Stop at its commit boundary. Task 13 is the
+PayPilot intermediate strategy case; do not begin it until the owner explicitly
+continues implementation.
+
+The owner could not complete the final manual replay because the completed-case
+screen exposed no replay or retry entry point. That product issue remains
+deferred and must not be treated as verified merely because the owner allowed
+Task 12 to proceed or because Task 12's automated checks pass.

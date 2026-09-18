@@ -1,0 +1,84 @@
+[
+  {
+    "id": "cedarcare-opening-clarification",
+    "contentVersion": 2,
+    "eventSchemaVersion": 2,
+    "scoringVersion": "v2",
+    "scaffoldingLevel": "beginner",
+    "skillId": "clarification",
+    "conceptIdsPracticed": ["service_level", "scope", "quality_constraint"],
+    "title": "Frame a clinic access problem",
+    "casePrompt": "CedarCare's outpatient clinics report that average appointment wait time increased from 8 to 13 days while patient visits grew. The COO wants to improve access without reducing care quality.",
+    "responseCycle": {
+      "interactionId": "cedarcare-opening-restatement",
+      "responseKind": "objective_restatement",
+      "prompt": "Restate the decision CedarCare needs to make, including the outcome and guardrail that matter.",
+      "scaffoldingLevel": "beginner",
+      "guidance": ["Separate the access outcome from the constraint on care quality."],
+      "criteria": [
+        { "id": "decision-objective", "label": "Frames the operational decision, not just the symptom" },
+        { "id": "target-measure", "label": "Names appointment wait time as the target outcome" },
+        { "id": "guardrail", "label": "Preserves care quality as a decision guardrail" }
+      ],
+      "comparison": {
+        "title": "One focused restatement",
+        "text": "I want to determine what is driving CedarCare's longer appointment waits and which operational changes can restore timely access without weakening care quality."
+      },
+      "diagnosticRules": [
+        { "criterionId": "decision-objective", "when": "not_met", "code": "objective_not_reframed", "severity": "blocking" },
+        { "criterionId": "target-measure", "when": "not_met", "code": "material_term_unresolved", "severity": "coaching" },
+        { "criterionId": "guardrail", "when": "not_met", "code": "constraint_missed", "severity": "coaching" }
+      ]
+    },
+    "questionOptions": [
+      { "id": "wait-definition", "label": "How is appointment wait time measured, and for which visit types?", "response": "It is calendar days from a patient's request to the earliest offered appointment, across new and follow-up visits.", "highValue": true },
+      { "id": "clinic-pattern", "label": "Is the increase broad or concentrated by clinic, specialty, or time period?", "response": "Most of the deterioration is concentrated in primary-care clinics during the last six months.", "highValue": true },
+      { "id": "quality-guardrail", "label": "Which quality or staffing constraints cannot be compromised?", "response": "The COO will not shorten visits below clinical guidelines or rely on sustained clinician overtime.", "highValue": true },
+      { "id": "lobby-paint", "label": "When were clinic lobbies last repainted?", "response": "Lobby appearance is not linked to appointment availability.", "highValue": false },
+      { "id": "all-patient-interviews", "label": "Can we interview every patient before analyzing operations?", "response": "That would delay the decision and is not needed for the initial capacity diagnosis.", "highValue": false }
+    ],
+    "recommendedQuestionCount": 3,
+    "minimumHighValueQuestions": 2
+  },
+  {
+    "id": "streamwave-opening-clarification",
+    "contentVersion": 2,
+    "eventSchemaVersion": 2,
+    "scoringVersion": "v2",
+    "scaffoldingLevel": "intermediate",
+    "skillId": "clarification",
+    "conceptIdsPracticed": ["retention", "segment", "decision_horizon"],
+    "title": "Clarify a subscriber-retention decision",
+    "casePrompt": "StreamWave's reported subscriber churn rose from 3.1% to 4.4%. Leadership wants a recommendation before next quarter's product roadmap is finalized.",
+    "responseCycle": {
+      "interactionId": "streamwave-opening-restatement",
+      "responseKind": "retention_decision_frame",
+      "prompt": "Frame the decision and identify what must be clarified before diagnosing the churn increase.",
+      "scaffoldingLevel": "intermediate",
+      "guidance": [],
+      "criteria": [
+        { "id": "outcome-definition", "label": "Recognizes that the churn measure must be defined" },
+        { "id": "segment-scope", "label": "Makes customer or product scope explicit" },
+        { "id": "decision-window", "label": "Connects the work to the roadmap deadline" }
+      ],
+      "comparison": {
+        "title": "One decision-ready opening",
+        "text": "I want to establish which subscribers and churn definition drive the reported increase, then identify the product actions that can materially improve retention before the next roadmap is locked."
+      },
+      "diagnosticRules": [
+        { "criterionId": "outcome-definition", "when": "not_met", "code": "material_term_unresolved", "severity": "blocking" },
+        { "criterionId": "segment-scope", "when": "not_met", "code": "objective_not_reframed", "severity": "coaching" },
+        { "criterionId": "decision-window", "when": "not_met", "code": "constraint_missed", "severity": "coaching" }
+      ]
+    },
+    "questionOptions": [
+      { "id": "churn-definition", "label": "Is 4.4% monthly voluntary churn, and is the definition unchanged?", "response": "Yes. It is monthly voluntary churn, measured consistently with the prior period.", "highValue": true },
+      { "id": "segment-concentration", "label": "Which plans, tenures, or acquisition cohorts account for the increase?", "response": "The increase is concentrated among monthly-plan subscribers acquired through a recent promotional channel.", "highValue": true },
+      { "id": "roadmap-flexibility", "label": "Which roadmap decisions are still reversible next quarter?", "response": "Onboarding and retention features can still be reprioritized; pricing changes require a later approval cycle.", "highValue": true },
+      { "id": "office-location", "label": "Where is StreamWave's product team seated?", "response": "Team location does not affect the churn diagnosis.", "highValue": false },
+      { "id": "competitor-history", "label": "Can we first document every competitor feature launched in five years?", "response": "Leadership needs a focused recommendation before that broad review could be completed.", "highValue": false }
+    ],
+    "recommendedQuestionCount": 3,
+    "minimumHighValueQuestions": 2
+  }
+]

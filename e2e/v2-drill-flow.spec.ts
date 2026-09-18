@@ -21,6 +21,28 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
 });
 
+test("each skill exposes three V2 reps and preserves the selected rep", async ({ page }) => {
+  await page.goto("/drills/structure");
+
+  const repNavigation = page.getByRole("navigation", { name: "V2 practice reps" });
+  await expect(repNavigation.getByRole("link")).toHaveCount(3);
+  await repNavigation.getByRole("link", {
+    name: /structure a delivery-reliability problem/i,
+  }).click();
+
+  await expect(page.getByRole("heading", {
+    name: "Structure a delivery-reliability problem",
+  })).toBeVisible();
+  await expect(page.getByText("One operational structure")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", {
+    name: "Structure a delivery-reliability problem",
+  })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+    .toBeLessThanOrEqual(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test("structure V2 completes a generated response and framework checkpoint", async ({ page }) => {
   await page.goto("/drills/structure");
   await expect(page.getByText("One defensible structure")).toHaveCount(0);

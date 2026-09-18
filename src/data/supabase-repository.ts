@@ -288,10 +288,7 @@ export class SupabasePracticeRepository implements PracticeRepository {
     const rows = await this.database.selectCaseEvents(userId, attemptId);
     return [...rows]
       .sort((left, right) => left.sequence - right.sequence)
-      .flatMap(({ event }) => {
-        const parsed = CaseEventSchema.safeParse(event);
-        return parsed.success ? [parsed.data] : [];
-      });
+      .map(({ event }) => CaseEventSchema.parse(event));
   }
 
   async getCaseAttempt(userId: string, attemptId: string) {

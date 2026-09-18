@@ -921,17 +921,20 @@ npm run build
   current content.
 - Cross-user repository coverage, existing Supabase RLS policy checks, and
   user-filtered attempt/event reads protect historical attempts from disclosure.
-- Added a signed-in browser stop-state journey with automated accessibility and
-  320px reflow checks. Existing pilot suites retain full case journeys, keyboard
-  operation, 320/768/1440 reflow, refresh recovery, and precommit answer-secrecy
-  assertions.
+- Added signed-in browser journeys for both ordered exact-V2 replay from
+  Progress and the unavailable-version stop state. The stop state retains
+  automated accessibility and 320px reflow checks; existing pilot suites retain
+  full case journeys, keyboard operation, 320/768/1440 reflow, refresh recovery,
+  and precommit answer-secrecy assertions.
 - Updated the README and added `RELEASE_NOTES.md` with the additive migration
   smoke sequence, separate live-release record, honest Wave 1 boundaries, and a
   rollback that selects V1 active cases without deleting V2 rows.
 - No obsolete V2 feature flag existed. Pilot activation remains explicit in the
   immutable case/drill version registries.
-- Production migration, deployment, and live smoke testing were not performed;
-  they require explicit owner approval and are recorded separately.
+- The controller confirmed a linked dry-run containing additive migrations
+  `002` and `003` plus checksummed schema/data backups. Migration apply,
+  transaction-scoped live RLS smoke, and deployment were not performed in this
+  implementation task and remain external release gates.
 
 ## Decisions and Notes
 
@@ -948,7 +951,9 @@ npm run build
 
 ## Next Action
 
-Task 17 is implemented locally. Review the release-candidate evidence, then
-obtain explicit owner approval before applying live migrations or deploying.
-After approval, record production sign-in/RLS, save, historical replay, rollback,
-and answer-secrecy smoke results separately from this implementation task.
+Task 17 is implemented locally and its initial changes are committed as
+`a5390a7`. Review the fix commit, then have the controller apply migrations
+`002` and `003` under the required approval and record the transaction-scoped
+cross-user/RLS result in `RELEASE_NOTES.md`. Deployment still requires explicit
+owner approval and separate live sign-in/save, historical replay, rollback, and
+answer-secrecy evidence.

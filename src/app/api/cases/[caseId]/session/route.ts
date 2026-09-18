@@ -23,10 +23,6 @@ export async function POST(
   { params }: { params: Promise<{ caseId: string }> },
 ) {
   const { caseId } = await params;
-  if (!getCaseDefinition(caseId)) {
-    return NextResponse.json({ error: "Case not found" }, { status: 404 });
-  }
-
   let body: { events?: unknown[]; contentVersion?: unknown };
   try {
     body = (await request.json()) as { events?: unknown[]; contentVersion?: unknown };
@@ -47,7 +43,15 @@ export async function POST(
     body.contentVersion as number | undefined,
   );
   if (!caseDefinition) {
-    return NextResponse.json({ error: "Case version not found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error:
+          body.contentVersion === undefined
+            ? "Case not found"
+            : "Case version not found",
+      },
+      { status: 404 },
+    );
   }
 
   const parsedEvents = body.events.map((event) => CaseEventSchema.safeParse(event));

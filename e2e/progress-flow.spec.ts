@@ -14,6 +14,33 @@ async function completeQuantitativeDrill(
   await expect(page.getByText("100 / 100")).toBeVisible();
 }
 
+async function installSignedInSession(page: Page) {
+  const payload = Buffer.from(JSON.stringify({
+    sub: "user-1",
+    exp: 4_102_444_800,
+    role: "authenticated",
+  })).toString("base64url");
+  await page.addInitScript(({ token }) => {
+    localStorage.setItem("sb-127-auth-token", JSON.stringify({
+      access_token: token,
+      refresh_token: "e2e-refresh-token",
+      token_type: "bearer",
+      expires_in: 2_147_483_647,
+      expires_at: 4_102_444_800,
+      user: {
+        id: "user-1",
+        aud: "authenticated",
+        role: "authenticated",
+        email: "learner@example.com",
+        app_metadata: {},
+        user_metadata: {},
+        identities: [],
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+    }));
+  }, { token: `e2e.${payload}.signature` });
+}
+
 test("guest sees progress and a deterministic next session after practice", async ({
   page,
 }) => {
@@ -159,30 +186,7 @@ test("dense guest history targets a recurring objective diagnosis and rotates af
 test("signed-in history produces the same exact diagnostic recommendation", async ({
   page,
 }) => {
-  const payload = Buffer.from(JSON.stringify({
-    sub: "user-1",
-    exp: 4_102_444_800,
-    role: "authenticated",
-  })).toString("base64url");
-  await page.addInitScript(({ token }) => {
-    localStorage.setItem("sb-127-auth-token", JSON.stringify({
-      access_token: token,
-      refresh_token: "e2e-refresh-token",
-      token_type: "bearer",
-      expires_in: 2_147_483_647,
-      expires_at: 4_102_444_800,
-      user: {
-        id: "user-1",
-        aud: "authenticated",
-        role: "authenticated",
-        email: "learner@example.com",
-        app_metadata: {},
-        user_metadata: {},
-        identities: [],
-        created_at: "2026-01-01T00:00:00.000Z",
-      },
-    }));
-  }, { token: `e2e.${payload}.signature` });
+  await installSignedInSession(page);
 
   await page.route("http://127.0.0.1:54321/rest/v1/drill_attempts**", async (route) => {
     const diagnostic = {
@@ -245,34 +249,105 @@ test("signed-in history produces the same exact diagnostic recommendation", asyn
   ).toBeVisible();
 });
 
+test("signed-in case history replays its ordered exact V2 attempt from Progress", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await completeAlpineFitV2(page);
+  const savedAttempt = await page.evaluate(() => {
+    const history = JSON.parse(
+      sessionStorage.getItem("casework:practice-history") ?? "{}",
+    ) as {
+      caseAttempts?: Array<{
+        attemptId: string;
+        caseId: string;
+        skillScores: Record<string, number>;
+        feedbackCodes: string[];
+        events: unknown[];
+        completedAt: string;
+        scoringVersion: string;
+        contentVersion: number;
+        eventSchemaVersion: number;
+        scaffoldingLevel: string;
+        learningEvidence: unknown;
+        diagnostics: unknown[];
+      }>;
+    };
+    if (!history.caseAttempts?.[0]) throw new Error("Completed case was not saved");
+    return history.caseAttempts[0];
+  });
+  await installSignedInSession(page);
+
+  await page.route("http://127.0.0.1:54321/rest/v1/drill_attempts**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  const attemptRow = {
+    id: savedAttempt.attemptId,
+    user_id: "user-1",
+    case_id: savedAttempt.caseId,
+    skill_scores: savedAttempt.skillScores,
+    feedback_codes: savedAttempt.feedbackCodes,
+    completed_at: savedAttempt.completedAt,
+    scoring_version: savedAttempt.scoringVersion,
+    content_version: savedAttempt.contentVersion,
+    event_schema_version: savedAttempt.eventSchemaVersion,
+    scaffolding_level: savedAttempt.scaffoldingLevel,
+    learning_evidence: savedAttempt.learningEvidence,
+    diagnostics: savedAttempt.diagnostics,
+  };
+  let ownedAttemptRequestUrl = "";
+  await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", async (route) => {
+    const isSingle = new URL(route.request().url()).searchParams.has("id");
+    if (isSingle) ownedAttemptRequestUrl = route.request().url();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(isSingle ? attemptRow : [attemptRow]),
+    });
+  });
+  let ownedEventsRequestUrl = "";
+  await page.route("http://127.0.0.1:54321/rest/v1/case_events**", async (route) => {
+    ownedEventsRequestUrl = route.request().url();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(savedAttempt.events
+        .map((event, sequence) => ({ sequence, event }))
+        .reverse()),
+    });
+  });
+
+  await page.goto("/progress");
+  const replayRequest = page.waitForRequest((request) =>
+    request.method() === "POST" &&
+    request.url().includes("/api/cases/alpinefit-profitability/session"),
+  );
+  await page.getByRole("link", { name: "Review AlpineFit profitability · V2" }).click();
+  const replayPayload = await (await replayRequest).postDataJSON() as {
+    contentVersion: number;
+    events: unknown[];
+  };
+
+  expect(replayPayload.contentVersion).toBe(2);
+  expect(replayPayload.events).toEqual(savedAttempt.events);
+  expect(new URL(ownedAttemptRequestUrl).searchParams.get("user_id"))
+    .toBe("eq.user-1");
+  expect(new URL(ownedAttemptRequestUrl).searchParams.get("id"))
+    .toBe(`eq.${savedAttempt.attemptId}`);
+  expect(new URL(ownedEventsRequestUrl).searchParams.get("user_id"))
+    .toBe("eq.user-1");
+  expect(new URL(ownedEventsRequestUrl).searchParams.get("case_attempt_id"))
+    .toBe(`eq.${savedAttempt.attemptId}`);
+  await expect(page.getByRole("heading", { name: "Preserved issue tree" }))
+    .toBeVisible();
+  await expect(page.getByText("Revision 1").first()).toBeVisible();
+});
+
 test("signed-in case history stops safely when its exact version is unavailable", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
-  const payload = Buffer.from(JSON.stringify({
-    sub: "user-1",
-    exp: 4_102_444_800,
-    role: "authenticated",
-  })).toString("base64url");
-  await page.addInitScript(({ token }) => {
-    localStorage.setItem("sb-127-auth-token", JSON.stringify({
-      access_token: token,
-      refresh_token: "e2e-refresh-token",
-      token_type: "bearer",
-      expires_in: 2_147_483_647,
-      expires_at: 4_102_444_800,
-      user: {
-        id: "user-1",
-        aud: "authenticated",
-        role: "authenticated",
-        email: "learner@example.com",
-        app_metadata: {},
-        user_metadata: {},
-        identities: [],
-        created_at: "2026-01-01T00:00:00.000Z",
-      },
-    }));
-  }, { token: `e2e.${payload}.signature` });
+  await installSignedInSession(page);
 
   await page.route("http://127.0.0.1:54321/rest/v1/drill_attempts**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),

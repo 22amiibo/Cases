@@ -38,5 +38,17 @@ additive schema.
 
 ## Live release record
 
-Live migration, deployment, sign-in/RLS smoke, historical replay, and production
-answer-secrecy inspection must be recorded after the owner approves release.
+This section is the release-candidate evidence record. Controller-held command
+transcripts, artifact paths, and checksums must be linked or copied here before
+the owner approves production deployment; values not supplied to this worktree
+are intentionally not invented.
+
+| Gate | Status and evidence |
+| --- | --- |
+| Linked migration dry-run | Complete, controller-confirmed: the linked-project dry-run included additive migrations `002_v2_learning_evidence.sql` and `003_case_event_evidence.sql`. The command transcript remains in the controller's release record. |
+| Recoverable backup | Complete, controller-confirmed: checksummed schema and data backups were created. Artifact locations and checksum values remain in the controller's release record. |
+| Live migration apply | Pending controller action after code-fix review and required approval. This implementation task did not apply migrations. |
+| Transaction-scoped live RLS smoke | Pending controller action after migration apply. Record proof that the owner can read the owned attempt and ordered events, a second user cannot read either, and the smoke transaction rolls back. |
+| Live signed-in save and exact-version replay | Pending approved release smoke. Record the saved attempt ID, content version, and replay result without learner content. |
+| Production answer-secrecy inspection | Pending approved deployment. Record the inspected precommit responses and result. |
+| Rollback rehearsal | Pending approved release window. Record the V1 active-version selection and restoration result without deleting V2 rows. |

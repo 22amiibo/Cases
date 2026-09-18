@@ -8,14 +8,18 @@ evaluation, and existing user work.
 
 ## Remaining task set
 
-1. Obtain explicit owner approval for the production migration and deployment.
-2. Record live sign-in/RLS, save, historical replay, rollback, and answer-
-   secrecy smoke results after deployment.
+1. Have the controller apply migrations `002` and `003` after code-fix review
+   and required approval, then run the transaction-scoped live cross-user/RLS
+   smoke.
+2. Obtain explicit owner approval for deployment and record live sign-in/save,
+   historical replay, rollback, and answer-secrecy smoke results.
 
 ## Current task
 
-Task 17 is implemented, locally verified, and ready for the required commit.
-Production migration and deployment remain outside this implementation run.
+Task 17's initial implementation is committed as `a5390a7`. Review fix round 1
+closes fail-open event parsing, inactive-case historical replay, and successful
+signed-in replay coverage. Production migration and deployment remain outside
+this implementation run.
 
 ## Completed tasks
 
@@ -28,6 +32,8 @@ Production migration and deployment remain outside this implementation run.
 - Task 16 committed as `feat: add diagnostic v2 progress coaching`.
 - Task 17 adds owned exact-version historical replay, safe unavailable-version
   summaries, Progress replay links, release documentation, and release gates.
+- Task 17 initial implementation committed as `a5390a7` (`chore: harden and
+  document casework v2 pilot`).
 
 ## Remaining work
 
@@ -58,15 +64,23 @@ Production migration and deployment remain outside this implementation run.
 - Task 17 full local gate: 54 test files / 262 tests passed; lint, typecheck,
   production build, and `git diff --check` passed; all 33 Playwright journeys
   passed, including signed-in unknown-version safety, axe, and 320px reflow.
-- The migration SQL contract tests passed. This machine has no Supabase CLI,
-  PostgreSQL client, or Docker runtime, so an executable local migration reset
-  was not available and remains a release-environment check.
+- Review fix round 1 focused repository/route regressions pass, and both the
+  successful ordered exact-V2 replay and unknown-version stop browser journeys
+  pass.
+- Review fix round 1 full local gate: 54 test files / 264 tests passed; lint,
+  typecheck, production build, and `git diff --check` passed; all 34 Playwright
+  journeys passed.
+- The migration SQL contract tests passed. The controller confirmed a linked
+  dry-run containing migrations `002` and `003` and confirmed checksummed schema
+  and data backups. Transcripts, artifact locations, and checksum values remain
+  in the controller's release record.
 
 ## Known deferred issues
 
 - Live deployment/migration work requires explicit owner approval.
-- Executable database migration smoke remains pending in an environment with
-  Supabase CLI and a local database runtime.
+- Migration apply and the transaction-scoped live cross-user/RLS smoke remain
+  pending controller action; they are external release gates, not a local code
+  blocker.
 
 ## Blockers
 
@@ -74,5 +88,7 @@ Production migration and deployment remain outside this implementation run.
 
 ## Exact next action
 
-Review the Task 17 report and commit, then obtain owner approval before any live
-migration or deployment. Preserve the two pre-existing untracked user items.
+Review the Task 17 fix commit. The controller can then apply migrations `002`
+and `003` under the required approval and record the transaction-scoped live
+cross-user/RLS smoke in `RELEASE_NOTES.md`. Preserve the two pre-existing
+untracked user items; deployment still requires explicit owner approval.

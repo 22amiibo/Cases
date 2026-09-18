@@ -99,13 +99,14 @@ Before an approved release:
 
 1. Confirm a recoverable database backup and compare local/remote migration
    state with `supabase migration list`.
-2. Run `supabase db reset` against local Supabase to smoke-test all checked-in
-   migrations, then run the full verification commands above.
+2. Dry-run the linked migration apply (and use `supabase db reset` when a local
+   Supabase runtime is available), then run the full verification commands
+   above.
 3. Inspect browser network responses before commitment for authored answers,
    rubric correctness, scoring metadata, and hidden case conclusions.
 4. Apply `supabase db push` and deploy only after the owner approves both live
    actions. Record live sign-in, RLS, save, replay, and answer-secrecy smoke
-   results separately.
+   results in the release evidence record in `RELEASE_NOTES.md`.
 
 Rollback does not delete V2 attempts. Point the three pilot entries in
 `activeCaseVersions` back to version `1`, redeploy the application, and leave

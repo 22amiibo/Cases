@@ -283,7 +283,6 @@ describe("SupabasePracticeRepository", () => {
             atMs: 1,
           },
         },
-        { sequence: 2, event: { type: "invented", atMs: 3 } },
       ]),
     });
     const repository = new SupabasePracticeRepository(database);
@@ -358,6 +357,41 @@ describe("SupabasePracticeRepository", () => {
       "user-1",
       caseAttempt.attemptId,
     );
+  });
+
+  it("rejects a historical attempt when any stored event is malformed", async () => {
+    const database = client({
+      selectCaseAttempt: vi.fn().mockResolvedValue({
+        id: caseAttempt.attemptId,
+        user_id: "user-1",
+        case_id: "alpinefit-profitability",
+        skill_scores: { structure: 90 },
+        feedback_codes: [],
+        completed_at: "2026-01-03T00:00:00.000Z",
+        scoring_version: "v2",
+        content_version: 2,
+        event_schema_version: 2,
+        scaffolding_level: "beginner",
+        learning_evidence: null,
+        diagnostics: [],
+      }),
+      selectCaseEvents: vi.fn().mockResolvedValue([
+        {
+          sequence: 0,
+          event: {
+            type: "clarification_selected",
+            clarificationId: "clarify-goal",
+            atMs: 1,
+          },
+        },
+        { sequence: 1, event: { type: "invented", atMs: 2 } },
+      ]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await expect(
+      repository.getCaseAttempt("user-1", caseAttempt.attemptId),
+    ).rejects.toThrow();
   });
 
   it("does not read events when the attempt row is not owned by the learner", async () => {

@@ -71,6 +71,18 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 implementation plan — draft for owner review
+
+- Reconciled the proposed V3 roadmap with the released V2 baseline at
+  `c9dde86` and saved the implementation-ready draft in
+  `CASEWORK_V3_IMPLEMENTATION_PLAN.md`.
+- The draft limits detailed implementation planning to V3.0, keeps V3.1 and
+  V3.2 behind production-evidence gates, preserves legacy schemas, and adds the
+  missing immutable course-step evidence contract.
+- V3 implementation, migration, and deployment remain unauthorized.
+- Next action: owner review of the V3.0 scope and plan. If approved, create a
+  clean V3 branch/worktree and execute Task 0 only.
+
 ### V2 final wrong-unit retry release fix — deployed
 
 - Reproduced the release blocker: after a correct number with the wrong unit,

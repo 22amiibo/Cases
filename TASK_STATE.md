@@ -10,6 +10,12 @@ deterministic evaluation, and existing user work.
 
 None. V2 is released.
 
+## V3 planning
+
+`CASEWORK_V3_IMPLEMENTATION_PLAN.md` is a draft for owner review. It reconciles
+the V3 proposal with the released V2 baseline and provides an executable V3.0
+task sequence. It does not authorize implementation, migration, or deployment.
+
 ## Current task
 
 The final V2 release blocker is fixed and deployed. `CaseGeneratedStep` now
@@ -97,5 +103,6 @@ calculation can be retried immediately without refresh. Production migrations
 
 ## Exact next action
 
-Preserve the two pre-existing untracked user items. No further V2 release work
-is assigned.
+Preserve the two pre-existing untracked user items. Review
+`CASEWORK_V3_IMPLEMENTATION_PLAN.md`; no V3 implementation begins without
+explicit owner approval.

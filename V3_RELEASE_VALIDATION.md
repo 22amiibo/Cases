@@ -1,0 +1,454 @@
+# Release candidate
+
+**Continuation verdict (2026-09-18): BLOCKED — RELEASE FIX REQUIRED.** See the continuation below. Real Auth/PostgREST testing is now available and exposed cross-identity browser-draft reuse. The code candidate remains `3b0e6be478c9905ae442570fa08283c4c1c07635`; only this report is being committed. Earlier evidence is preserved as the record of the first validation pass, not a statement that its environment limitations remain unchanged.
+
+- Validation date: 2026-09-18 (America/Chicago).
+- Repository/worktree: Casework, `.worktrees/casework-v3`.
+- Branch: `feature/casework-v3`.
+- Original candidate: `94249c5b1d272a3c01bc6be0905e64c536f61a22`.
+- Revised candidate validated: `3b0e6be478c9905ae442570fa08283c4c1c07635` (`fix: enforce v3 case metadata during release validation`). **The candidate commit changed.** The original candidate is not approved: validation found and corrected a V3 metadata constraint defect.
+- Validator: Codex; local macOS ARM64, Node 26.4.0, npm 11.17.0, PostgreSQL 17.11, Supabase CLI 2.117.0, Chromium/Playwright 1.63.0, Next.js 16.3.5.
+- Production databases, deployment settings, and production data were not accessed or changed. No production migration or deployment occurred.
+
+## Integrity and environment
+
+Initial branch and HEAD matched the request; initial worktree was clean. Migrations 001–003 and both protected paths have no tracked differences from the documented V2 production baseline `c9dde86b0529901a7bcee801fcb8e070f72b8b86`.
+
+Running the Supabase CLI initially created untracked `supabase/.temp/cli-latest` in the candidate worktree. This is an unexpected protected-path side effect, disclosed during validation. It was not edited, staged, or deleted. Subsequent CLI operations used temporary projects outside the worktree. The final worktree is therefore **not clean**, even apart from this report.
+
+The original generated `.next` cache contained duplicate filenames and produced TypeScript errors. It was moved intact to the evidence directory. A later generated Turbopack cache also failed with `invalid digit found in string`. Final application verification used a clean `git archive` export outside the Desktop directory, with the existing installed dependencies copied into it. The cause of the duplicate files was not established. The export began at the original SHA; only the documented migration/test fixes were subsequently copied into it.
+
+Required application configuration is exactly:
+
+| Variable | Requirement |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Actual isolated/production Supabase **HTTP API** URL, selected for the intended environment at build time |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Matching public anon key; RLS remains mandatory |
+
+With neither configured, the application supports guest session storage. Never put a service-role key, database password, or privileged token in a `NEXT_PUBLIC_*` variable. CLI database credentials are operational secrets, not application variables. No other application environment variable or runtime V3 disable flag was found. Production values and platform configuration were not verified.
+
+The production-mode test build used `http://127.0.0.1:54321` and `e2e-anon-key`, matching the repository's mocked browser suite. **No Supabase HTTP service was listening there.** An earlier build used PostgreSQL port 55432 as the public URL; that was not a valid API configuration and is not accepted as connected-application evidence.
+
+## Surgical release fix
+
+Original migration 004 allowed an authenticated owner to insert a V3 case with `case_mode = NULL`. PostgreSQL CHECK constraints accept an unknown/NULL expression. The application requires the mode and parses V3 cases strictly; an invalid owned row can therefore break that user's history/course reads.
+
+Changed only the V3 branch of `case_attempts_version_metadata_check` to `coalesce((...), false)`. V1/V2 branches remain unchanged. This also rejects NULL content version, event schema version, diagnostics, and skill evidence for V3 cases. Added `supabase/tests/v3_required_metadata.sql`, a real transaction-scoped database regression:
+
+- Before fix: exit 3, `V3 required metadata accepted NULL: case_mode`.
+- After fix: all five NULL-field checks pass on fresh and V2-upgraded databases.
+- Valid V1, V2, and V3 rows remain accepted, including nullable V3 scaffolding; all fixture changes roll back.
+
+Production-mode browser verification additionally exposed five tests refreshing before asynchronous commits were confirmed. Added five visible-state waits across four existing e2e files, preserving every post-refresh assertion. No application UI, content, API, or TypeScript persistence implementation changed. Before: 54 passed / 5 failed; after: 59 passed / 0 failed in production mode.
+
+Migration 004 is documented as unreleased. Editing it is appropriate only while production has 001–003. **If any target already applied the original 004, abort this rollout proposal:** the CLI will not reapply an edited migration. That environment requires a separately reviewed forward migration, not migration-history repair or an unrecorded constraint edit.
+
+# Fresh migration
+
+## Isolation and process
+
+Dedicated cluster: `/tmp/casework-v3-validation-94249c5/pgdata`, loopback `127.0.0.1:55432`, socket `/tmp/casework-v3-validation-94249c5/socket`. This is a disposable local PostgreSQL cluster, not production. Local trust authentication is confined to this test cluster; it is not a production recommendation.
+
+The bootstrap supplied Supabase prerequisites: `auth.users`, `auth.uid()`, authenticated/anon/service roles, schema usage, and the legacy Supabase default table/sequence/function grants. It did **not** implement Supabase Auth, JWT verification, PostgREST, or a full managed Supabase installation. The roles and RLS policies execute in real PostgreSQL.
+
+The original candidate passed a fresh psql single-transaction apply per migration and a separate actual Supabase CLI apply. The corrected candidate was applied from scratch to `casework_fixed_fresh` using CLI 2.117.0:
+
+```sh
+/tmp/casework-v3-validation-94249c5/supabase-cli/supabase \
+  --workdir /tmp/casework-v3-validation-94249c5/fixed-project \
+  db push \
+  --db-url 'postgresql://noahmartz@127.0.0.1:55432/casework_fixed_fresh?sslmode=disable' \
+  --include-all --skip-vault --yes
+```
+
+Exact order: `001_initial.sql`, `002_v2_learning_evidence.sql`, `003_case_event_evidence.sql`, `004_v3_learning.sql`. All succeeded. No application seed is required by this history. CLI migration ledger contains versions 001–004.
+
+Migration SHA-256 values:
+
+| Migration | SHA-256 |
+| --- | --- |
+| 001 | `38877c00adcf5eaa3628023888d0fdecc8e2f1e85e1aaba5daf03ef41c641121` |
+| 002 | `42e34d899dd3f7c6ef6547f5e9cedac550d7f6e6a009d98513c778d35a53e502` |
+| 003 | `dbb06b367ebf23ee18ff2eaed010a4f5cf60147f57a423db62fbec5851d55a26` |
+| corrected 004 | `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844` |
+
+Original 004 hash was `dea562291d8880a73e74c53e0b3d4a2809793a525d618cd4e52bcb13cdc7b010`.
+
+## Schema evidence
+
+Verified eight public tables, expected repository columns, 45 constraints, 21 indexes (including seven explicitly named query indexes), defaults/identity columns, five persistence RPCs, the signup/profile trigger, grants, eight RLS-enabled tables, and eight owner policies. The complete catalog is in `schema-catalog.log`; the corrected schema differs only in the documented V3 CHECK branch.
+
+- Tables: profiles, drill_attempts, case_attempts, case_events, activity_attempts, activity_events, course_enrollments, course_step_events.
+- Composite ownership FKs bind activity/case events to the matching attempt and user. Course-step events require the matching enrollment.
+- Unique event sequences, activity event IDs, enrollment keys, and lesson-step event keys are present.
+- Activity version fields require positive content version, event schema 3, scoring `v3`; case V3 retains event schema 2. Content version is independent of scoring version: current activities/course use version 1, AlpineFit uses version 2.
+- Course context is all NULL or all populated; versions are positive. Activity completion cannot precede start.
+- Defaults include creation timestamps, legacy UUIDs/empty arrays, and generated event identities. New activity attempt IDs are supplied by the application.
+- All five persistence RPCs are SECURITY INVOKER with an empty search path. The profile-creation trigger function is SECURITY DEFINER with an empty search path; two auth user inserts produced two profiles.
+- No `learning_runs` table is intended: unfinished runs are browser session drafts.
+
+Fresh representative writes produced two users/profiles, two drills, two activity attempts/four events, two V3 case attempts/two events, two enrollments, and two lesson events. Practice and Interview modes, standalone and course contexts, and exact versions survived reads. The real repository parsed these rows through a SQL-backed validation adapter.
+
+**Limit:** migrations rely on platform default table/sequence grants. They do not independently install every authenticated table privilege. This rehearsal modeled legacy Supabase defaults; a project using opt-in grants requires explicit verification before approval. Grants and RLS are independent controls ([Supabase API security](https://supabase.com/docs/guides/api/securing-your-api)).
+
+# Upgrade migration
+
+Starting shape: exact unchanged migrations 001–003, matching the repository's latest documented V2 production shape. No production export was used; this is a synthetic representative fixture, not proof of the current live catalog or production-scale migration timing.
+
+For the corrected candidate, `casework_fixed_upgrade` received 001–003 through the actual CLI. `upgrade_seed.sql` then inserted V1/V2 attempts, versioned events, users, and historical scores/diagnostics. Row counts and stable JSON digests of every original persisted field were captured. Only corrected 004 was then copied to the isolated migration project and applied with `db push`.
+
+| Resource | Before | After | Original values |
+| --- | ---: | ---: | --- |
+| profiles | 2 | 2 | unchanged |
+| drill_attempts | 2 | 2 | unchanged |
+| case_attempts | 3 | 3 | unchanged |
+| case_events | 3 | 3 | unchanged |
+
+All ten row digests match. Case versions remain one V1 and two V2; none were relabeled V3. No historical rows were rewritten or removed. Migration 004 adds tables/nullable columns/indexes/functions/policies and replaces a metadata constraint; it performs no data UPDATE/DELETE.
+
+`read-persisted.mjs` read the actual upgraded rows under an authenticated owner role and passed them through the candidate repository and exact-definition review code. V1 and V2 attempt parsing/review passed; history returned four owned skill records; the other user's case detail was absent. This adapter uses SQL instead of PostgREST, so it is not a substitute for the missing browser integration gate.
+
+New V3 activity/case/course-context writes and reads passed on the fresh corrected schema. The SQL regression also accepted a valid V3 row on the upgraded schema. Complete browser workflows against the upgraded database remain unverified.
+
+# RLS matrix
+
+Users: A `11111111-1111-4111-8111-111111111111`; B `22222222-2222-4222-8222-222222222222`. Every ownership query/mutation used `BEGIN; SET LOCAL ROLE authenticated;` and a transaction-local `request.jwt.claim.sub`, never an owner/superuser role for the tested operation. Mutations were rolled back. This exercises real PostgreSQL RLS, including permissive table grants, without an application mock. JWT issuance/validation is outside this evidence.
+
+The following direct-table matrix was run in **both directions**, A→B and B→A. Counts are per user; activity_events has two own rows, every other resource one. Cross-user INSERT tests used unused IDs, avoiding primary-key collisions.
+
+| Resource | Own SELECT / UPDATE / DELETE expected → actual | Other SELECT / UPDATE / DELETE expected → actual | Own INSERT expected → actual | Other INSERT expected → actual |
+| --- | --- | --- | --- | --- |
+| profiles | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | signup trigger → profile created | direct INSERT not tested |
+| drill_attempts | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| case_attempts | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| case_events | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| activity_attempts | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| activity_events | 2 / 2 / 2 → 2 / 2 / 2 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| course_enrollments | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+| course_step_events | 1 / 1 / 1 → 1 / 1 / 1 | 0 / 0 / 0 → 0 / 0 / 0 | 1 → 1 | denied → denied |
+
+Progress/history/detail reads use these owned tables; there is no separate unrestricted history view or learning-run persistence surface.
+
+| RPC/security scenario | Expected | Actual |
+| --- | --- | --- |
+| get_case_events, own / other attempt, A and B | 1 / 0 events | 1 / 0 |
+| save_case_attempt, save_case_attempt_v2, save_case_attempt_v3, save_activity_attempt_v3 with other user ID, A and B | reject | all rejected by identity guard |
+| V3 case/activity retry with own identity but foreign attempt ID, A and B | reject | conflicting-attempt error; no takeover |
+| Identical activity retry, A and B | one attempt/two events | unchanged counts |
+| Identical V3 case retry, A and B | one attempt/one event | unchanged counts |
+| Changed activity/case metadata on retry, A | reject | both rejected |
+| Change ownership of existing rows, eight tables, A and B | reject | all SQLSTATE 42501 |
+| Insert child event with own user ID and other user's parent, A and B | reject | both composite FKs reject, SQLSTATE 23503 |
+| Activity RPC with missing event ID, A and B | reject entire save | SQLSTATE 23502; parent attempt absent |
+| New transaction without claim, all eight tables | zero rows | zero rows; prior identity did not leak |
+| anon activity table read / V3 activity RPC | zero / reject | zero / rejected |
+
+No tested cross-user access succeeded. Under the modeled default grants, anon still has explicit function EXECUTE despite revoking PUBLIC. The identity guards and RLS fail closed; do not mistake PUBLIC revocation for removal of an explicit anon grant ([Supabase function privileges](https://supabase.com/docs/guides/database/functions)).
+
+Owner UPDATE/DELETE are allowed by the existing FOR ALL policies. Thus historical immutability is an application/RPC convention, not a database prohibition against an owner manually changing their own data. This validation does not claim otherwise.
+
+# Persistence smoke
+
+| Flow | Proven | Missing |
+| --- | --- | --- |
+| Activity start/commit/refresh/resume/complete/reopen | guest browser suite; production-mode flagship/review journeys | real authenticated browser → Supabase round trip |
+| Activity retry/idempotency | guest save recovery; real SQL RPC retries and atomic failure | HTTP retry/auth integration |
+| Case start/refresh/recover/complete | guest browser suite, both AlpineFit modes | real authenticated completion/save |
+| Persist case mode/exact version/reopen/replay | SQL modes/versions; real-row repository parsing; guest and mocked owned replay | real HTTP saved-attempt URL |
+| Profitability start/steps/leave/resume/completion | complete nine-step guest browser journey; repository tests for derived completion | real signed-in cross-device course against migrated DB |
+| Activity/case course context | SQL storage and repository parsing; guest course journey | HTTP/RLS integration of complete course saves |
+| Identity switch/stale data | browser identity-switch test with mocked auth/REST; real SQL identity isolation | real sign-out/sign-in/session refresh |
+
+The original five production-mode refresh failures were resolved by waiting for the committed state before refreshing. This proves recovery of confirmed commits. It does **not** promise that a request interrupted before confirmation survives navigation; unfinished server runs are not persisted by V3.0 design.
+
+# Regression suite
+
+Final results are from fresh runs during this validation, not copied from RELEASE_NOTES.md. Final application source is unchanged from the original commit; migration and test changes are listed above.
+
+| Check | Result / evidence |
+| --- | --- |
+| `npm run lint` | pass, exit 0; `lint-fixed.log` |
+| `npm run typecheck` | pass, exit 0 after production type generation; `typecheck-fixed.log` |
+| `npm test` | 90 files / 480 tests passed, exit 0; `unit-fixed.log` |
+| legacy V1/V2 fixtures | all four `v3-compatibility.test.ts` tests included in the 480; actual upgraded-row parse/review also passed |
+| `CI=1 npm run test:e2e` | 60 passed, 0 failed, no retries reported, exit 0, 1.3m; `playwright-fixed-ci.log` |
+| production browser suite | 59 passed, 0 failed, exit 0, 38.1s; `playwright-production-fixed.log` |
+| production build | pass, 22 static pages; `build-clean.log` |
+| answer-secrecy bundle scan | 23 chunks / three exact server-only markers absent; `secrecy-clean.log` |
+| accessibility / keyboard / reflow | included in browser suites; axe, keyboard navigation, 320/768/1440 checks |
+| precommit network secrecy | activity/case response checks included in browser suites; selected authored markers/metadata, not an exhaustive proof of every possible disclosure |
+| SQL metadata regression | five rejected NULL fields plus valid V1/V2/V3 rows on fresh and upgraded schemas |
+| `git diff --check` | pass; staged surgical fix also passed before commit |
+
+Production browser command:
+
+```sh
+node node_modules/@playwright/test/cli.js test \
+  --config=/tmp/casework-v3-validation-94249c5/playwright-production.config.ts
+```
+
+This temporary config runs `next start`, two workers, no retries, and the existing suite except its explicitly development-only private activity. Guest flows use real Next.js APIs and session storage; signed-in flows retain the repository's mocked Supabase responses. No agent-browser executable was available; installed Playwright supplied browser verification.
+
+Earlier attempts are retained as adverse evidence: two original-worktree runs each had 59 pass/1 navigation timeout, their focused repetitions passed 3/3 each, and the pause interrupted a CI run (exit 130, 59 passed/1 flaky). A later start failed on corrupted generated cache. The clean original export then passed all 60 tests. Production mode first had 54/59 pass before the five confirmation waits. None of these failures is silently counted as a clean pass.
+
+# Recovery / rollback
+
+## Demonstrated behavior
+
+The SQL files contain no explicit BEGIN/COMMIT. psql was initially run with `--single-transaction` per migration. Separately, the actual Supabase CLI 2.117.0 path was fault-tested: append `select 1 / 0;` to an isolated copy of 004 after applying 001–003. The CLI failed with SQLSTATE 22012. Ledger remained 001–003; activity_attempts and case_mode were absent; the old V2 constraint remained. Restoring the exact migration and retrying succeeded, ledger 001–004. This proves atomicity for that CLI/migration failure, not for arbitrary deployment runners or connection failures at commit time. The fault experiment used original 004; the corrected migration was independently applied fresh and as an upgrade.
+
+The application must deploy **after** migration 004 and its schema/grants/RLS checks. Deploying V3 first can request nonexistent tables/functions. V2's baseline repository selects explicit legacy columns and ignores non-V1/V2 scoring versions, so code inspection supports a compatibility window with the additive schema. A running V2 application against mixed migrated data was **not rehearsed**.
+
+## Concrete procedure (proposal; production actions not executed)
+
+1. Before migration, retain a recoverable backup/checkpoint, schema dump, migration ledger, application deployment ID, migration checksums, and row-count checks. Demonstrate restoration into a separate environment. Do not accept an untested backup as rollback proof.
+2. If 004 fails before application rollout, keep V2 serving. Inspect the ledger and actual catalog; if both remain at 003, correct the execution/environment problem and retry the exact reviewed migration. Never use migration repair to pretend SQL ran.
+3. If connection loss makes commit outcome uncertain, inspect both ledger and catalog before retry. If inconsistent or partially applied, stop for recovery assessment; do not blindly rerun non-idempotent CREATE statements.
+4. After a successful 004 but before deployment, an application problem does not require schema deletion. Leave additive tables/columns/history in place and keep V2 running, subject to the missing compatibility rehearsal.
+5. After V3 deployment, the proposed disable path is to restore the specifically verified previous V2 deployment with the same database configuration. Retain schema 004 and all V3 records. V3 history may temporarily be inaccessible in V2 UI. This deployment rollback is **not yet demonstrated**, and no runtime kill switch exists. Merely changing active content registries would require a separately tested application build and may not close direct routes.
+6. If database corruption is suspected, preserve current evidence and writes, stop rollout, and restore the checkpoint to a separate database for comparison. Any production restore/cutover requires separate owner approval and reconciliation of writes after the checkpoint. Do not drop V3 tables or run a down migration to disable the release.
+
+No destructive database rollback, point-in-time restore, or production application rollback was performed. Retained local cluster/artifacts allow further validation; they are not production backup assets.
+
+# Production rollout proposal
+
+**Not executable for approval yet:** close the unresolved validation gates first. The commands below describe a future separately approved production workflow.
+
+1. Finish real Auth/PostgREST browser testing in a disposable Supabase environment using both users; run the persistence matrix on fresh and upgraded schemas. Rehearse V2 application compatibility and deployment rollback there.
+2. Owner identifies the production project, current deployed application SHA/deployment ID, and actual schema/ledger. Expected baseline is 001–003 and documented V2 `c9dde86…`, but repository notes are not evidence of current production reality. Abort on drift or any existing 004 until reviewed.
+3. Verify and restore-test the production backup/checkpoint; record location, checksum, retention, and recovery owner. Record counts/representative digests, policy/function definitions, and default grants. Choose a window for 004's ALTER TABLE constraint/index locks; production-size timing and concurrent load have not been measured.
+4. Obtain separate explicit owner approval for **production migration** and **application deployment**. Pin the revised candidate SHA and corrected 004 hash. Verify the two public environment variables point to the intended project, and that no privileged credentials enter browser assets.
+5. In a clean deployment checkout, use the reviewed CLI version. `supabase migration list --linked` must agree with the catalog; `supabase db push --linked --dry-run` must list **only 004_v3_learning.sql**. Abort if anything else is proposed. Do not use `--include-all`, seed, reset, or repair as a production workaround.
+6. Apply `supabase db push --linked` only under the approved migration action. Verify ledger 001–004; tables/columns/constraints/indexes/functions/trigger; all RLS policies; authenticated table/sequence/RPC grants; NULL rejection; unchanged historical counts/records. Use transaction-scoped A/B checks with dedicated test identities and rollback mutations. Abort deployment on any discrepancy.
+7. Deploy the pinned revised application commit using the verified production public configuration. Do not promote a build containing the local test URL/key. Retain the previous verified deployment.
+8. Post-deploy, use dedicated test accounts: sign in; complete/reopen/retry one activity; complete AlpineFit Practice and Interview modes; refresh and reopen exact-version case URLs; enroll/leave/resume Profitability; inspect progress/history; sign out and switch identities; verify guest behavior and precommit answer secrecy. Record IDs/versions/results without learner text or tokens.
+9. Observe hosting deployment/build/runtime logs, Supabase Postgres/Auth/API logs, and browser console/network failures for these runs and an owner-defined observation window. No custom telemetry, alert thresholds, or monitoring owner is configured by this repository; establish those operational details before promotion.
+10. Declare healthy only after all checks pass. Abort/recover on cross-user data, failed saves/retries, lost historical rows, version/mode mismatch, answer leakage, persistent 5xx/auth failures, or broken refresh/history/course flows. Use the recovery procedure above; retain V3 data. If the agreed previous deployment has not been rehearsed, do not claim an immediate safe rollback.
+
+# Unresolved risks
+
+| Severity | Impact | Recommendation |
+| --- | --- | --- |
+| Blocking | No full isolated Supabase HTTP/Auth service or real JWT browser session was available. Gates 6/7 signed-in persistence are incomplete. | Provision a disposable full Supabase environment; execute real A/B sign-in, save, refresh, identity switch, exact-history, course, and HTTP retry flows. |
+| Blocking | V2 application rollback/compatibility with mixed migrated data and disable procedure are not demonstrated. | Rehearse the exact previous deployment and restoration before owner approval. |
+| High, environment-dependent | Table/sequence grants depend on Supabase defaults; local bootstrap modeled legacy grants. | Confirm actual migration owner/default ACLs and API exposure in the isolated target and before production migration. |
+| Medium | Historical seed is small/synthetic; no production-scale locks, latency, or data distribution exercised. | Validate production shape and restore-test a representative sanitized backup; plan the migration window. |
+| Medium | Owners can directly UPDATE/DELETE their own history; immutable-history behavior is not enforced against manual owner writes. | Record this boundary; separately review stricter privileges if database-enforced immutability is required. No cross-user bypass was observed. |
+| Medium | Earlier generated-cache corruption and navigation timeouts occurred on the Desktop worktree. | Build from a clean controlled checkout; retain failed-run evidence. Root cause of duplicate cache files remains unknown. |
+| Low | Protected untracked CLI cache was generated during validation; final worktree is not clean. | Owner handles the protected artifact separately; do not stage it with release changes. |
+
+The original NULL metadata defect is fixed and regression-tested; it is not an unresolved defect in the revised candidate. Production browser refresh tests now wait for confirmed commits; no claim is made about surviving an aborted in-flight request.
+
+# Evidence locations
+
+Local evidence root: `/tmp/casework-v3-validation-94249c5/`. These artifacts are temporary and must be archived with the release record before relying on them later.
+
+- `supabase_bootstrap.sql`, `fresh_schema_and_seed.sql`, `upgrade_seed.sql`, `upgrade_after.sql`.
+- `rls_matrix.sql`, `rls_extra.sql`, `rls-fixed.log`, `rls-fixed-b.log`, `rls-extra.log`.
+- `read-persisted.mjs`, `persisted-fixed.log`, `schema-catalog.log`.
+- `metadata-before.log`, `metadata-after.log`; durable regression: `supabase/tests/v3_required_metadata.sql`.
+- `lint-fixed.log`, `typecheck-fixed.log`, `unit-fixed.log`, `build-clean.log`, `secrecy-clean.log`.
+- `playwright-clean-ci.log`, `playwright-fixed-ci.log`, `playwright-production.log`, `playwright-production-fixed.log`, `production-test-results/` (later runs may replace browser artifacts).
+- `fixed-project/`, `upgrade-project/`, `failure-project/`, `playwright-production.config.ts`, `clean-candidate/`, cluster `postgres.log`.
+
+# Previous validation verdict (superseded by continuation)
+
+**BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
+
+The corrected migrations and database ownership checks passed, and application regression evidence is strong within its stated guest/mocked-auth limits. It is not yet proven safe to migrate and deploy production. Complete real Supabase application persistence and the rollback rehearsal before requesting owner production approval. Production migration and deployment remain separate, explicitly approved actions.
+
+Final worktree: no uncommitted tracked source changes; this report is untracked, and protected `supabase/.temp/cli-latest` remains untracked. The worktree is **not clean**. No protected artifact was included in the fix commit.
+
+All 316 tracked files match the tested clean export byte-for-byte. The report passed its whitespace check. The isolated PostgreSQL cluster was stopped cleanly at handoff; databases and evidence files were retained.
+
+# Continuation — remaining blockers, 2026-09-18
+
+## Candidate integrity and scope
+
+Reconfirmed branch `feature/casework-v3`, exact HEAD `3b0e6be478c9905ae442570fa08283c4c1c07635`, and no tracked changes at continuation start. Corrected migration 004 still hashes to `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844`. No product source or migration was changed in this continuation. Prior 480-unit/60-e2e/59-production-journey results remain prior evidence for this same candidate; they were not rerun or counted as new results.
+
+Production data and deployments remained untouched. A connected Vercel read-only `list_teams` request returned zero teams; no target project/settings could be identified through that connection. There was no local Vercel linkage or supplied target credential configuration. No attempt was made to acquire broader permissions or retrieve secret values.
+
+## Blocker 1 — real Supabase Auth / JWT / PostgREST
+
+### Environment and commands
+
+Created an additional disposable database `casework_http` in the existing loopback-only PostgreSQL 17.11 cluster. Downloaded official PostgREST **16.3** macOS ARM64 and compiled official Supabase Auth **v2.197.0** with its Go toolchain. Auth's own upstream migrations created its real users, identities, sessions, refresh-token and other internal tables. This is native self-hosted Auth/PostgREST, **not** a managed Supabase project or the CLI Docker distribution. [Auth architecture](https://supabase.com/docs/guides/auth/architecture), [official Auth source](https://github.com/supabase/auth/tree/v2.197.0), [PostgREST release](https://github.com/PostgREST/postgrest/releases/tag/v16.3).
+
+Local request path:
+
+`Chromium → production Next.js app → loopback HTTP gateway → Supabase Auth / PostgREST → authenticated JWT role → RLS → PostgreSQL`.
+
+- App V3: `127.0.0.1:3000`; prior V2: `127.0.0.1:3001`.
+- HTTP gateway: `127.0.0.1:54321`; Auth: 55433; PostgREST: 55434; SMTP sink: 55435; PostgreSQL: 55432.
+- The gateway routes requests and supplies CORS headers; it does not mock Auth, REST results, JWT verification, or database operations. PostgREST verifies Auth-issued JWTs. Its connecting role is NOINHERIT, non-superuser and has no BYPASSRLS.
+- Magic links were requested using the actual application's Email form, delivered to an in-memory local SMTP sink and opened in Chromium. No fake sessions were injected for these sign-ins. The native Auth default existing-user `/verify` link path was normalized by the test to the gateway's `/auth/v1/verify`; production mail URL paths still require target verification.
+- Auth JWT signing material and test sessions stayed in process memory or mode-0600 local credential artifacts, not this report or Git. No production keys were used.
+- The local bootstrap initially needed Auth role search_path/ownership and a no-login `postgres` role before upstream migrations could finish. These were test-environment changes only. Application migrations then succeeded unchanged, 001 through corrected 004, through CLI 2.117.0.
+- The platform public-table/default-function grants were explicitly supplied in the isolated bootstrap. Successful HTTP access therefore does not prove the live project's default ACLs.
+
+Reproduction artifacts are under `/tmp/casework-v3-http-validation/`:
+
+```sh
+node /tmp/casework-v3-http-validation/stack.mjs
+node /tmp/casework-v3-http-validation/app.mjs v3 build
+node /tmp/casework-v3-http-validation/app.mjs v3 start
+# Run from the retained clean-candidate directory:
+node node_modules/@playwright/test/cli.js test \
+  --config=/tmp/casework-v3-http-validation/playwright.config.ts \
+  --grep 'real Auth'
+node /tmp/casework-v3-http-validation/http-checks.mjs
+```
+
+The stack script generates a new isolated key on restart: rebuild both app artifacts and create fresh test sessions after restarting it. Do not reuse old credential/session artifacts. The temporary bootstrap is a one-time setup for a fresh database, not an idempotent production provisioning script.
+
+### Real identity/request matrix
+
+Final failing browser run used A `e88de1b2-5220-47b0-bdb6-a566fbffc2f5` and B `5f81af0c-599e-4483-b7e5-f111a5f946f4`. Additional synthetic accounts from test-harness iterations remain isolated. `requests.json` records each browser request's method, path, JWT subject and response status, without tokens or query strings.
+
+| Request / flow | Identity | Expected | Actual |
+| --- | --- | --- | --- |
+| POST `/auth/v1/otp`, GET `/auth/v1/verify`, GET `/auth/v1/user` | A, then B | Real sign-in/session | 200 / 303 / 200; application displayed correct account |
+| POST Next `/api/activities/*/commit`, refresh | A | Confirmed draft resumes | Clarifying decision/feedback retained after refresh |
+| POST `/rest/v1/rpc/save_activity_attempt_v3` | A | Owned immutable save | 200; standalone and course activity attempts/events persisted |
+| GET activity_attempts/activity_events; `/practice/attempts/{id}` | A | Exact saved attempt reopens | Saved title/feedback loaded; refresh succeeded |
+| POST course_enrollments, POST course_step_events, PATCH course_enrollments | A | Enrollment, lesson evidence, monotonic context | 201 / 201 / 204; two lessons plus activity derived 3/9 steps after refresh |
+| POST `/rest/v1/rpc/save_case_attempt_v3` | A | Version/mode/course retained | 200; AlpineFit content 2, Practice mode, Profitability `case` context persisted |
+| GET case_attempts/case_events; historical case URL | A | Exact case can reopen | Stored case reopened/refreshed; fuller replay regions confirmed during recovery test |
+| POST `/auth/v1/token` after expired local session metadata | A | SDK restores session using refresh token | 200; same user ID retained; subsequent signed-in page worked |
+| POST `/auth/v1/logout` | A | End Auth session | 204; sign-in form returned |
+| GET seven persistence surfaces, including explicit A filter | B | No A data | 200 with empty arrays for attempts/events/drills/enrollment/lesson context |
+| Direct A activity URL | B | Fail closed | `Attempt unavailable` |
+| Direct A historical case URL | B | Fail closed | `No completed case to review`; no replay data |
+| Open A's unfinished Hypothesis activity after logout/login | B, same browser tab | Fresh B run; no A decision/events | **FAIL: A's selected Revenue economics claim and revealed evidence restored** |
+
+Saved A example IDs: activity `e404ffc9-f80c-45ef-a7fb-415ab36910a4`; case `d93dc9c6-ad9c-4456-8270-2b42fb223692`.
+
+Additional executable HTTP check: **66 recorded requests passed**, plus private-schema exclusion:
+
+- For all eight public resources, both A→B and B→A SELECT, PATCH and DELETE returned zero rows. Profiles use `id`; the other tables use `user_id`.
+- Both V3 save RPCs accepted two identical A retries with unchanged event counts.
+- B using A's `p_user_id`, or B's identity with A's existing attempt ID, failed on both RPCs. Anonymous retries failed too.
+- Cross-user direct activity/case INSERT returned 403.
+- B's `get_case_events` RPC for A returned no rows.
+- Tampered JWT returned 401. `Accept-Profile: auth` returned 406; only `public` is exposed.
+
+This complements, rather than replaces, the earlier exhaustive transaction-scoped SQL matrix. It is not a claim that every cross-user INSERT variant was retested over HTTP. There is no server `learning_runs` table; unfinished local runs are the failed isolation surface.
+
+### Release-blocking defect and fix boundary
+
+Reproduction: A signs in → starts `alpinefit-hypothesis-v3` → commits Revenue economics → leaves → signs out → B signs in in the **same tab** → opens the same activity. B sees A's selected hypothesis and restored evidence round. The browser assertion expected zero revealed-evidence elements and received one. The failure screenshot and page snapshot confirm the selected radio value, not merely static page copy.
+
+Root cause: `src/components/activity/ActivityShell.tsx:70` keys session drafts by activity/version/course but not identity; `readRun` restores them without an owner. `AuthPanel` signs out without clearing/scoping application drafts. `usePracticeProgress` invalidates its own React results, but still enumerates unowned local run entries. Related case drafts, generated responses, scratchpads and pending saves also use session-storage keys; changing one activity key would not establish the requested application-wide isolation.
+
+**No source fix was applied.** A blanket storage clear is not an acceptable silent patch: the plan explicitly requires pending attempts to remain until successful save. Correcting this shared lifecycle requires choosing preservation semantics for unfinished drafts and pending saves, handling already-existing unowned keys, and resetting mounted views. The owner was asked whether to preserve user-scoped drafts/pending saves or discard unfinished drafts while preserving pending saves. Until that choice is resolved and covered by regression tests, this candidate is not approvable. No new server-side run feature is proposed.
+
+The failure is client-side cross-identity disclosure; it is **not** a demonstrated RLS/JWT ownership bypass. Database rows remained isolated in every HTTP scenario tested. Cross-device unfinished-run persistence is not supported by V3.0 and was not claimed.
+
+## Blocker 2 — recovery rehearsal
+
+Built exact documented V2 `c9dde86b0529901a7bcee801fcb8e070f72b8b86` from `git archive` into a separate temporary directory. Both old and new production builds used the same real isolated Auth/PostgREST/database configuration.
+
+Executed:
+
+```sh
+node /tmp/casework-v3-http-validation/app.mjs v2 build
+node /tmp/casework-v3-http-validation/app.mjs v2 start
+node node_modules/@playwright/test/cli.js test \
+  --config=/tmp/casework-v3-http-validation/playwright.config.ts \
+  --grep 'rollback rehearsal'
+```
+
+**Final result: 1 passed, 0 failed, 5.4 seconds.**
+
+1. With 004 and real V3 rows already present, signed A into the old production-built app by real magic link.
+2. V2 Progress rendered its normal evidence view, excluding V3 records.
+3. Completed AlpineFit through V2 with refresh/recovery checkpoints. Required the case count to increase by one and selected that **new** V2 ID for replay.
+4. Reopened/replayed the new V2 attempt through V2's actual `/cases/alpinefit-profitability/review?attemptId=...` URL. V3's newer `/attempts/...` route does not exist in V2.
+5. V3-only activity route returned HTTP 404 in V2.
+6. Every preexisting row in six relevant tables matched its before snapshot in every field. Final run preserved 2 activity attempts, 10 activity events, 3 case attempts, 42 case events, 1 enrollment and 2 course-step events. It added a new V2 case (`b1f64545-823e-4635-99b1-29f6e6c818a2`) and its events without rewriting those originals.
+7. In a fresh browser client, signed A into V3 again, reopened its original activity and full case replay, and verified course progress derived as 4/9 (two lessons, activity and capstone). V3 records remained usable.
+
+This demonstrates **application-artifact/database compatibility and data retention**, not an executed Vercel alias rollback. Both artifacts were available on separate local ports; hosting control-plane behavior, existing open tabs, caches and a production traffic cutover were not rehearsed. The original V2 artifact has not been certified as a remedy for the newly found browser-draft issue.
+
+### Safest recovery strategy and exact proposed process
+
+Prefer restoring the verified previous app while **leaving schema 004 and all V3 data intact**. V3-only UI/history is temporarily unavailable under V2; records remain recoverable when a corrected V3 artifact returns. Do not add a down migration or delete attempts.
+
+- **004 succeeds, V3 deploy fails:** keep V2 serving. Verify V2 sign-in, one save/replay and history, plus unchanged V3 counts if any writes already occurred. No database rollback is necessary for this demonstrated shape.
+- **V3 application regression after promotion:** stop promotion/automatic advancement; identify the previously recorded production deployment whose source is the verified V2 SHA and whose public environment targets the same database. Under separate owner authorization, use Vercel's project deployment rollback control, or `vercel rollback <verified-previous-deployment-id-or-url>` from the verified linked project. Check `vercel rollback status <project>`, production routing, runtime errors, sign-in, V2 save/replay and retained data. Check plan eligibility/retention before relying on an older deployment. These commands were **not executed**. [Official rollback command](https://vercel.com/docs/cli/rollback).
+- **Restore V3 later:** validate the corrected artifact first, then separately approve its promotion. Reopen existing V3 attempts/course state and confirm V2 writes made during recovery remain accessible. Promotion is not authorization to reapply 004.
+- **Cross-user leak:** halt release immediately. An app rollback is insufficient if the fault is in database policies/grants or already-open clients; constrain access through an owner-approved incident procedure and investigate. The present local-draft defect must be fixed before release, not accepted because app rollback is possible.
+- **Database intervention required:** partial/catalog-ledger mismatch, bad constraints/grants/RLS, actual data corruption/loss, unacceptable database locking/load, or changed production schema. Preserve current writes/evidence; restore the checkpoint into a separate database for analysis. Prefer a reviewed forward repair where safe. Production restore/cutover requires explicit owner approval and reconciliation of post-checkpoint writes.
+- **Preserve post-migration data:** never reset the database, drop V3 tables, revert the ledger, or restore an old backup over live writes merely to disable the UI. Capture a current checkpoint before any approved database intervention.
+
+No true database down-migration, destructive restore or live hosting rollback was tested or recommended. The earlier CLI transaction-failure proof remains unchanged.
+
+## Blocker 3 — configuration / grants readiness audit
+
+| Area | Repository/isolated evidence | Production requirement / limitation |
+| --- | --- | --- |
+| Required app variables | Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` read by browser client | Set both at build time to the same intended project; no PostgreSQL-port URL or lab key |
+| Browser/server boundary | Browser uses public key and user's Auth JWT; Next activity APIs evaluate content; no application service-role credential found | Never place service-role, JWT signing secret, database password or CLI token in browser/public variables; operational credentials stay outside build assets |
+| Auth | Real email OTP, link verification, user lookup, logout, SDK refresh succeeded | Confirm email provider/delivery, allowed origin redirects, Site URL, gateway mail paths, JWT settings and rate limits; local SMTP is not production delivery proof |
+| Table privileges | Actual HTTP SELECT/INSERT/PATCH/RPC worked with modeled platform defaults | Verify authenticated table CRUD, sequence privileges and migration-owner default ACLs; migrations do not independently provision all of them |
+| RLS | All eight public tables enabled; owner FOR ALL policies; genuine JWT subject drives `auth.uid()` | Compare actual target definitions and forbid anonymous/unowned leakage; owners still have own-row UPDATE/DELETE |
+| RPC grants | Five persistence RPCs invoker, empty search_path, authenticated EXECUTE | PUBLIC revoke does not remove explicit anon EXECUTE; local anon retained it but ownership guards denied writes. Audit actual target ACLs, not just migration text |
+| PostgREST | Public-only schema; auth profile request rejected 406; invalid JWT rejected 401 | Ensure Data API enabled, public exposed, auth excluded, JWT configuration matches Auth, schema cache refreshed after migration |
+| Migration order | Unchanged 001→002→003→corrected004; real Auth tables/profile trigger work | Expected current target 001–003. Abort if original004 already applied; require separate reviewed forward migration |
+| Backup | No production backup inspected/restored | Record restore-tested checkpoint, retention, restore owner, pre-migration schema/ledger/counts and post-checkpoint write reconciliation |
+| Deployment | Exact V2 artifact works against004 and retained V3 rows in local rehearsal | Migrate/verify before V3 promotion; retain eligible prior deployment; public vars are part of built artifact |
+| Monitoring | Local service/build/browser logs collected; repo specifies no custom alert owner/window | Assign owner, observation window and thresholds for hosting runtime plus Supabase Auth/API/Postgres errors |
+
+Actual production URL/key pairing, JWT settings, grants, schema exposure, backup and current deployed SHA remain **unverified**, not failed. No secrets were requested or printed. The connected read-only Vercel discovery returned no teams; no Supabase administrative connector was available. [Grants versus RLS](https://supabase.com/docs/guides/api/securing-your-api), [function execution privileges](https://supabase.com/docs/guides/database/functions).
+
+## Fresh continuation results and limitations
+
+- Unchanged V3 production build against real isolated public configuration: passed.
+- Exact prior V2 production build against that configuration: passed.
+- Real Auth/activity/course/case/session browser journey: **1 failed**, specifically same-tab A→B unfinished-draft isolation. The preceding persisted flows passed; this is not recorded as an overall pass.
+- HTTP security/idempotency script: **66 recorded requests passed**, plus private-schema denial.
+- Focused V2 application recovery rehearsal: **1 passed** with new-save, replay and before/after preservation assertions.
+- Previous broad regression results remain 480 unit / 60 e2e / 59 production-mode journeys; not freshly rerun because code is unchanged and release is blocked on the new real-auth defect.
+- Early temporary harness iterations used incorrect review/progress headings, V3 URLs against V2, and the native mail prefix. Corrected only the temporary harness; the final draft assertion is an actual product failure. No existing repository tests were weakened.
+- No complete real-auth nine-step course, second fresh-versus-upgraded HTTP matrix, production-scale migration load, same-origin deployment cutover, or host rollback command was newly demonstrated. Representative course context/progress and real case replay were demonstrated. Do not expand those claims.
+
+## Updated production rollout proposal — DO NOT EXECUTE
+
+1. Resolve browser draft/pending-state ownership semantics, implement the minimum complete isolation fix, add durable regression coverage and record the new candidate SHA. Rerun affected unit/browser/build/secrecy gates and real same-tab/mounted-view identity-switch checks. Revalidate any modified migration, if applicable.
+2. Finish remaining real-auth persistence coverage on the corrected candidate, including course completion, fresh/upgraded shapes and the chosen draft/pending policy. Recheck V2 compatibility if persistence contracts changed. Archive sanitized evidence.
+3. Owner identifies the actual production project, deployed SHA/deployment ID, 001–003 ledger/catalog and correct public configuration. Verify grants/RLS/RPC execution, PostgREST exposure, Auth redirects/email, migration-owner defaults and monitoring ownership. Abort on drift or previously applied original004.
+4. Verify a restore-tested backup/checkpoint; record table counts, representative record checksums, schema/policies/ACLs, restoration owner and post-checkpoint write-reconciliation plan. Measure/approve a migration lock window and verify previous deployment availability/rollback eligibility.
+5. Obtain separate explicit owner approvals for production migration and application deployment, pinned to the corrected validated code SHA and migration hashes.
+6. In a verified clean linked checkout, `supabase migration list --linked`; then `supabase db push --linked --dry-run` must propose **only corrected004**. Abort otherwise. Apply `supabase db push --linked` only under approved migration authority.
+7. Before app promotion, verify ledger004, schema/constraint/grant/policy/RPC expectations, unchanged historical records and old-app signed-in save/replay. Abort on inconsistency or cross-user access; preserve004 if the app alone has trouble.
+8. Deploy/promote the exact approved build with target public config; preserve the previously verified deployment. No source-push shortcut should unexpectedly auto-deploy before migration.
+9. Dedicated A/B post-deploy smoke: real sign-in, refresh-token restoration, activity/case save+retry+exact replay, course context/progress, direct foreign URLs, unfinished drafts/pending saves, same-tab and mounted-view sign-out/login, plus guest and answer-secrecy checks.
+10. Monitor hosting and Supabase Auth/API/Postgres errors for the agreed window. Declare healthy only on all passes. Cross-user data, save/history loss, version mismatch, migration/catalog drift or persistent auth/5xx errors trigger abort/recovery; retain all post-migration attempts. Database intervention or deployment recovery still requires explicit owner authority.
+
+## Remaining risks
+
+| Severity | Status / impact | Required action |
+| --- | --- | --- |
+| **Blocking release defect** | User B sees/resumes User A's unfinished same-tab activity draft | Resolve retention semantics; isolate all local draft/pending surfaces and mounted state; add regression coverage; validate revised candidate |
+| Blocking approval prerequisite | Actual production configuration/grants/backups/deployment identity not compared | Owner provides/verifies scoped target read-only evidence before approval |
+| High validation gap | Complete corrected-candidate real-auth matrix cannot pass while identity leak remains | Fix first, then finish targeted HTTP/browser checks; do not rely solely on old mocked-auth passes |
+| Operational limitation | Local dual-port artifact rehearsal is not a live routing rollback or stale-open-tab proof | Confirm exact hosting deployment eligibility and same-origin cutover procedure before production |
+| Existing limitations | Synthetic data/lock scale, default-grant assumptions, owner-editable history | Retain prior caveats; verify target shape/ACLs and operational window |
+
+## Continuation evidence and worktree hygiene
+
+Evidence root: `/tmp/casework-v3-http-validation/`.
+
+- Reproduction: `tests/real.spec.ts`, `playwright.config.ts`, `http-checks.mjs`, `bootstrap.sql`, `stack.mjs`, `app.mjs`.
+- Results: `browser-real.log` (real draft failure), `requests.json` (redacted browser matrix), `http-checks.log`, `http-matrix.json`, `rollback-browser.log`, `rollback-result.json`, `grants.log`, `build-v3.log`, `build-v2.log`, `results/` screenshots/snapshots.
+- Private local-only artifacts: `local-credentials.json`, `flow-state.json` contain disposable test tokens. **Do not commit, publish or include these in a release-evidence bundle.** Auth mail tokens were held in memory by the SMTP sink, not printed. Stop local services before archiving; archive only sanitized evidence.
+- Repository convention permits tracked release/evidence Markdown (RELEASE_NOTES, implementation plans and task-state records are already tracked; this report is not ignored). Commit **only `V3_RELEASE_VALIDATION.md`**. The resulting documentation-only HEAD is not a new product candidate: validated source remains `3b0e6be478c9905ae442570fa08283c4c1c07635`.
+- Protected CLI cache was not edited, deleted, staged or used to infer migration state. CLI commands continued to use the existing temporary project outside the worktree.
+- At handoff, both local application servers, Auth/PostgREST/gateway/SMTP processes and the isolated PostgreSQL cluster were stopped. Evidence and disposable database files were retained. After the report-only commit, tracked files are clean; the existing protected CLI cache remains untracked, so the overall worktree remains dirty. No production process was stopped or changed.
+
+# Final validation verdict
+
+**BLOCKED — RELEASE FIX REQUIRED**
+
+Real Auth/PostgREST and application recovery are no longer blocked by lack of a runnable local stack. They exposed a concrete browser-draft identity leak which the earlier mocked tests did not establish. Do not approve this candidate for production. No candidate code change was made; a draft/pending-retention decision is required before a safe complete surgical fix. Production migration/deployment remain separate owner-approved operations and were not executed.

@@ -145,6 +145,44 @@ export function buildGeneratedCaseEvent({
   };
 }
 
+export function materializeGeneratedCaseDiagnostics(
+  definition: CaseDefinition,
+  event: CaseEvent,
+): DiagnosticOutcome[] {
+  if (!("responses" in event) || !("diagnostics" in event) || event.diagnostics.length > 0) {
+    return "diagnostics" in event ? event.diagnostics : [];
+  }
+  const responseId = event.responses.at(-1)?.responseId;
+  if (!responseId) return [];
+  if (event.type === "case_opening_submitted") {
+    const highValueCount = event.questions.filter(({ questionId }) =>
+      definition.clarificationOptions.some((option) => option.id === questionId && option.highValue),
+    ).length;
+    const strong = highValueCount >= (definition.opening?.minimumHighValueQuestions ?? 1);
+    return [systemDiagnostic(strong ? "strong_opening" : "low_value_question", strong ? "strength" : "coaching", responseId)];
+  }
+  if (event.type === "calculation_submitted") {
+    const calculation = definition.calculations.find(({ id }) => id === event.taskId);
+    if (!calculation) return [];
+    const correct = withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance);
+    const unitCorrect = event.unit === calculation.unit;
+    return [systemDiagnostic(
+      !unitCorrect ? "unit_error" : correct ? "strong_quantitative_reasoning" : "arithmetic_error",
+      correct && unitCorrect ? "strength" : "blocking",
+      responseId,
+    )];
+  }
+  if (event.type === "synthesis_submitted") {
+    const strong = event.evidenceIds.length >= 2;
+    return [systemDiagnostic(strong ? "strong_synthesis" : "evidence_unsupported", strong ? "strength" : "coaching", responseId)];
+  }
+  if (event.type === "recommendation_submitted") {
+    const strong = event.evidenceIds.length >= definition.recommendation.minimumEvidence;
+    return [systemDiagnostic(strong ? "strong_recommendation" : "support_insufficient", strong ? "strength" : "blocking", responseId)];
+  }
+  return [];
+}
+
 export function buildCaseQuantitativeFeedback(
   definition: CaseDefinition,
   itemId: string | undefined,

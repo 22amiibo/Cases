@@ -55,16 +55,18 @@ test("AlpineFit V2 completes the full generated loop with refresh and retry", as
 test("AlpineFit Interview Mode defers authored feedback until the case is complete", async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 320, height: 900 });
-  const revealBodies: string[] = [];
+  const revealBodies: Array<{ url: string; body: string }> = [];
   const responseReads: Promise<void>[] = [];
   page.on("response", (response) => {
-    if (/\/api\/cases\/alpinefit-profitability\/(cycle|hypotheses)\/commit|\/api\/cases\/alpinefit-profitability\/exhibits\/[^/]+\/commit/.test(response.url())) {
-      responseReads.push(response.text().then((body) => { revealBodies.push(body); }));
+    if (/\/api\/cases\/alpinefit-profitability\/(?:session|cycle\/(?:commit|complete)|hypotheses\/(?:commit|complete)|exhibits\/[^/]+\/commit)/.test(response.url())) {
+      responseReads.push(response.text().then((body) => { revealBodies.push({ url: response.url(), body }); }));
     }
   });
 
   await page.goto("/cases/alpinefit-profitability?mode=interview");
   await expect(page.getByLabel("Interview timer")).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await completeAlpineFitV2(page, {
     interview: true,
     refresh: true,
@@ -73,9 +75,13 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
   });
   await Promise.all(responseReads);
 
-  expect(revealBodies).not.toEqual([]);
-  expect(revealBodies.every((body) => !body.includes("Current overtime creates approximately $756,000"))).toBe(true);
-  expect(revealBodies.every((body) => !body.includes("One defensible interpretation"))).toBe(true);
+  const precompletionBodies = revealBodies
+    .filter(({ body }) => !body.includes('"review":{'))
+    .map(({ body }) => body);
+  expect(precompletionBodies).not.toEqual([]);
+  expect(precompletionBodies.every((body) => !body.includes("Current overtime creates approximately $756,000"))).toBe(true);
+  expect(precompletionBodies.every((body) => !body.includes("One defensible interpretation"))).toBe(true);
+  expect(precompletionBodies.every((body) => !body.includes("arithmetic_error"))).toBe(true);
   await expect(page.getByRole("heading", { name: "Your case review" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

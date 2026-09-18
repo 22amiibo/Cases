@@ -13,7 +13,7 @@ import {
 } from "@/core/learning-cycle";
 import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
 import type { CommittedResponse } from "@/core/schema";
-import { CaseGeneratedStep } from "./CaseGeneratedStep";
+import { CaseGeneratedStep, clearCaseCycleStorage } from "./CaseGeneratedStep";
 
 const definition = getCaseDefinition("alpinefit-profitability", 2)!;
 const calculation = definition.calculations[0];
@@ -121,5 +121,28 @@ describe("CaseGeneratedStep", () => {
     render(<Harness caseMode="interview" />);
 
     expect(screen.getByLabelText("Your response")).toBeVisible();
+  });
+
+  it("clears only the requested mode including auxiliary checkpoint state", () => {
+    const practiceKey = `casework:guest-session:${definition.id}:cycle:recommendation:main`;
+    const interviewKey = `${practiceKey}:interview`;
+    const practiceExhibitKey = "casework:exhibit-cycle:cost-category:insights";
+    const interviewExhibitKey = `casework:exhibit-cycle:cost-category:${definition.id}:interview:insights`;
+    window.sessionStorage.setItem(`${practiceKey}:checkpoint`, "practice");
+    window.sessionStorage.setItem(`${interviewKey}:checkpoint`, "interview");
+    window.sessionStorage.setItem(`${interviewKey}:insights`, "interview-insights");
+    window.sessionStorage.setItem(practiceExhibitKey, "practice-exhibit");
+    window.sessionStorage.setItem(interviewExhibitKey, "interview-exhibit");
+
+    clearCaseCycleStorage(window.sessionStorage, definition.id, "practice", ["cost-category"]);
+    expect(window.sessionStorage.getItem(`${practiceKey}:checkpoint`)).toBeNull();
+    expect(window.sessionStorage.getItem(`${interviewKey}:checkpoint`)).toBe("interview");
+    expect(window.sessionStorage.getItem(practiceExhibitKey)).toBeNull();
+    expect(window.sessionStorage.getItem(interviewExhibitKey)).toBe("interview-exhibit");
+
+    clearCaseCycleStorage(window.sessionStorage, definition.id, "interview", ["cost-category"]);
+    expect(window.sessionStorage.getItem(`${interviewKey}:checkpoint`)).toBeNull();
+    expect(window.sessionStorage.getItem(`${interviewKey}:insights`)).toBeNull();
+    expect(window.sessionStorage.getItem(interviewExhibitKey)).toBeNull();
   });
 });

@@ -108,7 +108,16 @@ export async function POST(
         };
       },
     ),
-    facts: getRevealedFacts(session),
+    facts: getRevealedFacts(session).map((fact) =>
+      parsedMode.data === "interview" && caseDefinition.calculations.some(
+        (calculation) => calculation.evidenceFactId === fact.id,
+      )
+        ? {
+            ...fact,
+            text: "Use your completed calculation as evidence in the final recommendation.",
+          }
+        : fact,
+    ),
     exhibits: caseDefinition.exhibits
       .filter((exhibit) => session.revealedExhibitIds.includes(exhibit.id))
       .map(

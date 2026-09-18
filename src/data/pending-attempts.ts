@@ -33,6 +33,18 @@ export function loadPendingAttempt<T extends { attemptId: string }>(
   }
 }
 
+export function getOrCreatePendingAttempt<T extends { attemptId: string }>(
+  storage: PendingStorage,
+  key: string,
+  create: () => T,
+) {
+  const pending = loadPendingAttempt<T>(storage, key);
+  if (pending) return pending;
+  const attempt = create();
+  savePendingAttempt(storage, key, attempt);
+  return attempt;
+}
+
 export function clearPendingAttempt(storage: PendingStorage, key: string) {
   storage.removeItem(pendingKey(key));
 }

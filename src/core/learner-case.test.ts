@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import alpineFitContent from "@/content/cases/alpinefit-profitability.json";
 import { getCaseDefinition } from "@/content/cases";
 import { CaseDefinitionSchema } from "./schema";
-import { projectHypothesisPractice, toLearnerCaseDefinition, toLearnerCaseReview } from "./learner-case";
+import {
+  materializeCompletedCaseEvents,
+  projectHypothesisPractice,
+  toLearnerCaseDefinition,
+  toLearnerCaseReview,
+} from "./learner-case";
 import type { CaseEvent } from "./schema";
 
 describe("toLearnerCaseDefinition", () => {
@@ -290,6 +295,77 @@ describe("toLearnerCaseReview", () => {
       diagnostics: [{ code: "arithmetic_error", source: "system", severity: "blocking" }],
     });
     expect(review.scores.find(({ id }) => id === "quantitative")?.value).toBe(0);
+  });
+
+  it("materializes deterministic deferred opening, calculation, and hypothesis diagnostics for debrief persistence", () => {
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+    const events: CaseEvent[] = [
+      {
+        type: "case_opening_submitted",
+        eventSchemaVersion: 2,
+        responses: [{
+          responseId: "opening-response",
+          interactionId: definition.opening!.responseCycle.interactionId,
+          revision: 1,
+          revisionOf: null,
+          responseKind: definition.opening!.responseCycle.responseKind,
+          text: "Clarify the objective.",
+          committedAtMs: 1,
+        }],
+        rubricOutcomes: [{ criterionId: "response_recorded", met: true }],
+        diagnostics: [],
+        questions: definition.clarificationOptions.slice(0, 1).map(({ id, response }) => ({ questionId: id, interviewerResponse: response })),
+        authoredComparisonViewed: false,
+        atMs: 1,
+      },
+      {
+        type: "hypothesis_updated",
+        eventSchemaVersion: 2,
+        status: "retain",
+        previousHypothesisId: "revenue-economics",
+        hypothesisId: "revenue-economics",
+        evidenceIds: ["cost-growth"],
+        revisionOfResponseId: "initial-response",
+        responses: [{
+          responseId: "hypothesis-response",
+          interactionId: definition.hypothesisPractice!.update.interactionId,
+          revision: 1,
+          revisionOf: null,
+          responseKind: definition.hypothesisPractice!.update.responseKind,
+          text: "Retain revenue economics.",
+          committedAtMs: 2,
+        }],
+        rubricOutcomes: [{ criterionId: "response_recorded", met: true }],
+        diagnostics: [],
+        rationale: "Retain revenue economics.",
+        authoredComparisonViewed: false,
+        atMs: 2,
+      },
+      {
+        type: "calculation_submitted",
+        eventSchemaVersion: 2,
+        taskId: "incremental-overtime-expense",
+        answer: 700000,
+        unit: "$",
+        responses: [{
+          responseId: "calculation-response",
+          interactionId: definition.calculations[0].responseCycle!.interactionId,
+          revision: 1,
+          revisionOf: null,
+          responseKind: definition.calculations[0].responseCycle!.responseKind,
+          text: "700000 $",
+          committedAtMs: 3,
+        }],
+        rubricOutcomes: [{ criterionId: "response_recorded", met: true }],
+        diagnostics: [],
+        authoredComparisonViewed: false,
+        atMs: 3,
+      },
+    ];
+
+    expect(materializeCompletedCaseEvents(definition, events).flatMap((event) =>
+      "diagnostics" in event ? event.diagnostics.map(({ code }) => code) : [],
+    )).toEqual(["low_value_question", "contradicted_hypothesis_retained", "arithmetic_error"]);
   });
 
   it("replays the complete hypothesis and evidence-linked revision chain without a score", () => {

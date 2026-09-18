@@ -38,13 +38,21 @@ export function clearCaseCycleStorage(
   storage: Storage,
   caseId: string,
   mode: CaseMode = "practice",
+  exhibitIds: string[] = [],
 ) {
   const casePrefix = `casework:guest-session:${caseId}:cycle:`;
+  const isInterviewKey = (key: string) => /:interview(?:$|:)/.test(key);
+  const exhibitKeys = new Set(exhibitIds.map((id) => `casework:exhibit-cycle:${id}`));
   const keys: string[] = [];
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
-    if (key && (key.startsWith(casePrefix) || key.startsWith("casework:exhibit-cycle:")) &&
-      (mode === "practice" ? !key.endsWith(":interview") : key.endsWith(`:${mode}`))) {
+    const cycleMatches = key?.startsWith(casePrefix) && (
+      mode === "interview" ? isInterviewKey(key) : !isInterviewKey(key)
+    );
+    const exhibitMatches = key && (mode === "interview"
+      ? key.startsWith(`casework:exhibit-cycle:`) && key.includes(`:${caseId}:interview`)
+      : !isInterviewKey(key) && [...exhibitKeys].some((base) => key === base || key.startsWith(`${base}:`)));
+    if (key && (cycleMatches || exhibitMatches)) {
       keys.push(key);
     }
   }

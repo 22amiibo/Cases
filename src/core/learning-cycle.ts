@@ -401,13 +401,13 @@ export function validateCompletedLearningCycleState(
       canonical = applyLearningCycleAction(canonical, {
         type: "response_committed",
         response,
-        reveal: revealLearningCycleAfterCommit(definition, response),
+        reveal: allowDeferredReveal
+          ? deferLearningCycleReveal(definition, response)
+          : revealLearningCycleAfterCommit(definition, response),
       });
       canonical = applyLearningCycleAction(canonical, {
         type: "self_check_submitted",
-        outcomes: allowDeferredReveal
-          ? definition.criteria.map(({ id }) => ({ criterionId: id, met: false }))
-          : matchingAssessments[0].outcomes,
+        outcomes: matchingAssessments[0].outcomes,
       });
       canonical = applyLearningCycleAction(canonical, {
         type: "comparison_viewed",
@@ -420,7 +420,7 @@ export function validateCompletedLearningCycleState(
       );
     }
 
-    return (allowDeferredReveal || serializeLearningCycleState(canonical) === serializeLearningCycleState(parsed.data))
+    return serializeLearningCycleState(canonical) === serializeLearningCycleState(parsed.data)
       ? canonical
       : null;
   } catch {

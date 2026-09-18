@@ -222,8 +222,18 @@ export function createCaseAttempt({
     skillScores[skillId.data] = Math.round(dimension.value * 1000) / 10;
   }
 
-  const diagnostics = events.flatMap((event) =>
-    "diagnostics" in event ? event.diagnostics : [],
+  const diagnostics = [
+    ...events.flatMap((event) => "diagnostics" in event ? event.diagnostics : []),
+    ...(review.generatedResponses ?? []).flatMap(({ diagnostics: responseDiagnostics }) => responseDiagnostics),
+    ...(review.hypotheses ?? []).flatMap(({ diagnostics: hypothesisDiagnostics }) => hypothesisDiagnostics),
+    ...(review.exhibitInterpretations ?? []).flatMap(({ diagnostics: exhibitDiagnostics }) => exhibitDiagnostics),
+  ].filter((diagnostic, index, all) =>
+    all.findIndex((candidate) =>
+      candidate.code === diagnostic.code &&
+      candidate.source === diagnostic.source &&
+      candidate.severity === diagnostic.severity &&
+      candidate.responseId === diagnostic.responseId,
+    ) === index,
   );
   const baseAttempt = {
     attemptId,

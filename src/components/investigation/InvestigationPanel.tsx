@@ -20,8 +20,8 @@ import type { V3CaseAttempt, V3CaseAttemptRepository } from "@/data/v3-repositor
 import { v2DiagnosticSkillMap } from "@/core/v3-taxonomy";
 import {
   clearPendingAttempt,
+  getOrCreatePendingAttempt,
   loadPendingAttempt,
-  savePendingAttempt,
 } from "@/data/pending-attempts";
 import type {
   LearnerCaseDefinition,
@@ -211,7 +211,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   const startedAt = useRef<number | null>(null);
   const initialEvents = useRef(workspace.events);
   const latestRequest = useRef(0);
-  const [pendingCaseAttempt] = useState(() =>
+  const [pendingCaseAttempt, setPendingCaseAttempt] = useState(() =>
     restorePendingCaseAttempt(caseDefinition.id, caseDefinition.caseMode),
   );
   const caseAttemptId = useRef<string | null>(
@@ -338,27 +338,35 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   async function saveCompletedRecommendation(recommendationEvent: CaseEvent) {
     const nextEvents = [...events, recommendationEvent];
     const completedView = await loadView(nextEvents, false);
-    if (!completedView.review) throw new Error("Completed case review was not returned");
+    const review = completedView.review;
+    if (!review) throw new Error("Completed case review was not returned");
     const practiceSession = await getBrowserPracticeSession();
-    const attemptId = caseAttemptId.current ??= crypto.randomUUID();
-    const attempt = createCaseAttempt({
-      attemptId,
-      userId: practiceSession.userId,
-      caseId: caseDefinition.id,
-      review: completedView.review,
-      events: nextEvents,
-      completedAt: new Date().toISOString(),
-      contentVersion: caseDefinition.version,
-      scaffoldingLevel: caseDefinition.scaffoldingLevel,
-    });
-    savePendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode), attempt);
+    const attempt = getOrCreatePendingAttempt(
+      window.sessionStorage,
+      pendingCaseKey(caseDefinition.id, caseDefinition.caseMode),
+      () => {
+        const attemptId = caseAttemptId.current ??= crypto.randomUUID();
+        return createCaseAttempt({
+          attemptId,
+          userId: practiceSession.userId,
+          caseId: caseDefinition.id,
+          review,
+          events: nextEvents,
+          completedAt: new Date().toISOString(),
+          contentVersion: caseDefinition.version,
+          scaffoldingLevel: caseDefinition.scaffoldingLevel,
+        });
+      },
+    );
+    setPendingCaseAttempt(attempt);
     await saveAttempt(practiceSession.repository, attempt);
     clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode));
+    setPendingCaseAttempt(null);
     setWorkspace((current) => ({ ...current, events: nextEvents }));
-    setReviewAttemptId(attemptId);
+    setReviewAttemptId(attempt.attemptId);
     setView(completedView);
     router.push(
-      `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(attemptId)}`,
+      `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(attempt.attemptId)}`,
     );
   }
 
@@ -487,7 +495,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     if (!result.ok) throw new Error("Unable to complete hypothesis");
     const payload = (await result.json()) as { event: CaseEvent };
     await record(payload.event);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
   }
 
   const availableCalculations = view?.calculations ?? [];
@@ -497,24 +505,21 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     setRecoveryStatus("saving");
     try {
       const practiceSession = await getBrowserPracticeSession();
-      const restoredAttempt = {
-        ...pendingCaseAttempt,
-        userId: practiceSession.userId,
-      };
-      await saveAttempt(practiceSession.repository, restoredAttempt);
-      const completedView = await loadView(restoredAttempt.events, false);
+      await saveAttempt(practiceSession.repository, pendingCaseAttempt);
+      const completedView = await loadView(pendingCaseAttempt.events, false);
       clearPendingAttempt(
         window.sessionStorage,
         pendingCaseKey(caseDefinition.id, caseDefinition.caseMode),
       );
       setWorkspace((current) => ({
         ...current,
-        events: restoredAttempt.events,
+        events: pendingCaseAttempt.events,
       }));
-      setReviewAttemptId(restoredAttempt.attemptId);
+      setPendingCaseAttempt(null);
+      setReviewAttemptId(pendingCaseAttempt.attemptId);
       setView(completedView);
       router.push(
-        `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(restoredAttempt.attemptId)}`,
+        `/cases/${caseDefinition.id}/review?attemptId=${encodeURIComponent(pendingCaseAttempt.attemptId)}`,
       );
     } catch {
       setRecoveryStatus("error");
@@ -526,7 +531,12 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
     window.sessionStorage.removeItem(calculationFeedbackKey);
     clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
-    clearCaseCycleStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
+    clearCaseCycleStorage(
+      window.sessionStorage,
+      caseDefinition.id,
+      caseDefinition.caseMode,
+      view?.exhibits.map(({ id }) => id) ?? [],
+    );
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
     elapsedOffset.current = 0;
     startedAt.current = null;

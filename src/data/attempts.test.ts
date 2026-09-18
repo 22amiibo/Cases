@@ -159,4 +159,64 @@ describe("practice attempt mapping", () => {
     });
     expect(attempt.skillScores).not.toHaveProperty("hypothesis");
   });
+
+  it("persists deterministic completed-review diagnostics when Interview events were deferred", () => {
+    const diagnostic = {
+      code: "arithmetic_error" as const,
+      source: "system" as const,
+      severity: "blocking" as const,
+      responseId: "calculation-response",
+    };
+    const review = {
+      framework: null,
+      scores: [],
+      feedback: [],
+      generatedResponses: [{
+        kind: "calculation" as const,
+        label: "Calculation",
+        responses: [],
+        rubricOutcomes: [],
+        diagnostics: [diagnostic],
+        details: [],
+      }],
+      hypotheses: [],
+      exhibitInterpretations: [],
+      nodes: [],
+      events: [],
+      efficientPath: { label: "Path", nodeIds: [] },
+      exhibitScoreAvailable: true,
+    } satisfies LearnerCaseReview;
+    const attempt = createCaseAttempt({
+      attemptId: "interview-attempt",
+      userId: "user-1",
+      caseId: "alpinefit-profitability",
+      review,
+      events: [{
+        type: "calculation_submitted",
+        eventSchemaVersion: 2,
+        taskId: "incremental-overtime-expense",
+        answer: 1,
+        unit: "$",
+        responses: [{
+          responseId: "calculation-response",
+          interactionId: "incremental-overtime-expense",
+          revision: 1,
+          revisionOf: null,
+          responseKind: "calculation",
+          text: "1 $",
+          committedAtMs: 1,
+        }],
+        rubricOutcomes: [{ criterionId: "response_recorded", met: true }],
+        diagnostics: [],
+        authoredComparisonViewed: false,
+        atMs: 1,
+      }],
+      completedAt: "2026-01-03T00:00:00.000Z",
+      contentVersion: 2,
+      scaffoldingLevel: "beginner",
+    });
+
+    expect(attempt.diagnostics).toEqual([diagnostic]);
+    expect(attempt.feedbackCodes).toContain("arithmetic_error");
+  });
 });

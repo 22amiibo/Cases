@@ -525,6 +525,34 @@ describe("deterministic case engine", () => {
     expect(isCaseEventAllowed(session, opening, { mode: "interview", contentVersion: 2 })).toBe(false);
   });
 
+  it("makes correct and incorrect Interview calculations reveal the same neutral evidence availability", () => {
+    const investigation = (answer: number) => {
+      let session = createCaseSession(alpineFit, { mode: "interview", contentVersion: alpineFit.version });
+      session = applyCaseEvent(session, { type: "clarification_selected", clarificationId: "target-metric", atMs: 1 });
+      session = applyCaseEvent(session, {
+        type: "framework_submitted",
+        conceptIds: ["variable_cost"],
+        priorityConceptId: "variable_cost",
+        atMs: 2,
+      });
+      for (const nodeId of ["costs", "variable_cost", "labor", "overtime"]) {
+        session = applyCaseEvent(session, { type: "node_investigated", nodeId, atMs: 3 });
+      }
+      return applyCaseEvent(session, {
+        type: "calculation_submitted",
+        taskId: "incremental-overtime-expense",
+        answer,
+        atMs: 4,
+      });
+    };
+
+    const correct = investigation(756000);
+    const incorrect = investigation(1);
+    expect(correct.completedCalculationIds).toEqual(incorrect.completedCalculationIds);
+    expect(correct.revealedFactIds).toEqual(incorrect.revealedFactIds);
+    expect(correct.revealedFactIds).toContain("incremental-labor");
+  });
+
   it("requires an initial V2 hypothesis before investigation and an evidence-linked update before synthesis", () => {
     const initial = hypothesisSession();
     expect(applyCaseEvent(initial, { type: "node_investigated", nodeId: "costs", atMs: 4 })).toBe(initial);

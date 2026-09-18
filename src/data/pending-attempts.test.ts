@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CaseAttempt } from "./repository";
 import {
   clearPendingAttempt,
+  getOrCreatePendingAttempt,
   loadPendingAttempt,
   savePendingAttempt,
 } from "./pending-attempts";
@@ -43,5 +44,23 @@ describe("pending attempt storage", () => {
     expect(
       loadPendingAttempt(window.sessionStorage, "bad"),
     ).toBeNull();
+  });
+
+  it("reuses the exact immutable payload for a same-page retry", () => {
+    window.sessionStorage.clear();
+    const create = () => ({
+      ...caseAttempt,
+      completedAt: "2026-01-03T00:00:00.000Z",
+      events: [{ ...caseAttempt.events[0], atMs: 10 }],
+    });
+
+    const first = getOrCreatePendingAttempt(window.sessionStorage, "case:alpinefit", create);
+    const retried = getOrCreatePendingAttempt(window.sessionStorage, "case:alpinefit", () => ({
+      ...create(),
+      completedAt: "2026-01-04T00:00:00.000Z",
+      events: [{ ...caseAttempt.events[0], atMs: 20 }],
+    }));
+
+    expect(retried).toEqual(first);
   });
 });

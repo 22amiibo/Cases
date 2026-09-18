@@ -91,7 +91,9 @@ function hasGeneratedEvidence(
   if (!("responses" in event) || !("rubricOutcomes" in event) || !("diagnostics" in event)) return false;
   const cycle = getCaseLearningCycle(definition, kind, itemId);
   if (!cycle) return false;
-  const criterionIds = new Set(cycle.criteria.map(({ id }) => id));
+  const criterionIds = new Set(
+    allowDeferredDiagnostics ? ["response_recorded"] : cycle.criteria.map(({ id }) => id),
+  );
   const submittedIds = new Set(event.rubricOutcomes.map(({ criterionId }) => criterionId));
   const responseIds = new Set(event.responses.map(({ responseId }) => responseId));
   const authoredRules = new Set(
@@ -103,7 +105,9 @@ function hasGeneratedEvidence(
     event.rubricOutcomes.length === criterionIds.size &&
     submittedIds.size === criterionIds.size &&
     event.rubricOutcomes.every(({ criterionId }) => criterionIds.has(criterionId)) &&
-    (allowDeferredDiagnostics || event.diagnostics
+    (allowDeferredDiagnostics
+      ? event.diagnostics.length === 0
+      : event.diagnostics
       .filter(({ source }) => source === "self_assessment")
       .every(({ code, severity, responseId }) =>
         authoredRules.has(`${code}:${severity}`) &&
@@ -219,7 +223,9 @@ export function isCaseEventAllowed(
     case "case_opening_submitted": {
       const opening = caseDefinition.opening;
       const criterionIds = new Set(
-        opening?.responseCycle.criteria.map(({ id }) => id) ?? [],
+        policy.showImmediateFeedback
+          ? opening?.responseCycle.criteria.map(({ id }) => id) ?? []
+          : ["response_recorded"],
       );
       const submittedCriterionIds = new Set(
         event.rubricOutcomes.map(({ criterionId }) => criterionId),
@@ -556,7 +562,10 @@ export function applyCaseEvent(
     )) {
       completedCalculationIds.push(calculation.id);
     }
-    if (calculation && isCorrectCalculationSubmission(calculation, event)) {
+    if (calculation && (
+      isCorrectCalculationSubmission(calculation, event) ||
+      !getCaseModePolicy(session.runContext.mode).allowCheckpointRetry
+    )) {
       revealedFactIds.push(calculation.evidenceFactId);
     }
 

@@ -55,7 +55,9 @@ export function isHypothesisLearningEvidenceValid(
   const practice = definition.hypothesisPractice;
   if (!practice) return false;
   const cycle = event.type === "hypothesis_formed" ? practice.initial : practice.update;
-  const criterionIds = new Set(cycle.criteria.map(({ id }) => id));
+  const criterionIds = new Set(
+    allowDeferredDiagnostics ? ["response_recorded"] : cycle.criteria.map(({ id }) => id),
+  );
   const submittedCriterionIds = new Set(
     event.rubricOutcomes.map(({ criterionId }) => criterionId),
   );

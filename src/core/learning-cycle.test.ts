@@ -78,6 +78,24 @@ describe("generated response learning cycle", () => {
     expect(JSON.stringify(deferred)).not.toContain("comparison_missed");
   });
 
+  it("preserves the neutral deferred self-check without fabricating authored failures", () => {
+    let completed = applyLearningCycleAction(createLearningCycleState(definition.interactionId), {
+      type: "response_committed",
+      response: firstResponse,
+      reveal: deferLearningCycleReveal(definition, firstResponse),
+    });
+    completed = applyLearningCycleAction(completed, {
+      type: "self_check_submitted",
+      outcomes: [{ criterionId: "response_recorded", met: true }],
+    });
+    completed = applyLearningCycleAction(completed, { type: "comparison_viewed" });
+    completed = applyLearningCycleAction(completed, { type: "cycle_completed" });
+
+    expect(validateCompletedLearningCycleState(completed, definition, true)).toEqual(completed);
+    expect(JSON.stringify(validateCompletedLearningCycleState(completed, definition, true)))
+      .not.toContain('"observation","met":false');
+  });
+
   it("rejects self-check, comparison, and retry transitions before commitment", () => {
     const state = createLearningCycleState(definition.interactionId);
 

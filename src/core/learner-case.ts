@@ -20,9 +20,14 @@ import {
 } from "./framework-events";
 import type { LearnerLearningCyclePrompt } from "./learning-cycle";
 import { projectLearningCyclePrompt } from "./learning-cycle";
-import { getCurrentHypothesisId, getHypothesisEvents } from "./hypothesis";
+import {
+  getCurrentHypothesisId,
+  getHypothesisEvents,
+  getHypothesisSystemDiagnostic,
+} from "./hypothesis";
 import { getCaseModePolicy, type CaseRunContext } from "./case-mode";
 import { withinTolerance } from "./validation";
+import { materializeGeneratedCaseDiagnostics } from "./case-learning";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
@@ -272,6 +277,41 @@ function projectGeneratedCaseResponses(
   return projected;
 }
 
+export function materializeCompletedCaseEvents(
+  definition: CaseDefinition,
+  events: CaseEvent[],
+): CaseEvent[] {
+  return events.map((event) => {
+    if (!("diagnostics" in event) || event.diagnostics.length > 0 || event.authoredComparisonViewed) {
+      return event;
+    }
+    if (
+      event.type === "case_opening_submitted" ||
+      event.type === "calculation_submitted" ||
+      event.type === "synthesis_submitted" ||
+      event.type === "recommendation_submitted"
+    ) {
+      return { ...event, diagnostics: materializeGeneratedCaseDiagnostics(definition, event) };
+    }
+    if (event.type === "hypothesis_updated") {
+      const responseId = event.responses.at(-1)?.responseId;
+      return responseId
+        ? {
+            ...event,
+            diagnostics: [getHypothesisSystemDiagnostic(
+              definition,
+              event.previousHypothesisId,
+              event.status,
+              event.evidenceIds,
+              responseId,
+            )],
+          }
+        : event;
+    }
+    return event;
+  });
+}
+
 export function toLearnerCaseDefinition(
   definition: CaseDefinition,
   context: CaseRunContext = { mode: "practice", contentVersion: definition.version },
@@ -311,17 +351,18 @@ export function toLearnerCaseReview(
   definition: CaseDefinition,
   events: CaseEvent[],
 ): LearnerCaseReview {
-  const score = scoreCase(definition, events);
-  const exhibitScoreAvailable = !events.some(
+  const completedEvents = materializeCompletedCaseEvents(definition, events);
+  const score = scoreCase(definition, completedEvents);
+  const exhibitScoreAvailable = !completedEvents.some(
     (event) => event.type === "exhibit_interpretation_submitted" && !event.authoredComparisonViewed,
   );
-  const investigatedEvents = events.filter(
+  const investigatedEvents = completedEvents.filter(
     (event): event is Extract<CaseEvent, { type: "node_investigated" }> =>
       event.type === "node_investigated",
   );
   const visitedNodeIds = new Set(investigatedEvents.map((event) => event.nodeId));
   const feedback: LearnerFeedback[] = [];
-  const frameworkEvent = events
+  const frameworkEvent = completedEvents
     .filter(
       (event): event is Extract<CaseEvent, { type: "framework_submitted" }> =>
         event.type === "framework_submitted",
@@ -345,17 +386,17 @@ export function toLearnerCaseReview(
     });
   }
   if (
-    events.some(
+    completedEvents.some(
       (event) => {
         if (
           event.type !== "synthesis_submitted" ||
-          !isValidSynthesisSubmission(definition, events, event)
+          !isValidSynthesisSubmission(definition, completedEvents, event)
         ) {
           return false;
         }
         const discoveredFacts = getDiscoveredFactIdsBefore(
           definition,
-          events,
+          completedEvents,
           event.atMs,
         );
         return (
@@ -394,7 +435,7 @@ export function toLearnerCaseReview(
             : "legacy_flattened",
         }
       : null,
-    exhibitInterpretations: events.flatMap((event) => {
+    exhibitInterpretations: completedEvents.flatMap((event) => {
       if (event.type !== "exhibit_interpretation_submitted") return [];
       const exhibit = definition.exhibits.find(
         (candidate) => candidate.id === event.exhibitId,
@@ -409,7 +450,7 @@ export function toLearnerCaseReview(
         authoredComparisonViewed: event.authoredComparisonViewed,
       }];
     }),
-    hypotheses: getHypothesisEvents(events).map((event) => ({
+    hypotheses: getHypothesisEvents(completedEvents).map((event) => ({
       type: event.type,
       status: event.type === "hypothesis_formed" ? "initial" : event.status,
       previousHypothesisId: event.type === "hypothesis_updated"
@@ -422,7 +463,7 @@ export function toLearnerCaseReview(
       diagnostics: event.diagnostics,
       revisionOfResponseId: event.revisionOfResponseId,
     })),
-    generatedResponses: projectGeneratedCaseResponses(definition, events),
+    generatedResponses: projectGeneratedCaseResponses(definition, completedEvents),
     nodes: definition.investigationNodes.map((node) => ({
       id: node.id,
       label: node.label,

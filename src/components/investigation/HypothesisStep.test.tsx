@@ -76,4 +76,18 @@ describe("HypothesisStep", () => {
 
     expect(window.sessionStorage.length).toBe(0);
   });
+
+  it("preserves the other mode's hypothesis state when restarting", () => {
+    const practiceKey = "casework:guest-session:case-v2:hypothesis:update";
+    const interviewKey = `${practiceKey}:interview`;
+    window.sessionStorage.setItem(`${practiceKey}:options`, "practice");
+    window.sessionStorage.setItem(`${interviewKey}:options`, "interview");
+
+    clearHypothesisPracticeStorage(window.sessionStorage, "case-v2", "practice");
+    expect(window.sessionStorage.getItem(`${practiceKey}:options`)).toBeNull();
+    expect(window.sessionStorage.getItem(`${interviewKey}:options`)).toBe("interview");
+
+    clearHypothesisPracticeStorage(window.sessionStorage, "case-v2", "interview");
+    expect(window.sessionStorage.getItem(`${interviewKey}:options`)).toBeNull();
+  });
 });

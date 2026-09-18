@@ -143,14 +143,18 @@ export async function completeAlpineFitV2(
   await page.getByLabel("Decision").selectOption("stabilize-staffing");
   await page.getByLabel("Labor expense grew 34%, while staffed service hours grew only 11%.").check();
   await page.getByLabel("Overtime hours nearly tripled, with the highest usage in six clubs.").check();
-  await page.getByLabel("Current overtime creates approximately $756,000 of incremental annual labor expense.").check();
+  await page.getByLabel(interview
+    ? "Use your completed calculation as evidence in the final recommendation."
+    : "Current overtime creates approximately $756,000 of incremental annual labor expense.").check();
   await page.getByLabel("Risk").selectOption("service-disruption");
   await page.getByLabel("Next step").selectOption("six-club-pilot");
   if (saveRecovery) {
     await page.evaluate(() => {
       const originalSetItem = Storage.prototype.setItem;
+      let failed = false;
       Storage.prototype.setItem = function (key, value) {
-        if (key === "casework:practice-history") {
+        if (key === "casework:practice-history" && !failed) {
+          failed = true;
           throw new DOMException("Storage unavailable");
         }
         return originalSetItem.call(this, key, value);
@@ -159,9 +163,9 @@ export async function completeAlpineFitV2(
   }
   await page.getByRole("button", { name: "Save recommendation" }).click();
   if (saveRecovery) {
-    await expect(page.getByText("This step was not saved. Try again.", { exact: true })).toBeVisible();
-    await page.reload();
-    await page.getByRole("button", { name: "Retry saving completed case" }).click();
+    const retry = page.getByRole("button", { name: "Retry saving completed case" });
+    await expect(retry).toBeVisible();
+    await retry.click();
   }
   await expect(page.getByRole("heading", { name: "Your case review" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Revenue" })).toBeVisible();

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getCaseDefinition } from "@/content/cases";
 import { buildGeneratedCaseEvent } from "@/core/case-learning";
-import { applyCaseEvent, createCaseSession } from "@/core/case-engine";
+import { applyCaseEvent, createCaseSession, replayCaseEvents } from "@/core/case-engine";
 import { scoreCase } from "@/core/case-scoring";
 import {
   applyLearningCycleAction,
   createLearningCycleState,
+  deferLearningCycleReveal,
   revealLearningCycleAfterCommit,
   type AuthoredLearningCycle,
 } from "@/core/learning-cycle";
@@ -14,7 +15,12 @@ import { POST } from "./route";
 
 const definition = getCaseDefinition("alpinefit-profitability", 2)!;
 
-function completedCycle(authored: AuthoredLearningCycle, responseId: string, atMs: number) {
+function completedCycle(
+  authored: AuthoredLearningCycle,
+  responseId: string,
+  atMs: number,
+  deferred = false,
+) {
   const response = {
     responseId,
     interactionId: authored.interactionId,
@@ -28,11 +34,15 @@ function completedCycle(authored: AuthoredLearningCycle, responseId: string, atM
   cycle = applyLearningCycleAction(cycle, {
     type: "response_committed",
     response,
-    reveal: revealLearningCycleAfterCommit(authored, response),
+    reveal: deferred
+      ? deferLearningCycleReveal(authored, response)
+      : revealLearningCycleAfterCommit(authored, response),
   });
   cycle = applyLearningCycleAction(cycle, {
     type: "self_check_submitted",
-    outcomes: authored.criteria.map(({ id }) => ({ criterionId: id, met: true })),
+    outcomes: deferred
+      ? [{ criterionId: "response_recorded", met: true }]
+      : authored.criteria.map(({ id }) => ({ criterionId: id, met: true })),
   });
   cycle = applyLearningCycleAction(cycle, { type: "comparison_viewed" });
   return applyLearningCycleAction(cycle, { type: "cycle_completed" });
@@ -139,20 +149,55 @@ describe("case learning-cycle completion", () => {
     const { session, atMs } = sessionAtCalculation();
     const interviewEvents = session.events.map((event) =>
       "diagnostics" in event
-        ? { ...event, diagnostics: [], authoredComparisonViewed: false }
+        ? {
+            ...event,
+            rubricOutcomes: [{ criterionId: "response_recorded", met: true }],
+            diagnostics: [],
+            authoredComparisonViewed: false,
+          }
         : event,
     );
     const calculation = definition.calculations[0];
-    const firstCycle = completedCycle(calculation.responseCycle!, "calculation-response", atMs);
-    const retriedCycle = {
-      ...firstCycle,
-      responses: [...firstCycle.responses, {
-        ...firstCycle.responses[0],
-        responseId: "calculation-response-2",
-        revision: 2,
-        revisionOf: "calculation-response",
-      }],
+    let replay = createCaseSession(definition, { mode: "interview", contentVersion: definition.version });
+    interviewEvents.forEach((event, index) => {
+      const next = applyCaseEvent(replay, event);
+      expect(next, `invalid Interview event ${index}: ${event.type}`).not.toBe(replay);
+      replay = next;
+    });
+    expect(replayCaseEvents(definition, interviewEvents, {
+      mode: "interview",
+      contentVersion: definition.version,
+    })).not.toBeNull();
+    const firstCycle = completedCycle(calculation.responseCycle!, "calculation-response", atMs, true);
+    const retriedResponse = {
+      ...firstCycle.responses[0],
+      responseId: "calculation-response-2",
+      revision: 2,
+      revisionOf: "calculation-response",
     };
+    let retriedCycle = createLearningCycleState(calculation.responseCycle!.interactionId);
+    retriedCycle = applyLearningCycleAction(retriedCycle, {
+      type: "response_committed",
+      response: firstCycle.responses[0],
+      reveal: deferLearningCycleReveal(calculation.responseCycle!, firstCycle.responses[0]),
+    });
+    retriedCycle = applyLearningCycleAction(retriedCycle, {
+      type: "self_check_submitted",
+      outcomes: [{ criterionId: "response_recorded", met: true }],
+    });
+    retriedCycle = applyLearningCycleAction(retriedCycle, { type: "comparison_viewed" });
+    retriedCycle = applyLearningCycleAction(retriedCycle, { type: "retry_started" });
+    retriedCycle = applyLearningCycleAction(retriedCycle, {
+      type: "response_committed",
+      response: retriedResponse,
+      reveal: deferLearningCycleReveal(calculation.responseCycle!, retriedResponse),
+    });
+    retriedCycle = applyLearningCycleAction(retriedCycle, {
+      type: "self_check_submitted",
+      outcomes: [{ criterionId: "response_recorded", met: true }],
+    });
+    retriedCycle = applyLearningCycleAction(retriedCycle, { type: "comparison_viewed" });
+    retriedCycle = applyLearningCycleAction(retriedCycle, { type: "cycle_completed" });
     const retry = await POST(
       new Request("http://localhost/complete", {
         method: "POST",

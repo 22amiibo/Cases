@@ -93,3 +93,25 @@ it("uses learner-facing coaching language and prioritizes the progress sections"
   expect(screen.getByText("State the correct unit with your answer.")).toBeVisible();
   expect(document.body).not.toHaveTextContent(/V2 ATTEMPTS|SELF-ASSESSED|SYSTEM CHECK|unit_error|reduced scaffolding/i);
 });
+
+it("shows five ordered areas and current evidence separately from earlier results", () => {
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], localRuns: [], retry: vi.fn() });
+  render(<ProgressPage />);
+  const headings = screen.getAllByRole("heading", { level: 2 }).map(h => h.textContent);
+  expect(headings.slice(0, 5)).toEqual(["Continue", "Recommended next", "Quick practice", "Skills snapshot", "Recent activity"]);
+  expect(screen.getByRole("link", { name: "View all activity" })).toHaveAttribute("href", "/progress/history");
+  expect(screen.getAllByText("Not started").length).toBeGreaterThanOrEqual(10);
+  expect(document.body).not.toHaveTextContent(/scoringVersion|self_assessment|composite|readiness score/i);
+});
+it("puts a saved unfinished activity ahead of an unpracticed recommendation", () => {
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], localRuns: [["casework:v3-activity:alpinefit-clarifying-v3:1", JSON.stringify({ attemptId: "run", startedAt: "2026-09-01T00:00:00.000Z", events: [{ eventId: "start", type: "activity_started", atMs: 0 }] })]], retry: vi.fn() });
+  render(<ProgressPage />);
+  expect(within(screen.getByRole("region", { name: "Recommended next" })).getByRole("link")).toHaveAttribute("href", "/practice/activities/alpinefit-clarifying-v3?version=1");
+  expect(screen.getByText(/Your unfinished practice is saved/)).toBeVisible();
+});
+it("includes current full cases in case history and never renders a missing case id", () => {
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], localRuns: [], v3CaseAttempts: [{ attemptId: "full-case", caseId: "missing-raw-case-id", contentVersion: 99, scoringVersion: "v3", completedAt: "2026-09-01T00:00:00Z", skillEvidence: [], diagnostics: [], events: [] }], retry: vi.fn() });
+  render(<ProgressPage />);
+  expect(within(screen.getByRole("region", { name: "Case history" })).getByRole("link", { name: "Review Case practice" })).toHaveAttribute("href", "/cases/missing-raw-case-id/attempts/full-case");
+  expect(document.body).not.toHaveTextContent("missing-raw-case-id");
+});

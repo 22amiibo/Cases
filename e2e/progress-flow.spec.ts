@@ -15,6 +15,7 @@ async function completeQuantitativeDrill(
 }
 
 async function installSignedInSession(page: Page) {
+  await page.route("http://127.0.0.1:54321/rest/v1/**", route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   const payload = Buffer.from(JSON.stringify({
     sub: "user-1",
     exp: 4_102_444_800,
@@ -51,6 +52,13 @@ test("guest sees progress and a deterministic next session after practice", asyn
   await page.getByRole("button", { name: "Next question" }).click();
   await completeQuantitativeDrill(page, "40000", "orders");
   await completeAlpineFitV2(page);
+  // Preserve this journey's original legacy-case contract now that new runs save current evidence.
+  await page.evaluate(() => {
+    const history = JSON.parse(sessionStorage.getItem("casework:practice-history") ?? "{}");
+    history.caseAttempts = [{ ...history.v3CaseAttempts[0], scoringVersion: "v2" }];
+    history.v3CaseAttempts = [];
+    sessionStorage.setItem("casework:practice-history", JSON.stringify(history));
+  });
 
   await page.goto("/");
   await page.getByRole("link", { name: "View progress" }).click();
@@ -292,7 +300,9 @@ test("signed-in case history replays its ordered exact V2 attempt from Progress"
   };
   let ownedAttemptRequestUrl = "";
   await page.route("http://127.0.0.1:54321/rest/v1/case_attempts**", async (route) => {
-    const isSingle = new URL(route.request().url()).searchParams.has("id");
+    const params = new URL(route.request().url()).searchParams;
+    if (params.get("scoring_version") === "eq.v3") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    const isSingle = params.has("id");
     if (isSingle) ownedAttemptRequestUrl = route.request().url();
     await route.fulfill({
       status: 200,
@@ -364,7 +374,9 @@ test("signed-in case history stops safely when its exact version is unavailable"
       learning_evidence: null,
       diagnostics: [],
     };
-    const isSingle = new URL(route.request().url()).searchParams.has("id");
+    const params = new URL(route.request().url()).searchParams;
+    if (params.get("scoring_version") === "eq.v3") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    const isSingle = params.has("id");
     await route.fulfill({
       status: 200,
       contentType: "application/json",

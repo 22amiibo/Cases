@@ -120,8 +120,11 @@ export async function POST(
         atMs: body.atMs,
       });
     }
-    if (!isCaseEventAllowed(session, event)) throw new Error("Hypothesis event is not allowed");
-    return NextResponse.json({ event });
+    const publicEvent = getCaseModePolicy(mode.data).showImmediateFeedback
+        ? event
+        : { ...event, diagnostics: [] };
+    if (!isCaseEventAllowed(session, publicEvent)) throw new Error("Hypothesis event is not allowed");
+    return NextResponse.json({ event: publicEvent });
   } catch {
     return NextResponse.json({ error: "Invalid hypothesis completion" }, { status: 400 });
   }

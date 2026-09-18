@@ -231,9 +231,9 @@ export function deferLearningCycleReveal(
   definition: AuthoredLearningCycle,
   response: CommittedResponse,
 ): LearningCycleReveal {
-  const reveal = revealLearningCycleAfterCommit(definition, response);
+  revealLearningCycleAfterCommit(definition, response);
   return {
-    criteria: reveal.criteria,
+    criteria: [{ id: "response_recorded", label: "Response recorded" }],
     comparison: {
       title: "Review available after completion",
       text: "Your comparison and diagnostics will be available in the completed-case debrief.",
@@ -405,7 +405,9 @@ export function validateCompletedLearningCycleState(
       });
       canonical = applyLearningCycleAction(canonical, {
         type: "self_check_submitted",
-        outcomes: matchingAssessments[0].outcomes,
+        outcomes: allowDeferredReveal
+          ? definition.criteria.map(({ id }) => ({ criterionId: id, met: false }))
+          : matchingAssessments[0].outcomes,
       });
       canonical = applyLearningCycleAction(canonical, {
         type: "comparison_viewed",

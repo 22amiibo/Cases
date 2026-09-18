@@ -29,19 +29,22 @@ type CheckpointReveal = {
   nextSteps?: Choice[];
 };
 
-function storageKey(caseId: string, kind: CaseCycleKind, itemId?: string) {
-  return `casework:guest-session:${caseId}:cycle:${kind}:${itemId ?? "main"}`;
+function storageKey(caseId: string, mode: CaseMode, kind: CaseCycleKind, itemId?: string) {
+  const base = `casework:guest-session:${caseId}:cycle:${kind}:${itemId ?? "main"}`;
+  return mode === "practice" ? base : `${base}:${mode}`;
 }
 
 export function clearCaseCycleStorage(
   storage: Storage,
   caseId: string,
+  mode: CaseMode = "practice",
 ) {
   const casePrefix = `casework:guest-session:${caseId}:cycle:`;
   const keys: string[] = [];
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
-    if (key && (key.startsWith(casePrefix) || key.startsWith("casework:exhibit-cycle:"))) {
+    if (key && (key.startsWith(casePrefix) || key.startsWith("casework:exhibit-cycle:")) &&
+      (mode === "practice" ? !key.endsWith(":interview") : key.endsWith(`:${mode}`))) {
       keys.push(key);
     }
   }
@@ -77,7 +80,7 @@ export function CaseGeneratedStep({
   onEvent: (event: CaseEvent) => Promise<void>;
   onQuantitativeFeedback?: (feedback: QuantitativeFeedback) => void;
 }) {
-  const key = storageKey(caseId, kind, itemId);
+  const key = storageKey(caseId, caseMode, kind, itemId);
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(window.sessionStorage.getItem(key), prompt.interactionId);
     return restored?.phase === "complete" ? restored : null;
@@ -93,7 +96,7 @@ export function CaseGeneratedStep({
   const [riskId, setRiskId] = useState("");
   const [nextStepId, setNextStepId] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
-  const orderSeedKey = `casework:choice-seed:case:${caseId}:${contentVersion}`;
+  const orderSeedKey = `casework:choice-seed:case:${caseId}:${contentVersion}${caseMode === "practice" ? "" : `:${caseMode}`}`;
   const orderedQuestionOptions = useStableChoiceOrder(
     reveal.questionOptions ?? [],
     orderSeedKey,

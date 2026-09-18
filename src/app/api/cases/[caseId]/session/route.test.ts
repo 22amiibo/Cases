@@ -47,6 +47,20 @@ describe("case session projection", () => {
     });
   });
 
+  it.each(["alpinefit-profitability", "paypilot-growth", "goldenloaf-operations"])(
+    "keeps retained V1 %s available in default Practice Mode",
+    async (caseId) => {
+      const response = await POST(
+        new Request(`http://localhost/api/cases/${caseId}/session`, {
+          method: "POST",
+          body: JSON.stringify({ events: [], contentVersion: 1 }),
+        }),
+        { params: Promise.resolve({ caseId }) },
+      );
+      expect(response.status).toBe(200);
+    },
+  );
+
   it("stops safely when an unknown historical content version is requested", async () => {
     const response = await POST(
       new Request("http://localhost/api/cases/alpinefit-profitability/session", {

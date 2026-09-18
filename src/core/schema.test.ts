@@ -243,8 +243,6 @@ describe("versioned framework events", () => {
       atMs: 2,
     } as const;
     expect(CaseEventSchema.parse(event)).toEqual(event);
-    expect(CaseEventSchema.safeParse({ ...event, insightIds: [] }).success).toBe(true);
-    expect(CaseEventSchema.safeParse({ ...event, authoredComparisonViewed: false }).success).toBe(true);
   });
 });
 
@@ -276,6 +274,8 @@ describe("V2 exhibit interpretation events", () => {
     } as const;
 
     expect(CaseEventSchema.parse(event)).toEqual(event);
+    expect(CaseEventSchema.safeParse({ ...event, insightIds: [] }).success).toBe(true);
+    expect(CaseEventSchema.safeParse({ ...event, authoredComparisonViewed: false }).success).toBe(true);
   });
 });
 

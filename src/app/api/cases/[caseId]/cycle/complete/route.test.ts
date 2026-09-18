@@ -137,6 +137,11 @@ describe("case learning-cycle completion", () => {
 
   it("hides immediate correctness and rejects revised checkpoints in Interview Mode", async () => {
     const { session, atMs } = sessionAtCalculation();
+    const interviewEvents = session.events.map((event) =>
+      "diagnostics" in event
+        ? { ...event, diagnostics: [], authoredComparisonViewed: false }
+        : event,
+    );
     const calculation = definition.calculations[0];
     const firstCycle = completedCycle(calculation.responseCycle!, "calculation-response", atMs);
     const retriedCycle = {
@@ -154,7 +159,7 @@ describe("case learning-cycle completion", () => {
         body: JSON.stringify({
           contentVersion: 2,
           mode: "interview",
-          events: session.events,
+          events: interviewEvents,
           kind: "calculation",
           itemId: calculation.id,
           cycle: retriedCycle,
@@ -172,7 +177,7 @@ describe("case learning-cycle completion", () => {
         body: JSON.stringify({
           contentVersion: 2,
           mode: "interview",
-          events: session.events,
+          events: interviewEvents,
           kind: "calculation",
           itemId: calculation.id,
           cycle: firstCycle,

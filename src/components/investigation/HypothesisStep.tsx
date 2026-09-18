@@ -12,18 +12,20 @@ import styles from "./HypothesisStep.module.css";
 
 type HypothesisPractice = NonNullable<LearnerSessionView["hypothesis"]>;
 
-function hypothesisStorageKey(caseId: string, phase: "initial" | "update") {
-  return `casework:guest-session:${caseId}:hypothesis:${phase}`;
+function hypothesisStorageKey(caseId: string, mode: CaseMode, phase: "initial" | "update") {
+  const base = `casework:guest-session:${caseId}:hypothesis:${phase}`;
+  return mode === "practice" ? base : `${base}:${mode}`;
 }
 
 export function clearHypothesisPracticeStorage(
   storage: Pick<Storage, "removeItem">,
   caseId: string,
+  mode: CaseMode = "practice",
 ) {
-  storage.removeItem(hypothesisStorageKey(caseId, "initial"));
-  storage.removeItem(hypothesisStorageKey(caseId, "update"));
-  storage.removeItem(`${hypothesisStorageKey(caseId, "initial")}:options`);
-  storage.removeItem(`${hypothesisStorageKey(caseId, "update")}:options`);
+  storage.removeItem(hypothesisStorageKey(caseId, mode, "initial"));
+  storage.removeItem(hypothesisStorageKey(caseId, mode, "update"));
+  storage.removeItem(`${hypothesisStorageKey(caseId, mode, "initial")}:options`);
+  storage.removeItem(`${hypothesisStorageKey(caseId, mode, "update")}:options`);
 }
 
 export type HypothesisCompletion = {
@@ -52,7 +54,7 @@ export function HypothesisStep({
   }>;
   onComplete: (completion: HypothesisCompletion) => Promise<void>;
 }) {
-  const storageKey = hypothesisStorageKey(caseId, practice.phase);
+  const storageKey = hypothesisStorageKey(caseId, caseMode, practice.phase);
   const optionsStorageKey = `${storageKey}:options`;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(
@@ -74,7 +76,7 @@ export function HypothesisStep({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">("idle");
   const orderedOptions = useStableChoiceOrder(
     options,
-    `casework:choice-seed:case:${caseId}`,
+    `casework:choice-seed:case:${caseId}${caseMode === "practice" ? "" : `:${caseMode}`}`,
     `hypothesis:${practice.phase}`,
   );
 

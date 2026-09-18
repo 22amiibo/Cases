@@ -71,7 +71,8 @@ describe("generated response learning cycle", () => {
   it("defers authored comparisons and diagnostics for an interview response", () => {
     const deferred = deferLearningCycleReveal(definition, firstResponse);
 
-    expect(deferred.criteria).toEqual(definition.criteria);
+    expect(deferred.criteria).toEqual([{ id: "response_recorded", label: "Response recorded" }]);
+    expect(JSON.stringify(deferred)).not.toContain("Names the strongest comparison");
     expect(deferred.comparison.text).not.toContain(definition.comparison.text);
     expect(deferred.diagnosticRules).toEqual([]);
     expect(JSON.stringify(deferred)).not.toContain("comparison_missed");

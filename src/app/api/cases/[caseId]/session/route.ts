@@ -57,7 +57,9 @@ export async function POST(
   }
   const parsedMode = CaseModeSchema.safeParse(body.mode ?? "practice");
   const metadata = getCaseMetadata(caseId, caseDefinition.version);
-  if (!parsedMode.success || !metadata?.supportedModes.includes(parsedMode.data)) {
+  if (!parsedMode.success || (
+    parsedMode.data === "interview" && !metadata?.supportedModes.includes("interview")
+  )) {
     return NextResponse.json({ error: "Case mode not supported" }, { status: 400 });
   }
   const runContext = { mode: parsedMode.data, contentVersion: caseDefinition.version } as const;

@@ -64,7 +64,12 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
 
   await page.goto("/cases/alpinefit-profitability?mode=interview");
   await expect(page.getByLabel("Interview timer")).toBeVisible();
-  await completeAlpineFitV2(page, { interview: true });
+  await completeAlpineFitV2(page, {
+    interview: true,
+    refresh: true,
+    calculationRetry: true,
+    saveRecovery: true,
+  });
   await Promise.all(responseReads);
 
   expect(revealBodies).not.toEqual([]);

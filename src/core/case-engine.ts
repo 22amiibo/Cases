@@ -85,6 +85,7 @@ function hasGeneratedEvidence(
   event: CaseEvent,
   kind: CaseCycleKind,
   itemId?: string,
+  allowDeferredDiagnostics = false,
 ) {
   if (!("eventSchemaVersion" in event) || event.eventSchemaVersion !== 2) return false;
   if (!("responses" in event) || !("rubricOutcomes" in event) || !("diagnostics" in event)) return false;
@@ -102,12 +103,12 @@ function hasGeneratedEvidence(
     event.rubricOutcomes.length === criterionIds.size &&
     submittedIds.size === criterionIds.size &&
     event.rubricOutcomes.every(({ criterionId }) => criterionIds.has(criterionId)) &&
-    event.diagnostics
+    (allowDeferredDiagnostics || event.diagnostics
       .filter(({ source }) => source === "self_assessment")
       .every(({ code, severity, responseId }) =>
         authoredRules.has(`${code}:${severity}`) &&
         Boolean(responseId && responseIds.has(responseId)),
-      )
+      ))
   );
 }
 
@@ -115,7 +116,9 @@ function hasExpectedSystemDiagnostic(
   event: CaseEvent,
   code: DiagnosticOutcome["code"],
   severity: DiagnosticOutcome["severity"],
+  allowDeferredDiagnostics = false,
 ) {
+  if (allowDeferredDiagnostics) return "diagnostics" in event && event.diagnostics.length === 0;
   if (!("responses" in event) || !("diagnostics" in event)) return false;
   const latestResponseId = event.responses.at(-1)?.responseId;
   const diagnostics = event.diagnostics.filter(({ source }) => source === "system");
@@ -252,11 +255,11 @@ export function isCaseEventAllowed(
           ) &&
           new Set(questionIds).size === questionIds.length &&
           (!caseDefinition.completeLearningLoop || (
-            hasGeneratedEvidence(caseDefinition, event, "opening") &&
+            hasGeneratedEvidence(caseDefinition, event, "opening", undefined, !policy.showImmediateFeedback) &&
             hasExpectedSystemDiagnostic(
               event,
               strongOpening ? "strong_opening" : "low_value_question",
-              strongOpening ? "strength" : "coaching",
+              strongOpening ? "strength" : "coaching", !policy.showImmediateFeedback,
             )
           ))
       );
@@ -280,7 +283,7 @@ export function isCaseEventAllowed(
           getHypothesisEvents(session.events).length === 0 &&
           !session.events.some(({ type }) => type === "node_investigated") &&
           includesId(practice.options, event.hypothesisId) &&
-          isHypothesisLearningEvidenceValid(caseDefinition, event),
+          isHypothesisLearningEvidenceValid(caseDefinition, event, !policy.showImmediateFeedback),
       );
     }
     case "hypothesis_updated": {
@@ -309,12 +312,14 @@ export function isCaseEventAllowed(
           event.revisionOfResponseId === getLastHypothesisResponseId(session.events) &&
           event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
           selectionValid &&
-          isHypothesisLearningEvidenceValid(caseDefinition, event) &&
+          isHypothesisLearningEvidenceValid(caseDefinition, event, !policy.showImmediateFeedback) &&
           expectedDiagnostic &&
-          systemDiagnostics.length === 1 &&
-          systemDiagnostics[0].code === expectedDiagnostic.code &&
-          systemDiagnostics[0].severity === expectedDiagnostic.severity &&
-          systemDiagnostics[0].responseId === expectedDiagnostic.responseId,
+          (policy.showImmediateFeedback
+            ? systemDiagnostics.length === 1 &&
+              systemDiagnostics[0].code === expectedDiagnostic.code &&
+              systemDiagnostics[0].severity === expectedDiagnostic.severity &&
+              systemDiagnostics[0].responseId === expectedDiagnostic.responseId
+            : systemDiagnostics.length === 0),
       );
     }
     case "node_investigated": {
@@ -370,11 +375,13 @@ export function isCaseEventAllowed(
               response.interactionId === interpretation.interactionId &&
               response.responseKind === interpretation.responseKind,
           ) &&
-          event.rubricOutcomes.length === criterionIds.size &&
-          submittedCriterionIds.size === criterionIds.size &&
-          event.rubricOutcomes.every(({ criterionId }) =>
-            criterionIds.has(criterionId),
-          ) &&
+          (!policy.showImmediateFeedback || (
+            event.rubricOutcomes.length === criterionIds.size &&
+            submittedCriterionIds.size === criterionIds.size &&
+            event.rubricOutcomes.every(({ criterionId }) =>
+              criterionIds.has(criterionId),
+            )
+          )) &&
           event.diagnostics.every(
             ({ responseId, source, code }) =>
               source === "self_assessment" &&
@@ -398,10 +405,13 @@ export function isCaseEventAllowed(
       return Boolean(
         currentStage === "investigate" &&
           calculation &&
+          (policy.allowCheckpointRetry || !session.events.some(
+            (candidate) => candidate.type === "calculation_submitted" && candidate.taskId === event.taskId,
+          )) &&
           calculation.prerequisiteNodeIds.every((nodeId) => visited.has(nodeId)) &&
           (calculation.responseCycle
             ? "eventSchemaVersion" in event &&
-              hasGeneratedEvidence(caseDefinition, event, "calculation", event.taskId) &&
+              hasGeneratedEvidence(caseDefinition, event, "calculation", event.taskId, !policy.showImmediateFeedback) &&
               hasExpectedSystemDiagnostic(
                 event,
                 !unitCorrect
@@ -409,7 +419,7 @@ export function isCaseEventAllowed(
                   : answerCorrect
                     ? "strong_quantitative_reasoning"
                     : "arithmetic_error",
-                answerCorrect && unitCorrect ? "strength" : "blocking",
+                answerCorrect && unitCorrect ? "strength" : "blocking", !policy.showImmediateFeedback,
               )
             : !("eventSchemaVersion" in event)),
       );
@@ -419,11 +429,11 @@ export function isCaseEventAllowed(
         currentStage === "investigate" &&
         isSynthesisReady(session) &&
         (!caseDefinition.synthesis ||
-          (hasGeneratedEvidence(caseDefinition, event, "synthesis") &&
+          (hasGeneratedEvidence(caseDefinition, event, "synthesis", undefined, !policy.showImmediateFeedback) &&
             hasExpectedSystemDiagnostic(
               event,
               event.evidenceIds.length >= 2 ? "strong_synthesis" : "evidence_unsupported",
-              event.evidenceIds.length >= 2 ? "strength" : "coaching",
+              event.evidenceIds.length >= 2 ? "strength" : "coaching", !policy.showImmediateFeedback,
             ))) &&
         new Set(event.evidenceIds).size === event.evidenceIds.length &&
         event.evidenceIds.every((factId) => revealedFacts.has(factId)) &&
@@ -438,7 +448,7 @@ export function isCaseEventAllowed(
       return (
         currentStage === "recommend" &&
         (!caseDefinition.recommendation.responseCycle ||
-          (hasGeneratedEvidence(caseDefinition, event, "recommendation") &&
+          (hasGeneratedEvidence(caseDefinition, event, "recommendation", undefined, !policy.showImmediateFeedback) &&
             hasExpectedSystemDiagnostic(
               event,
               event.evidenceIds.length >= caseDefinition.recommendation.minimumEvidence
@@ -446,7 +456,7 @@ export function isCaseEventAllowed(
                 : "support_insufficient",
               event.evidenceIds.length >= caseDefinition.recommendation.minimumEvidence
                 ? "strength"
-                : "blocking",
+                : "blocking", !policy.showImmediateFeedback,
             ))) &&
         new Set(event.evidenceIds).size === event.evidenceIds.length &&
         includesId(caseDefinition.recommendation.decisions, event.decisionId) &&
@@ -540,11 +550,13 @@ export function applyCaseEvent(
     const completedCalculationIds = [...session.completedCalculationIds];
     const revealedFactIds = [...session.revealedFactIds];
 
-    if (
-      calculation &&
-      isCorrectCalculationSubmission(calculation, event)
-    ) {
+    if (calculation && (
+      isCorrectCalculationSubmission(calculation, event) ||
+      !getCaseModePolicy(session.runContext.mode).allowCheckpointRetry
+    )) {
       completedCalculationIds.push(calculation.id);
+    }
+    if (calculation && isCorrectCalculationSubmission(calculation, event)) {
       revealedFactIds.push(calculation.evidenceFactId);
     }
 

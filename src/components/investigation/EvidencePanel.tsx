@@ -16,6 +16,7 @@ import type { CaseMode } from "@/core/v3-taxonomy";
 import styles from "./EvidencePanel.module.css";
 
 type EvidencePanelProps = {
+  caseId: string;
   facts: RevealedFact[];
   exhibits: LearnerExhibitDefinition[];
   interpretedExhibitIds?: string[];
@@ -36,6 +37,7 @@ type EvidencePanelProps = {
 };
 
 export function EvidencePanel({
+  caseId,
   facts,
   exhibits,
   interpretedExhibitIds = [],
@@ -76,6 +78,7 @@ export function EvidencePanel({
                   onCommitResponse={onCommitResponse}
                   onSubmitInterpretation={onSubmitInterpretation}
                   caseMode={caseMode}
+                  caseId={caseId}
                 />
               ) : null)}
           </div>
@@ -86,12 +89,14 @@ export function EvidencePanel({
 }
 
 function ExhibitInterpretationPractice({
+  caseId,
   exhibit,
   prompt,
   onCommitResponse,
   onSubmitInterpretation,
   caseMode,
 }: {
+  caseId: string;
   exhibit: LearnerExhibitDefinition;
   prompt: NonNullable<LearnerExhibitDefinition["interpretationPrompt"]>;
   onCommitResponse: NonNullable<EvidencePanelProps["onCommitResponse"]>;
@@ -100,7 +105,10 @@ function ExhibitInterpretationPractice({
   >;
   caseMode: CaseMode;
 }) {
-  const cycleStorageKey = `casework:exhibit-cycle:${exhibit.id}`;
+  const legacyKey = `casework:exhibit-cycle:${exhibit.id}`;
+  const cycleStorageKey = caseMode === "practice"
+    ? legacyKey
+    : `${legacyKey}:${caseId}:${caseMode}`;
   const optionsStorageKey = `${cycleStorageKey}:insights`;
   const [insightOptions, setInsightOptions] = useState<
     Array<{ id: string; label: string }>
@@ -128,7 +136,7 @@ function ExhibitInterpretationPractice({
   const [insightId, setInsightId] = useState("");
   const orderedInsightOptions = useStableChoiceOrder(
     insightOptions,
-    `casework:choice-seed:exhibit:${exhibit.id}`,
+    `casework:choice-seed:exhibit:${exhibit.id}${caseMode === "practice" ? "" : `:${caseMode}`}`,
     "insights",
   );
 

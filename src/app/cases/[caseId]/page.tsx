@@ -27,7 +27,9 @@ export default async function CasePage({
   const caseDefinition = getCaseDefinition(caseId, contentVersion);
   if (!caseDefinition) notFound();
   const mode = CaseModeSchema.safeParse(modeValue ?? "practice");
-  if (!mode.success || !getCaseMetadata(caseId, caseDefinition.version)?.supportedModes.includes(mode.data)) notFound();
+  if (!mode.success || (
+    mode.data === "interview" && !getCaseMetadata(caseId, caseDefinition.version)?.supportedModes.includes("interview")
+  )) notFound();
 
   return (
     <InvestigationPanel caseDefinition={toLearnerCaseDefinition(caseDefinition, {

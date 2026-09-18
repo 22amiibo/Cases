@@ -58,9 +58,12 @@ export async function POST(
       atMs: Number(body.atMs),
     });
     const parsedEvent = CaseEventSchema.parse(event);
-    if (!isCaseEventAllowed(session, parsedEvent)) throw new Error("Event is not allowed");
+    const publicEvent = getCaseModePolicy(mode.data).showImmediateFeedback
+      ? parsedEvent
+      : { ...parsedEvent, diagnostics: [] };
+    if (!isCaseEventAllowed(session, publicEvent)) throw new Error("Event is not allowed");
     return NextResponse.json({
-      event: parsedEvent,
+      event: publicEvent,
       ...(kind === "calculation" && getCaseModePolicy(mode.data).showImmediateFeedback
         ? { feedback: buildCaseQuantitativeFeedback(definition, itemId, checkpoint) }
         : {}),

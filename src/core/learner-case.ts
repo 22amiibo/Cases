@@ -22,6 +22,7 @@ import type { LearnerLearningCyclePrompt } from "./learning-cycle";
 import { projectLearningCyclePrompt } from "./learning-cycle";
 import { getCurrentHypothesisId, getHypothesisEvents } from "./hypothesis";
 import { getCaseModePolicy, type CaseRunContext } from "./case-mode";
+import { withinTolerance } from "./validation";
 
 export type LearnerExhibitDefinition = Omit<
   ExhibitDefinition,
@@ -156,6 +157,7 @@ export type LearnerSessionView = {
 
 export type StoredCaseWorkspace = {
   contentVersion: number;
+  runStartedAtMs: number;
   events: CaseEvent[];
   clarificationComplete: boolean;
   clarificationDraftIds: string[];
@@ -216,12 +218,29 @@ function projectGeneratedCaseResponses(
         details: event.questions.map(({ questionId }) => `Question: ${questionId.replaceAll("-", " ")}`),
       });
     } else if (event.type === "calculation_submitted" && "responses" in event) {
+      const calculation = definition.calculations.find(({ id }) => id === event.taskId);
+      const diagnostics = event.diagnostics.length > 0
+        ? event.diagnostics
+        : calculation
+          ? [{
+              code: event.unit !== calculation.unit
+                ? "unit_error" as const
+                : withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
+                  ? "strong_quantitative_reasoning" as const
+                  : "arithmetic_error" as const,
+              source: "system" as const,
+              severity: event.unit !== calculation.unit || !withinTolerance(event.answer, calculation.expectedAnswer, calculation.tolerance)
+                ? "blocking" as const
+                : "strength" as const,
+              responseId: event.responses.at(-1)?.responseId,
+            }]
+          : [];
       projected.push({
         kind: "calculation",
         label: definition.calculations.find(({ id }) => id === event.taskId)?.prompt ?? event.taskId,
         responses: event.responses,
         rubricOutcomes: event.rubricOutcomes,
-        diagnostics: event.diagnostics,
+        diagnostics,
         details: [`Answer: ${event.answer} ${event.unit}`],
       });
     } else if (event.type === "synthesis_submitted" && "responses" in event) {

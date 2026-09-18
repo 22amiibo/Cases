@@ -82,6 +82,7 @@ function restorePendingCaseAttempt(
 function createEmptyWorkspace(contentVersion: number): StoredCaseWorkspace {
   return {
     contentVersion,
+    runStartedAtMs: Date.now(),
     events: [],
     clarificationComplete: false,
     clarificationDraftIds: [] as string[],
@@ -103,6 +104,7 @@ function restoreWorkspace(stored: string | null, contentVersion: number): Restor
       clarificationComplete?: unknown;
       clarificationDraftIds?: unknown[];
       contentVersion?: unknown;
+      runStartedAtMs?: unknown;
     };
     if (!Array.isArray(serialized.events)) return { status: "expired" };
     const storedVersion = serialized.contentVersion === undefined ? 1 : serialized.contentVersion;
@@ -125,6 +127,9 @@ function restoreWorkspace(stored: string | null, contentVersion: number): Restor
       status: "ready",
       workspace: {
         contentVersion,
+        runStartedAtMs: Number.isFinite(serialized.runStartedAtMs)
+          ? Number(serialized.runStartedAtMs)
+          : Date.now(),
         events: parsedEvents.flatMap((event) =>
           event.success ? [event.data] : [],
         ),
@@ -272,6 +277,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       body: JSON.stringify({
         events: initialEvents.current,
         contentVersion: caseDefinition.version,
+        runStartedAtMs: workspace.runStartedAtMs,
         mode: caseDefinition.caseMode,
       }),
     })
@@ -293,7 +299,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     return () => {
       active = false;
     };
-  }, [caseDefinition.caseMode, caseDefinition.id, caseDefinition.version, sessionExpired]);
+  }, [caseDefinition.caseMode, caseDefinition.id, caseDefinition.version, sessionExpired, workspace.runStartedAtMs]);
 
   useEffect(() => {
     if (sessionExpired) return;
@@ -301,12 +307,13 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       storageKey,
       JSON.stringify({
         contentVersion: caseDefinition.version,
+        runStartedAtMs: workspace.runStartedAtMs,
         events,
         clarificationComplete,
         clarificationDraftIds,
       }),
     );
-  }, [caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey]);
+  }, [caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey, workspace.runStartedAtMs]);
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
@@ -359,11 +366,12 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     repository: Awaited<ReturnType<typeof getBrowserPracticeSession>>["repository"],
     attempt: CaseAttempt,
   ) {
-    await repository.saveCaseAttempt(attempt);
     if (caseDefinition.id === "alpinefit-profitability" && caseDefinition.version === 2) {
       await (repository as typeof repository & V3CaseAttemptRepository)
         .saveV3CaseAttempt(createV3CaseAttempt(attempt, caseDefinition.caseMode));
+      return;
     }
+    await repository.saveCaseAttempt(attempt);
   }
 
   async function recordGeneratedEvent(event: CaseEvent) {
@@ -517,8 +525,8 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     window.sessionStorage.removeItem(storageKey);
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
     window.sessionStorage.removeItem(calculationFeedbackKey);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
-    clearCaseCycleStorage(window.sessionStorage, caseDefinition.id);
+    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
+    clearCaseCycleStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode);
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
     elapsedOffset.current = 0;
     startedAt.current = null;
@@ -566,7 +574,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
         <Link href="/cases">← All cases</Link>
         <div className={styles.headerActions}>
           <CaseWalkthrough />
-          {caseDefinition.caseMode === "interview" && <InterviewTimer />}
+          {caseDefinition.caseMode === "interview" && <InterviewTimer startedAtMs={workspace.runStartedAtMs} />}
           <span>Guest session · {events.length} events saved</span>
         </div>
       </header>
@@ -846,6 +854,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
         <div className={styles.sideRail}>
           <EvidencePanel
+            caseId={caseDefinition.id}
             caseMode={caseDefinition.caseMode}
             facts={facts}
             exhibits={view?.exhibits ?? []}
@@ -867,13 +876,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   );
 }
 
-function InterviewTimer() {
-  const [seconds, setSeconds] = useState(0);
+function InterviewTimer({ startedAtMs }: { startedAtMs: number }) {
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const interval = window.setInterval(() => setSeconds((current) => current + 1), 1_000);
+    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(interval);
   }, []);
-  return <output aria-label="Interview timer">Interview timer · {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</output>;
+  const seconds = Math.max(0, Math.floor((now - startedAtMs) / 1_000));
+  return <span aria-label="Interview timer">Interview timer · {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</span>;
 }
 
 function WorkspaceFailure({

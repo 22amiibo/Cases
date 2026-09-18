@@ -50,6 +50,7 @@ export function getHypothesisSystemDiagnostic(
 export function isHypothesisLearningEvidenceValid(
   definition: CaseDefinition,
   event: HypothesisEvent,
+  allowDeferredDiagnostics = false,
 ): boolean {
   const practice = definition.hypothesisPractice;
   if (!practice) return false;
@@ -72,6 +73,8 @@ export function isHypothesisLearningEvidenceValid(
     event.rubricOutcomes.some(({ criterionId }) => !criterionIds.has(criterionId)) ||
     event.diagnostics.some(({ responseId }) => responseId && !responseIds.has(responseId))
   ) return false;
+
+  if (allowDeferredDiagnostics) return event.diagnostics.length === 0;
 
   const outcomeByCriterion = new Map(
     event.rubricOutcomes.map(({ criterionId, met }) => [criterionId, met]),

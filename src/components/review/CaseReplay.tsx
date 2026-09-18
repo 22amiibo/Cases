@@ -8,6 +8,7 @@ import { diagnosticDefinitions, type DiagnosticCode } from "@/core/diagnostics";
 import { InvestigationGroups } from "@/components/investigation/InvestigationGroups";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
+import type { V3Repository } from "@/data/v3-repository";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import styles from "./review.module.css";
 
@@ -237,7 +238,16 @@ export function ReviewSession({
         let contentVersion: number;
         if (attemptId) {
           const { repository, userId } = await getBrowserPracticeSession();
-          const attempt = await repository.getCaseAttempt(userId, attemptId);
+          const attempt = await repository.getCaseAttempt(userId, attemptId) ?? await (
+            repository as typeof repository & V3Repository
+          ).listCourseEvidence(userId).then(({ caseAttempts }) => {
+            const v3 = caseAttempts.find((candidate) => candidate.attemptId === attemptId);
+            return v3 && {
+              ...v3,
+              learningEvidence: null,
+              caseMode: undefined,
+            } as unknown as CaseAttempt;
+          });
           if (!attempt || attempt.caseId !== caseId) {
             if (active) setStatus("missing");
             return;

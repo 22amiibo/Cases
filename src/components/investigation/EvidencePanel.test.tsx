@@ -38,6 +38,7 @@ describe("EvidencePanel V2 interpretation", () => {
     });
     render(
       <EvidencePanel
+        caseId="alpinefit-profitability"
         facts={[]}
         exhibits={[exhibit]}
         onCommitResponse={onCommitResponse}

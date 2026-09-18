@@ -1,6 +1,6 @@
 # Release candidate
 
-**Continuation verdict (2026-09-18): BLOCKED — RELEASE FIX REQUIRED.** See the continuation below. Real Auth/PostgREST testing is now available and exposed cross-identity browser-draft reuse. The code candidate remains `3b0e6be478c9905ae442570fa08283c4c1c07635`; only this report is being committed. Earlier evidence is preserved as the record of the first validation pass, not a statement that its environment limitations remain unchanged.
+**Current verdict (2026-09-18): BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE.** The identity-isolation release defect is fixed and validated at **`628ada71d99e3ce115c3ba8f26e00518e5164336`**. Real Auth/PostgREST, pending-save recovery, and prior-V2 compatibility rehearsals pass. Target-production configuration, grants, checkpoint, and deployment identity remain unverified. See “Identity-isolation fix and final continuation” below. Earlier sections are preserved as chronological evidence and are superseded where explicitly updated.
 
 - Validation date: 2026-09-18 (America/Chicago).
 - Repository/worktree: Casework, `.worktrees/casework-v3`.
@@ -447,8 +447,148 @@ Evidence root: `/tmp/casework-v3-http-validation/`.
 - Protected CLI cache was not edited, deleted, staged or used to infer migration state. CLI commands continued to use the existing temporary project outside the worktree.
 - At handoff, both local application servers, Auth/PostgREST/gateway/SMTP processes and the isolated PostgreSQL cluster were stopped. Evidence and disposable database files were retained. After the report-only commit, tracked files are clean; the existing protected CLI cache remains untracked, so the overall worktree remains dirty. No production process was stopped or changed.
 
-# Final validation verdict
+# Previous continuation verdict (superseded)
 
 **BLOCKED — RELEASE FIX REQUIRED**
 
 Real Auth/PostgREST and application recovery are no longer blocked by lack of a runnable local stack. They exposed a concrete browser-draft identity leak which the earlier mocked tests did not establish. Do not approve this candidate for production. No candidate code change was made; a draft/pending-retention decision is required before a safe complete surgical fix. Production migration/deployment remain separate owner-approved operations and were not executed.
+
+# Identity-isolation fix and final continuation — 2026-09-18
+
+## Exact candidate and scope
+
+- Branch: `feature/casework-v3`.
+- Candidate: **`628ada71d99e3ce115c3ba8f26e00518e5164336`**, `fix: discard learner drafts on identity changes`.
+- Previous code candidate: `3b0e6be478c9905ae442570fa08283c4c1c07635`; the intermediate `bad5a51a63b41aa4f823a59d4843ec1ef93024e7` changed only this report. **The product candidate changed.**
+- Environment: same isolated native PostgreSQL 17.11, real Supabase Auth v2.197.0 and PostgREST 16.3 stack described above; browser → real Auth/session/JWT → real PostgREST/RPC → RLS → `casework_http`. Production was not accessed or changed.
+- No migration, content, scoring, product-scope, deployment configuration, or production data changes. Migration004 SHA-256 remains `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844`.
+- Prior fresh migration, representative V2 upgrade, ten unchanged historical fixture rows, transaction-scoped RLS, and SQL failure/recovery proofs remain valid: none of their migrations changed. They were not unnecessarily rerun from scratch.
+
+## Owner-selected draft semantics and implementation
+
+The owner explicitly selected **discard unfinished local drafts on identity transition**, not per-user preservation of unfinished drafts.
+
+1. A root identity boundary waits for the Auth identity before exposing learner state, clears prior draft keys, and synchronously remounts learner views when identity changes. Guest↔authenticated and A↔B transitions are included. Same-user token refresh is not an ownership transition and does not discard that user's draft.
+2. Activity, case, generated-response, scratchpad, hypothesis, exhibit and V2-drill storage access captures its original identity/generation. Late callbacks cannot recreate discarded drafts, remove the next user's drafts, or become valid again after A→B→A.
+3. Saves capture the originating user and attempt, not whichever session exists after evaluation. Completed save payloads are journaled separately under owner/attempt keys before Auth resolution; failed or interrupted saves remain available only to that owner. Returning-owner retry uses the original attempt ID and existing idempotent persistence methods. No server records are deleted or reassigned.
+4. Owned pending activity/case/drill payloads survive identity changes. Legacy pending payloads without provable ownership are retained but quarantined, not assigned to the next user. Guest committed history remains guest-owned and is not imported into an authenticated account.
+5. Uncommitted draft preservation per user remains a future enhancement, not part of this fix. Session-storage pending journals are not a new cross-device or closed-tab durable queue. Closing/clearing browser storage is outside the identity-transition preservation guarantee.
+
+The initial real-browser failure and pending-owner regression failed before their fixes. Durable tests now cover mounted-state clearing, both identity directions, guest transitions, token/user replacement, refresh, late-callback fencing, pending-save/logout ownership, returning-owner retries, and direct foreign attempt IDs. No prior regression assertion was removed or weakened.
+
+## Real Auth/PostgREST identity and request matrix
+
+Final browser command (local servers already running):
+
+```sh
+node /tmp/casework-v3-validation-94249c5/clean-candidate/node_modules/@playwright/test/cli.js \
+  test --config /tmp/casework-v3-http-validation/playwright.config.ts
+node /tmp/casework-v3-http-validation/http-checks.mjs
+```
+
+Result: **3 browser journeys passed / 0 failed (16.4s)**; **66 HTTP ownership/idempotency requests passed**, plus private-schema denial. Browser sessions and Supabase responses were real, not mocked. The pending-save test deliberately held and failed one outgoing RPC to exercise recovery; its eventual retry used the real service.
+
+| Request / path or state | Identity | Expected | Actual |
+| --- | --- | --- | --- |
+| `POST /auth/v1/otp`, verification link, `GET /auth/v1/user` | Separate real A and B accounts | Authenticated SDK sessions/JWTs | Pass; email captured only by local SMTP sink |
+| Activity `/api/activities/*/commit`, `/session`, `/complete`; `POST /rest/v1/rpc/save_activity_attempt_v3` | A | Start, commit, refresh/resume, complete and persist | Pass; exact saved attempt reopened and refreshed |
+| `GET /rest/v1/activity_attempts`, `/activity_events`; `/practice/attempts/:id` | A own / B→A | A can read/review; B gets no A rows and unavailable page | Pass |
+| Course enrollment/lesson writes and course-context activity/case RPC writes | A | Preserve context; progress derived from persisted evidence | Pass; 3/9 after lessons/activity, 4/9 after capstone; refresh and return restored 4/9 |
+| Course/history reads | B | No A enrollment/context/history | Pass; B sees 0/9 and enroll action |
+| `POST /rest/v1/rpc/save_case_attempt_v3`; case attempt/events reads; exact attempt URL | A own / B→A | Save mode/version, reopen/replay only owned attempt | Pass; Practice mode, content version2; B receives no completed case |
+| `POST /auth/v1/token` with expired local session metadata | A | Real refresh and session restoration remain A-owned | Pass |
+| `POST /auth/v1/logout`, then real B login in same tab | A→guest→B | Discard A unfinished Hypothesis run; no A selected answer/evidence | Pass, including refresh |
+| B unfinished activity and case scratchpad, logout, A login | B→guest→A | Discard B and old A drafts; restore only A persisted course/history | Pass, including refresh and exact saved activity URL |
+| Auth identity replacement while learner view remains mounted | A→guest→B→A | Synchronous local reset, no stale view/callback writes | Pass in component regression; real Auth broadcast exercised in pending-save browser journey |
+| Held `save_activity_attempt_v3`, real SDK logout broadcast into saving tab, then B login | Original A save / current B session | Preserve original pending owner/ID; no B save | Pass; original journal unchanged, B rows zero |
+| Same pending attempt on A's return | A | Retry under A and save once | Pass; one row with original ID/owner; journal removed only after success; owned direct URL survives refresh |
+| Direct SELECT/PATCH/DELETE over all eight public tables | A→B and B→A | No foreign rows or mutations | Pass; 200 with empty representation where applicable |
+| Foreign activity/case INSERT and forged-owner/foreign-attempt RPC calls | A/B | Fail closed | Pass; rejected, no reassignment |
+| Identical retries of both V3 RPCs | Each original owner | No duplicate attempts/events | Pass |
+| Anonymous persistence RPC / forged JWT / `Accept-Profile: auth` | Anonymous/invalid | No writes/private schema | Pass; invalid JWT401, private schema406 |
+
+There is no server-backed `learning_runs` table in this release. Same-identity local activity start/refresh/resume passed; these unfinished runs are deliberately discarded on identity change. Server attempts, events and course evidence are retained. The HTTP matrix supplements the previously retained transaction-scoped PostgreSQL tests; it does not replace them.
+
+Temporary harness corrections: the pending test initially named the RPC without its `_v3` suffix, then released its interception before abort completion. Both harness errors were corrected; the final complete run passed. An initial production-suite invocation used a different Playwright installation from the exported tests; rerunning with the export's matching installation passed. These were not product defects or waived assertions.
+
+## Recovery rehearsal on the revised candidate
+
+**Pass:** exact V2 `c9dde86b0529901a7bcee801fcb8e070f72b8b86` and the revised V3 artifact ran against the same isolated schema after004.
+
+- Before V2 activity: 2 V3 activity attempts, 10 activity events, 1 V3 case attempt, 14 case events, 1 enrollment and 2 lesson events were snapshotted for A.
+- V2 signed in, read Progress, completed/saved/replayed a new V2 case. Every snapshotted row remained deeply equal afterward. New V2 history was additive.
+- V3-only activity URL returned404 under V2. Restoring the V3 artifact reopened the saved V3 activity/case and restored 4/9 course progress.
+- This proves artifact/schema compatibility and retained data, not a hosted same-origin alias cutover. Existing old tabs/caches and hosting rollback eligibility still need owner operational handling. The old V2 artifact is not certified as a security fix for browser draft leakage.
+
+Recovery procedure (proposal, not executed on production):
+
+1. **004 succeeds, V3 deployment fails:** keep the verified V2 deployment serving; do not reverse004. Verify old-app Auth, one V2 save/replay, history and unchanged preexisting rows.
+2. **App-only regression after promotion:** halt promotion; under separate owner authority select the recorded prior deployment targeting the same database and restore it using the hosting rollback control (or the previously documented `vercel rollback <verified-previous-deployment-id-or-url>` process). Verify deployment identity, routing/cache behavior, Auth, V2 persistence, history and retained V3 counts before reopening traffic.
+3. **Return to fixed V3:** build/promote the approved candidate with correct production public configuration, then verify the stored V3 attempts, exact replay, course progress and A/B draft/pending isolation. Preserve all V2 and V3 writes made during the compatibility window.
+4. **Database fault or cross-user access:** app rollback alone is insufficient. Freeze rollout, preserve evidence/current writes, restore the checkpoint into a separate investigation database, and obtain explicit authority for a reviewed forward repair or reconciled restore/cutover. Triggers include RLS/grant errors, ledger/catalog mismatch, corruption, loss, unacceptable locks/load or target schema drift.
+
+No down migration or destructive restore was invented, run, or certified. Dropping V3 schema would destroy retained V3 history and is not this recovery strategy. A backup restore without reconciling later writes can lose user data and is not an acceptable automatic rollback.
+
+## Fresh regression results for the revised source
+
+| Check | Fresh result | Evidence under `/tmp/casework-v3-http-validation/` |
+| --- | --- | --- |
+| Unit/component suite | **93 files / 489 tests passed** | `identity-unit-final.log` |
+| Legacy V1/V2 fixtures | Included and passing in full unit/browser suites | Same log; existing compatibility fixtures unchanged |
+| Lint | Pass, no warnings | `identity-lint.log` |
+| Typecheck | Pass | `identity-typecheck.log` |
+| Full development Playwright | **60 passed, no failures/retries, 1.2m** | `identity-e2e.log` |
+| Production-mode Playwright | **59 passed, no failures, 38.4s**; dev-only private activity excluded by established config | `identity-production-regression.log` |
+| Real Auth/PostgREST/recovery browser suite | **3 passed, no failures, 16.4s** | `identity-browser-final.log` |
+| Real JWT/RLS/RPC matrix | **66 requests passed**, plus schema exposure rejection | `identity-http-checks-final.log`, `http-matrix.json` |
+| Production builds | Revised V3 and exact prior V2 pass | `identity-build.log`, `identity-v2-build.log` |
+| Accessibility, keyboard, 320/768/1440 reflow | Pass in full browser suites | Browser logs above |
+| Precommit network secrecy | Pass in browser suites | Browser logs above |
+| Answer-secrecy production bundle scan | Pass; 23 browser chunks, three server-only markers absent | Repeated `npm run check:answer-secrecy` on isolated built export |
+| `git diff --check` / staged fix diff | Pass | Run before fix commit |
+
+The isolated export's runtime source matched the committed candidate. Two final test-only adjustments (direct foreign-attempt regressions and a lint cleanup in the boundary test) were run in the worktree's final 489-test/lint/typecheck checks; they did not change the tested production runtime. No claim relies solely on the earlier 480-test result.
+
+## Production configuration/grants audit and remaining limitations
+
+Repository requirements and the earlier configuration table remain authoritative. Rechecked actual isolated catalog evidence in `identity-grants.log`:
+
+- All eight public tables have RLS enabled and authenticated CRUD privileges. Policies use `auth.uid() = user_id` (profiles use `id`) for both visibility and writes.
+- All five persistence/read RPCs are invoker functions with empty `search_path` and authenticated EXECUTE. The modeled legacy default ACL also grants anon EXECUTE; ownership guards reject anonymous persistence. Target ACLs must be compared rather than assumed from PUBLIC revocation.
+- PostgREST exposes only `public`; private `auth` exposure and invalid JWTs fail closed. Authenticated subjects drive actual PostgreSQL ownership checks.
+- Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required by application code, selected at build time. Public URL/key must identify the same target project. No service-role/signing/database secret belongs in browser variables or bundles.
+- Auth requires working email delivery, correct Site URL/allowed redirects, matching JWT settings and suitable rate limits. Local mail capture does not prove production delivery.
+- Production comparison remains unavailable: a fresh connected read-only Vercel team listing returned `teams: []`; no Supabase administrative connector is exposed. No credentials were requested, copied from protected caches, or printed. Actual deployment SHA, project/key pairing, Auth settings, grants, schema/ledger, backup/checkpoint and rollback artifact eligibility are **unverified**, not asserted to be wrong.
+
+| Severity | Remaining risk / impact | Recommendation |
+| --- | --- | --- |
+| Blocking validation prerequisite | No authorized target configuration/catalog/checkpoint/deployment evidence | Owner supplies sanitized read-only evidence or appropriate scoped read access; compare before production approval |
+| Operational | Local dual-port recovery does not demonstrate hosted cutover, stale tabs or rollback eligibility | Record exact previous deployment and host procedure; verify traffic/cache handling under separately approved rollout |
+| Operational | Synthetic upgrade fixtures do not establish production-scale lock duration | Approve a measured maintenance/lock window and recovery owner |
+| Documented limitation | Browser-session pending saves cannot survive deliberate tab/storage destruction; legacy unattributed pending payloads are quarantined | Preserve open pending-save tabs; do not claim cross-device/closed-tab queue durability |
+| Deferred, not a release feature | Uncommitted per-user local draft preservation | Consider later with explicit ownership design; V3.0 intentionally discards on transition |
+
+The previously blocking A→B draft leak is resolved for this candidate. No known release fix remains from the demonstrated tests. A complete nine-step course over real Auth, production-scale load, and a hosting control-plane rollback were not newly claimed; representative real course persistence and the full repository course journeys passed.
+
+## Exact proposed production sequence — DO NOT EXECUTE
+
+1. Verify actual target project/deployment and current001–003 catalog/ledger, public configuration, Auth redirects/email/JWT, table/sequence/default grants, RLS, RPC EXECUTE and exposed schemas. Abort on drift, unknown target, missing privilege proof or an already-applied original004.
+2. Confirm a restore-tested backup/checkpoint; record location/checksum, historical counts/checksums, recovery owner, post-checkpoint write reconciliation, approved lock window, previous deployment ID and rollback eligibility.
+3. Obtain **separate explicit owner approval** for migration and application deployment, pinned to candidate `628ada71d99e3ce115c3ba8f26e00518e5164336` and the004 hash above. Keep any source-push auto-deployment from promoting ahead of migration.
+4. From a verified clean operational checkout linked to the confirmed target, run `supabase migration list --linked` and `supabase db push --linked --dry-run`. Expected change: only corrected `004_v3_learning.sql`. Any other proposed migration is an abort condition.
+5. Under migration authority only, run `supabase db push --linked`. Verify004 ledger/catalog/constraints/indexes/RPCs/grants/RLS and refresh the Data API schema cache if necessary. Compare historical counts/records; verify old V2 Auth/save/replay. On failure, halt and use the documented recovery process; do not delete new schema/history.
+6. Under deployment authority only, build/promote the exact approved candidate with the verified target URL/public key. Retain the verified prior deployment and additive schema.
+7. Run dedicated A/B production smoke: real sign-in/refresh, activity and case save/retry/exact-version replay, course context/progress, owned and foreign direct URLs, A→logout→B→logout→A, pending-save logout/retry and guest transition. Verify secrecy, safe errors and no history loss.
+8. Observe hosting runtime and Supabase Auth/API/PostgreSQL logs for an owner-assigned window/threshold. Declare healthy only after all checks. Cross-user data, history loss, duplicate/reassigned saves, content-version mismatch, persistent Auth/5xx errors or catalog drift require abort and owner-directed recovery. App-only rollback retains004 and all post-migration user data.
+
+## Evidence and worktree hygiene
+
+Sanitized evidence: final logs named above, `requests.json` (method/path/subject/status only), `http-matrix.json`, `identity-grants.log`, `pending-result.json`, `rollback-result.json`, and the temporary test/config scripts. Private `local-credentials.json` and `flow-state.json` contain disposable test credentials and must never be committed or published. The stack generates new local keys on restart, so rebuild both artifacts and obtain fresh sessions when reproducing.
+
+The fix commit contains only the 22 source/test files needed for the identity regression. This tracked report is committed separately under the existing repository documentation convention. The protected CLI cache was not modified, deleted, staged or interpreted during this continuation. After the report commit, tracked files are clean; the existing `supabase/.temp/` remains untracked, so the overall worktree is not clean. Both local application servers, Auth/PostgREST/gateway/SMTP and the isolated PostgreSQL cluster were stopped; evidence/database files were retained. Any documentation-only HEAD after the fix does not change the product candidate SHA above.
+
+# Final validation verdict
+
+**BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
+
+The release-blocking identity defect is fixed at `628ada71d99e3ce115c3ba8f26e00518e5164336`, with fresh real Auth/PostgREST ownership/pending recovery, prior-V2 compatibility, and regression evidence. Target-production configuration, grants, checkpoint and deployment identity cannot be verified with the available authorized access. Stop here pending that evidence and separate owner approval. No production migration or deployment was performed.

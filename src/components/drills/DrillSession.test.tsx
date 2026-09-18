@@ -5,8 +5,40 @@ import { drillBanks } from "@/content/drills";
 import type { DrillDefinition } from "@/core/schema";
 import type { PracticeRepository } from "@/data/repository";
 import { DrillSession } from "./DrillSession";
+import { changeLearnerIdentity } from "@/data/learner-identity";
+import { loadPendingAttempt } from "@/data/pending-attempts";
+import { MemoryPracticeRepository } from "@/data/memory-repository";
 
 describe("DrillSession persistence", () => {
+  it("keeps a failed save owned by A across logout, B, and A returning", async () => {
+    sessionStorage.clear();
+    changeLearnerIdentity("A");
+    const definition = drillBanks.prioritization[0] as Extract<DrillDefinition, { skillId: "prioritization" }>;
+    const repository = new MemoryPracticeRepository();
+    repository.saveDrillAttempt = async () => { throw new Error("offline"); };
+    const user = userEvent.setup();
+    const first = render(<DrillSession definitions={[definition]} repository={repository} userId="A" createAttemptId={() => "A-pending"} />);
+    await user.selectOptions(screen.getByRole("combobox"), definition.options[0].id);
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+    await screen.findByRole("alert");
+    expect(JSON.parse(sessionStorage.getItem("casework:pending:save:A:A-pending") ?? "null")?.attempt.userId).toBe("A");
+    first.unmount();
+    changeLearnerIdentity("guest");
+    changeLearnerIdentity("B");
+    const second = render(<DrillSession definitions={[definition]} repository={repository} userId="B" />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(loadPendingAttempt(sessionStorage, `drill:${definition.id}`)).toBeNull();
+    second.unmount();
+    changeLearnerIdentity("guest");
+    changeLearnerIdentity("A");
+    const saved: string[] = [];
+    repository.saveDrillAttempt = async attempt => { saved.push(`${attempt.userId}:${attempt.attemptId}`); };
+    render(<DrillSession definitions={[definition]} repository={repository} userId="A" />);
+    await user.click(screen.getByRole("button", { name: /try saving again/i }));
+    expect(saved).toEqual(["A:A-pending"]);
+    expect(loadPendingAttempt(sessionStorage, `drill:${definition.id}`, "A")).toBeNull();
+    sessionStorage.clear();
+  });
   it("does not present an unreviewed scratch response as part of quantitative practice", () => {
     const definition = drillBanks.quantitative[0] as Extract<
       DrillDefinition,

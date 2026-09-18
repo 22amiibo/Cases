@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useState, useSyncExternalStore } from "react";
 import type { ComponentProps } from "react";
 import { GeneratedResponseCycle } from "@/components/practice/GeneratedResponseCycle";
@@ -13,7 +15,7 @@ import {
 import type { DiagnosticOutcome } from "@/core/schema";
 import { diagnosticDefinitions } from "@/core/diagnostics";
 import { createV2ClarificationAttempt } from "@/data/attempts";
-import { getBrowserPracticeSession } from "@/data/browser-practice";
+import { saveOwnedAttempt } from "@/data/owned-saves";
 import type { PracticeRepository } from "@/data/repository";
 import styles from "./DrillSession.module.css";
 
@@ -44,12 +46,14 @@ function HydratedClarificationDrillSession({
   createAttemptId?: () => string;
   now?: () => Date;
 }) {
+  const [draftStorage] = useState(bindLearnerStorage);
+  const [attemptId] = useState(createAttemptId);
   const optionsKey = `casework:v2-drill:${definition.id}:questions`;
   const cycleKey = `casework:v2-drill:${definition.id}:cycle`;
   const [questionOptions, setQuestionOptions] = useState<Array<{ id: string; label: string }>>(
     () => {
       try {
-        return JSON.parse(window.sessionStorage.getItem(optionsKey) ?? "[]") as Array<{ id: string; label: string }>;
+        return JSON.parse(draftStorage.getItem(optionsKey) ?? "[]") as Array<{ id: string; label: string }>;
       } catch {
         return [];
       }
@@ -57,7 +61,7 @@ function HydratedClarificationDrillSession({
   );
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(
-      window.sessionStorage.getItem(cycleKey),
+      draftStorage.getItem(cycleKey),
       definition.responsePrompt.interactionId,
     );
     return restored?.phase === "complete" ? restored : null;
@@ -88,7 +92,7 @@ function HydratedClarificationDrillSession({
       questionOptions: Array<{ id: string; label: string }>;
     };
     setQuestionOptions(payload.questionOptions);
-    window.sessionStorage.setItem(optionsKey, JSON.stringify(payload.questionOptions));
+    draftStorage.setItem(optionsKey, JSON.stringify(payload.questionOptions));
     return payload.reveal;
   }
 
@@ -106,19 +110,14 @@ function HydratedClarificationDrillSession({
       });
       if (!response.ok) throw new Error("Unable to complete clarification drill");
       const evaluated = (await response.json()) as NonNullable<typeof result>;
-      const practiceSession = repository && userId
-        ? { repository, userId }
-        : await getBrowserPracticeSession();
-      await practiceSession.repository.saveDrillAttempt(
-        createV2ClarificationAttempt({
-          attemptId: createAttemptId(),
-          userId: practiceSession.userId,
+      await saveOwnedAttempt({ method: "saveDrillAttempt", attempt: createV2ClarificationAttempt({
+          attemptId,
+          userId: userId ?? draftStorage.userId,
           definition,
           cycle,
           systemDiagnostics: evaluated.diagnostics,
           completedAt: now().toISOString(),
-        }),
-      );
+        }) }, repository);
       setResult(evaluated);
       setStatus("idle");
     } catch {

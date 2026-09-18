@@ -16,9 +16,10 @@ import type { LearningCycleReveal } from "@/core/learning-cycle";
 import type { CommittedResponse } from "@/core/schema";
 import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
 import { createCaseAttempt } from "@/data/attempts";
-import { getBrowserPracticeSession } from "@/data/browser-practice";
+import { bindLearnerStorage } from "@/data/learner-identity";
+import { saveOwnedAttempt } from "@/data/owned-saves";
 import type { CaseAttempt } from "@/data/repository";
-import type { V3CaseAttempt, V3CaseAttemptRepository } from "@/data/v3-repository";
+import type { V3CaseAttempt } from "@/data/v3-repository";
 import { v2DiagnosticSkillMap } from "@/core/v3-taxonomy";
 import {
   clearPendingAttempt,
@@ -197,11 +198,12 @@ export function InvestigationPanel({ caseDefinition, courseContext = null }: Inv
 }
 
 function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: InvestigationPanelProps) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const router = useRouter();
   const storageScope = courseRunSuffix(courseContext);
   const storageKey = caseStorageKey(caseDefinition.id, caseDefinition.caseMode) + storageScope;
   const [restoredWorkspace] = useState(() =>
-    restoreWorkspace(window.sessionStorage.getItem(storageKey), caseDefinition.version),
+    restoreWorkspace(draftStorage.getItem(storageKey), caseDefinition.version),
   );
   const [sessionExpired, setSessionExpired] = useState(
     restoredWorkspace.status === "expired",
@@ -238,7 +240,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
   const calculationFeedbackKey = `${storageKey}:quantitative-feedback`;
   const [calculationFeedback, setCalculationFeedback] = useState<QuantitativeFeedback | null>(() => {
     try {
-      return JSON.parse(window.sessionStorage.getItem(calculationFeedbackKey) ?? "null") as QuantitativeFeedback | null;
+      return JSON.parse(draftStorage.getItem(calculationFeedbackKey) ?? "null") as QuantitativeFeedback | null;
     } catch {
       return null;
     }
@@ -311,7 +313,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
 
   useEffect(() => {
     if (sessionExpired) return;
-    window.sessionStorage.setItem(
+    draftStorage.setItem(
       storageKey,
       JSON.stringify({
         contentVersion: caseDefinition.version,
@@ -322,7 +324,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
         clarificationDraftIds,
       }),
     );
-  }, [courseContext, caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey, workspace.runStartedAtMs]);
+  }, [courseContext, caseDefinition.version, clarificationComplete, clarificationDraftIds, events, sessionExpired, storageKey, workspace.runStartedAtMs, draftStorage]);
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
@@ -349,7 +351,6 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
     const completedView = await loadView(nextEvents, false);
     const review = completedView.review;
     if (!review) throw new Error("Completed case review was not returned");
-    const practiceSession = await getBrowserPracticeSession();
     const attempt = getOrCreatePendingAttempt(
       window.sessionStorage,
       pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope,
@@ -357,7 +358,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
         const attemptId = caseAttemptId.current ??= crypto.randomUUID();
         return createCaseAttempt({
           attemptId,
-          userId: practiceSession.userId,
+          userId: draftStorage.userId,
           caseId: caseDefinition.id,
           review,
           events: nextEvents,
@@ -368,8 +369,9 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
       },
     );
     setPendingCaseAttempt(attempt);
-    await saveAttempt(practiceSession.repository, attempt);
-    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope);
+    await saveAttempt(attempt);
+    clearPendingAttempt(window.sessionStorage, pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope, attempt.userId);
+    if (!draftStorage.isCurrent()) return;
     setPendingCaseAttempt(null);
     setWorkspace((current) => ({ ...current, events: nextEvents }));
     setReviewAttemptId(attempt.attemptId);
@@ -380,15 +382,13 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
   }
 
   async function saveAttempt(
-    repository: Awaited<ReturnType<typeof getBrowserPracticeSession>>["repository"],
     attempt: CaseAttempt,
   ) {
     if (caseDefinition.id === "alpinefit-profitability" && caseDefinition.version === 2) {
-      await (repository as typeof repository & V3CaseAttemptRepository)
-        .saveV3CaseAttempt(createV3CaseAttempt(attempt, caseDefinition.caseMode, validateCourseContext(courseContext, { type: "case", id: attempt.caseId, contentVersion: attempt.contentVersion!, mode: caseDefinition.caseMode })));
+      await saveOwnedAttempt({ method: "saveV3CaseAttempt", attempt: createV3CaseAttempt(attempt, caseDefinition.caseMode, validateCourseContext(courseContext, { type: "case", id: attempt.caseId, contentVersion: attempt.contentVersion!, mode: caseDefinition.caseMode })) });
       return;
     }
-    await repository.saveCaseAttempt(attempt);
+    await saveOwnedAttempt({ method: "saveCaseAttempt", attempt });
   }
 
   async function recordGeneratedEvent(event: CaseEvent) {
@@ -507,7 +507,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
     if (!result.ok) throw new Error("Unable to complete hypothesis");
     const payload = (await result.json()) as { event: CaseEvent };
     await record(payload.event);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
+    clearHypothesisPracticeStorage(draftStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
   }
 
   const availableCalculations = view?.calculations ?? [];
@@ -516,13 +516,14 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
     if (!pendingCaseAttempt || recoveryStatus === "saving") return;
     setRecoveryStatus("saving");
     try {
-      const practiceSession = await getBrowserPracticeSession();
-      await saveAttempt(practiceSession.repository, pendingCaseAttempt);
+      await saveAttempt(pendingCaseAttempt);
       const completedView = await loadView(pendingCaseAttempt.events, false);
       clearPendingAttempt(
         window.sessionStorage,
         pendingCaseKey(caseDefinition.id, caseDefinition.caseMode) + storageScope,
+        pendingCaseAttempt.userId,
       );
+      if (!draftStorage.isCurrent()) return;
       setWorkspace((current) => ({
         ...current,
         events: pendingCaseAttempt.events,
@@ -539,12 +540,12 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
   }
 
   function startFreshCase() {
-    window.sessionStorage.removeItem(storageKey);
-    window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
-    window.sessionStorage.removeItem(calculationFeedbackKey);
-    clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
+    draftStorage.removeItem(storageKey);
+    draftStorage.removeItem(`${storageKey}:scratchpad`);
+    draftStorage.removeItem(calculationFeedbackKey);
+    clearHypothesisPracticeStorage(draftStorage, caseDefinition.id, caseDefinition.caseMode, storageScope);
     clearCaseCycleStorage(
-      window.sessionStorage,
+      draftStorage,
       caseDefinition.id,
       caseDefinition.caseMode,
       caseDefinition.exhibitIds,
@@ -772,7 +773,7 @@ function HydratedInvestigationPanel({ caseDefinition, courseContext = null }: In
                   onEvent={recordGeneratedEvent}
                   onQuantitativeFeedback={(feedback) => {
                     setCalculationFeedback(feedback);
-                    window.sessionStorage.setItem(calculationFeedbackKey, JSON.stringify(feedback));
+                    draftStorage.setItem(calculationFeedbackKey, JSON.stringify(feedback));
                   }}
                 />
               ) : (

@@ -1,28 +1,32 @@
+import { learnerIdentity } from "./learner-identity";
 type PendingStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-function pendingKey(key: string) {
-  return `casework:pending:${key}`;
+function pendingKey(key: string, userId: string) {
+  return `casework:pending:${userId}:${key}`;
 }
 
-export function savePendingAttempt<T extends { attemptId: string }>(
+export function savePendingAttempt<T extends { attemptId: string; userId?: string }>(
   storage: PendingStorage,
   key: string,
   attempt: T,
 ) {
-  storage.setItem(pendingKey(key), JSON.stringify(attempt));
+  const userId = attempt.userId ?? learnerIdentity();
+  storage.setItem(pendingKey(key, userId), JSON.stringify({ ...attempt, userId }));
 }
 
 export function loadPendingAttempt<T extends { attemptId: string }>(
   storage: PendingStorage,
   key: string,
+  userId = learnerIdentity(),
 ): T | null {
-  const serialized = storage.getItem(pendingKey(key));
+  const serialized = storage.getItem(pendingKey(key, userId)) ?? storage.getItem(`casework:pending:${key}`);
   if (!serialized) return null;
 
   try {
     const parsed = JSON.parse(serialized) as unknown;
     return parsed &&
       typeof parsed === "object" &&
+      "userId" in parsed && parsed.userId === userId &&
       "attemptId" in parsed &&
       typeof parsed.attemptId === "string" &&
       parsed.attemptId.length > 0
@@ -33,18 +37,20 @@ export function loadPendingAttempt<T extends { attemptId: string }>(
   }
 }
 
-export function getOrCreatePendingAttempt<T extends { attemptId: string }>(
+export function getOrCreatePendingAttempt<T extends { attemptId: string; userId?: string }>(
   storage: PendingStorage,
   key: string,
   create: () => T,
 ) {
-  const pending = loadPendingAttempt<T>(storage, key);
-  if (pending) return pending;
   const attempt = create();
+  const pending = loadPendingAttempt<T>(storage, key, attempt.userId ?? learnerIdentity());
+  if (pending) return pending;
   savePendingAttempt(storage, key, attempt);
   return attempt;
 }
 
-export function clearPendingAttempt(storage: PendingStorage, key: string) {
-  storage.removeItem(pendingKey(key));
+export function clearPendingAttempt(storage: PendingStorage, key: string, userId = learnerIdentity()) {
+  storage.removeItem(pendingKey(key, userId));
+  const legacy = storage.getItem(`casework:pending:${key}`);
+  try { if (legacy && JSON.parse(legacy).userId === userId) storage.removeItem(`casework:pending:${key}`); } catch { /* Keep unattributed legacy data quarantined. */ }
 }

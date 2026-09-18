@@ -1,4 +1,5 @@
 import type { PracticeRepository } from "./repository";
+import { learnerIdentity } from "./learner-identity";
 import { getGuestPracticeRepository } from "./memory-repository";
 import {
   createBrowserSupabaseClient,
@@ -32,9 +33,9 @@ export async function resolvePracticeSession({
   };
 }
 
-export async function getBrowserPracticeSession() {
+export async function getBrowserPracticeSession(expectedUserId = learnerIdentity()) {
   const supabase = createBrowserSupabaseClient();
-  return resolvePracticeSession({
+  const session = await resolvePracticeSession({
     guestRepository: getGuestPracticeRepository(),
     getAuthenticatedUser: async () => {
       if (!supabase) return null;
@@ -49,4 +50,6 @@ export async function getBrowserPracticeSession() {
       return createSupabasePracticeRepository(supabase);
     },
   });
+  if (session.userId !== expectedUserId) throw new Error("Account changed; save remains with its original owner");
+  return session;
 }

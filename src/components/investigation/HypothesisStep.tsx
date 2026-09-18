@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useState } from "react";
 import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { GeneratedResponseCycle } from "@/components/practice/GeneratedResponseCycle";
@@ -57,18 +59,19 @@ export function HypothesisStep({
   }>;
   onComplete: (completion: HypothesisCompletion) => Promise<void>;
 }) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const storageKey = hypothesisStorageKey(caseId, caseMode, practice.phase) + storageScope;
   const optionsStorageKey = `${storageKey}:options`;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(
-      window.sessionStorage.getItem(storageKey),
+      draftStorage.getItem(storageKey),
       practice.prompt.interactionId,
     );
     return restored?.phase === "complete" ? restored : null;
   });
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>(() => {
     try {
-      return JSON.parse(window.sessionStorage.getItem(optionsStorageKey) ?? "[]") as Array<{ id: string; label: string }>;
+      return JSON.parse(draftStorage.getItem(optionsStorageKey) ?? "[]") as Array<{ id: string; label: string }>;
     } catch {
       return [];
     }
@@ -86,7 +89,7 @@ export function HypothesisStep({
   async function commitResponse(response: CommittedResponse) {
     const committed = await onCommit(practice.phase, response);
     setOptions(committed.options);
-    window.sessionStorage.setItem(optionsStorageKey, JSON.stringify(committed.options));
+    draftStorage.setItem(optionsStorageKey, JSON.stringify(committed.options));
     return committed.reveal;
   }
 

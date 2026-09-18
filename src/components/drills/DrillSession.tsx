@@ -14,7 +14,8 @@ import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import { QuantitativeFeedbackPanel } from "@/components/practice/QuantitativeFeedbackPanel";
 import { createDrillAttempt } from "@/data/attempts";
-import { getBrowserPracticeSession } from "@/data/browser-practice";
+import { bindLearnerStorage } from "@/data/learner-identity";
+import { saveOwnedAttempt } from "@/data/owned-saves";
 import type { PracticeRepository } from "@/data/repository";
 import {
   clearPendingAttempt,
@@ -32,6 +33,7 @@ type DrillSessionProps = {
 };
 
 type PendingDrillSave = {
+  userId: string;
   attemptId: string;
   completedAt: string;
   definitionId: string;
@@ -76,11 +78,14 @@ function HydratedDrillSession({
   now = () => new Date(),
   createAttemptId = () => crypto.randomUUID(),
 }: DrillSessionProps) {
+  const [draftStorage] = useState(bindLearnerStorage);
+  const originUserId = userId ?? draftStorage.userId;
   const [restoredSave] = useState(() => {
     for (const [definitionIndex, candidate] of definitions.entries()) {
       const pending = loadPendingAttempt<PendingDrillSave>(
         window.sessionStorage,
         pendingDrillKey(candidate.id),
+        originUserId,
       );
       if (pending?.definitionId === candidate.id) {
         return { definitionIndex, pending };
@@ -101,6 +106,7 @@ function HydratedDrillSession({
   async function complete(submission: Parameters<typeof evaluateDrill>[1]) {
     if (saveStatus !== "idle") return;
     const nextSave = {
+      userId: originUserId,
       attemptId: createAttemptId(),
       completedAt: now().toISOString(),
       definitionId: definition.id,
@@ -127,22 +133,17 @@ function HydratedDrillSession({
         (candidate) => candidate.id === save.definitionId,
       );
       if (!savedDefinition) throw new Error("Drill definition is unavailable");
-      const practiceSession =
-        repository && userId
-          ? { repository, userId }
-          : await getBrowserPracticeSession();
-      await practiceSession.repository.saveDrillAttempt(
-        createDrillAttempt(
+      await saveOwnedAttempt({ method: "saveDrillAttempt", attempt: createDrillAttempt(
           save.attemptId,
-          practiceSession.userId,
+          save.userId,
           savedDefinition,
           save.result,
           save.completedAt,
-        ),
-      );
+        ) }, repository);
       clearPendingAttempt(
         window.sessionStorage,
         pendingDrillKey(save.definitionId),
+        save.userId,
       );
       setResult(save.result);
       setPendingSave(null);
@@ -157,6 +158,7 @@ function HydratedDrillSession({
       clearPendingAttempt(
         window.sessionStorage,
         pendingDrillKey(pendingSave.definitionId),
+        pendingSave.userId,
       );
     }
     setIndex((current) => (current + 1) % definitions.length);

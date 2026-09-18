@@ -1,18 +1,21 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import styles from "./Scratchpad.module.css";
 
 export function Scratchpad({ storageKey }: { storageKey: string }) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const [notes, setNotes] = useState(
-    () => window.sessionStorage.getItem(storageKey) ?? "",
+    () => draftStorage.getItem(storageKey) ?? "",
   );
   const textarea = useRef<HTMLTextAreaElement>(null);
   const releaseTab = useRef(false);
 
   useEffect(() => {
-    window.sessionStorage.setItem(storageKey, notes);
-  }, [notes, storageKey]);
+    draftStorage.setItem(storageKey, notes);
+  }, [notes, storageKey, draftStorage]);
 
   function replaceSelection(start: number, end: number, replacement: string) {
     setNotes((current) => `${current.slice(0, start)}${replacement}${current.slice(end)}`);

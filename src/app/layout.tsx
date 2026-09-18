@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PrimaryNavigation } from "@/components/navigation/PrimaryNavigation";
+import { LearnerIdentityBoundary } from "@/components/auth/LearnerIdentityBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en">
       <body>
         <PrimaryNavigation />
-        {children}
+        <LearnerIdentityBoundary>{children}</LearnerIdentityBoundary>
       </body>
     </html>
   );

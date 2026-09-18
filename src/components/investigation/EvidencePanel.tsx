@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useState } from "react";
 import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
@@ -110,6 +112,7 @@ function ExhibitInterpretationPractice({
   caseMode: CaseMode;
   storageScope: string;
 }) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const legacyKey = `casework:exhibit-cycle:${exhibit.id}`;
   const cycleStorageKey = (caseMode === "practice"
     ? legacyKey
@@ -120,7 +123,7 @@ function ExhibitInterpretationPractice({
   >(() => {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(window.sessionStorage.getItem(optionsStorageKey) ?? "[]") as Array<{
+      return JSON.parse(draftStorage.getItem(optionsStorageKey) ?? "[]") as Array<{
         id: string;
         label: string;
       }>;
@@ -132,7 +135,7 @@ function ExhibitInterpretationPractice({
     () => {
       if (typeof window === "undefined") return null;
       const restored = restoreLearningCycleState(
-        window.sessionStorage.getItem(cycleStorageKey),
+        draftStorage.getItem(cycleStorageKey),
         prompt.interactionId,
       );
       return restored?.phase === "complete" ? restored : null;
@@ -153,7 +156,7 @@ function ExhibitInterpretationPractice({
         onCommit={async (response) => {
           const result = await onCommitResponse(exhibit.id, response);
           setInsightOptions(result.insightOptions);
-          window.sessionStorage.setItem(
+          draftStorage.setItem(
             optionsStorageKey,
             JSON.stringify(result.insightOptions),
           );
@@ -195,8 +198,8 @@ function ExhibitInterpretationPractice({
               insightIds: [insightId],
               authoredComparisonViewed: true,
             }).then(() => {
-              window.sessionStorage.removeItem(cycleStorageKey);
-              window.sessionStorage.removeItem(optionsStorageKey);
+              draftStorage.removeItem(cycleStorageKey);
+              draftStorage.removeItem(optionsStorageKey);
             });
           }}
         >

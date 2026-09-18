@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useState } from "react";
 import { ChoiceListbox } from "@/components/forms/ChoiceListbox";
 import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
@@ -35,7 +37,7 @@ function storageKey(caseId: string, mode: CaseMode, kind: CaseCycleKind, itemId?
 }
 
 export function clearCaseCycleStorage(
-  storage: Storage,
+  storage: Pick<Storage, "length" | "key" | "removeItem">,
   caseId: string,
   mode: CaseMode = "practice",
   exhibitIds: string[] = [],
@@ -92,13 +94,14 @@ export function CaseGeneratedStep({
   onEvent: (event: CaseEvent) => Promise<void>;
   onQuantitativeFeedback?: (feedback: QuantitativeFeedback) => void;
 }) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const key = storageKey(caseId, caseMode, kind, itemId) + storageScope;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
-    const restored = restoreLearningCycleState(window.sessionStorage.getItem(key), prompt.interactionId);
+    const restored = restoreLearningCycleState(draftStorage.getItem(key), prompt.interactionId);
     return restored?.phase === "complete" ? restored : null;
   });
   const [reveal, setReveal] = useState<CheckpointReveal>(() => {
-    try { return JSON.parse(window.sessionStorage.getItem(`${key}:checkpoint`) ?? "{}"); } catch { return {}; }
+    try { return JSON.parse(draftStorage.getItem(`${key}:checkpoint`) ?? "{}"); } catch { return {}; }
   });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [answer, setAnswer] = useState("");
@@ -156,7 +159,7 @@ export function CaseGeneratedStep({
     const payload = await result.json() as { reveal: LearningCycleReveal; checkpoint: CheckpointReveal | null };
     const checkpoint = payload.checkpoint ?? {};
     setReveal(checkpoint);
-    window.sessionStorage.setItem(`${key}:checkpoint`, JSON.stringify(checkpoint));
+    draftStorage.setItem(`${key}:checkpoint`, JSON.stringify(checkpoint));
     return payload.reveal;
   }
 
@@ -187,8 +190,8 @@ export function CaseGeneratedStep({
       };
       if (payload.feedback) onQuantitativeFeedback?.(payload.feedback);
       await onEvent(payload.event);
-      window.sessionStorage.removeItem(key);
-      window.sessionStorage.removeItem(`${key}:checkpoint`);
+      draftStorage.removeItem(key);
+      draftStorage.removeItem(`${key}:checkpoint`);
       setStatus("idle");
     } catch {
       setStatus("error");

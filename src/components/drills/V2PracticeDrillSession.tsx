@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useState, useSyncExternalStore } from "react";
 import type { ComponentProps } from "react";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
@@ -16,7 +18,7 @@ import type { DiagnosticOutcome, FrameworkSubmission } from "@/core/schema";
 import { diagnosticDefinitions } from "@/core/diagnostics";
 import type { projectV2PracticeDrill, LearnerV2Checkpoint, QuantitativeFeedback, V2CheckpointSubmission } from "@/core/v2-drill";
 import { createV2DrillAttempt } from "@/data/attempts";
-import { getBrowserPracticeSession } from "@/data/browser-practice";
+import { saveOwnedAttempt } from "@/data/owned-saves";
 import type { PracticeRepository } from "@/data/repository";
 import styles from "./DrillSession.module.css";
 
@@ -59,17 +61,19 @@ function HydratedV2PracticeDrillSession({
   createAttemptId?: () => string;
   now?: () => Date;
 }) {
+  const [draftStorage] = useState(bindLearnerStorage);
+  const [attemptId] = useState(createAttemptId);
   const cycleKey = `casework:v2-drill:${definition.id}:cycle`;
   const checkpointKey = `casework:v2-drill:${definition.id}:checkpoint`;
   const [cycle, setCycle] = useState<LearningCycleState | null>(() => {
     const restored = restoreLearningCycleState(
-      window.sessionStorage.getItem(cycleKey),
+      draftStorage.getItem(cycleKey),
       definition.responsePrompt.interactionId,
     );
     return restored?.phase === "complete" ? restored : null;
   });
   const [checkpoint, setCheckpoint] = useState<LearnerV2Checkpoint | null>(() =>
-    restoreCheckpoint(window.sessionStorage.getItem(checkpointKey)),
+    restoreCheckpoint(draftStorage.getItem(checkpointKey)),
   );
   const [optionId, setOptionId] = useState("");
   const [answer, setAnswer] = useState("");
@@ -122,7 +126,7 @@ function HydratedV2PracticeDrillSession({
       checkpoint: LearnerV2Checkpoint;
     };
     setCheckpoint(payload.checkpoint);
-    window.sessionStorage.setItem(checkpointKey, JSON.stringify(payload.checkpoint));
+    draftStorage.setItem(checkpointKey, JSON.stringify(payload.checkpoint));
     return payload.reveal;
   }
 
@@ -141,17 +145,14 @@ function HydratedV2PracticeDrillSession({
         diagnostics: DiagnosticOutcome[];
         feedback?: QuantitativeFeedback;
       };
-      const practiceSession = repository && userId
-        ? { repository, userId }
-        : await getBrowserPracticeSession();
-      await practiceSession.repository.saveDrillAttempt(createV2DrillAttempt({
-        attemptId: createAttemptId(),
-        userId: practiceSession.userId,
+      await saveOwnedAttempt({ method: "saveDrillAttempt", attempt: createV2DrillAttempt({
+        attemptId,
+        userId: userId ?? draftStorage.userId,
         definition,
         cycle,
         systemDiagnostics: evaluated.diagnostics,
         completedAt: now().toISOString(),
-      }));
+      }) }, repository);
       setDiagnostics(evaluated.diagnostics);
       setQuantitativeFeedback(evaluated.feedback ?? null);
       setStatus("idle");

@@ -1,5 +1,7 @@
 "use client";
 
+import { bindLearnerStorage } from "@/data/learner-identity";
+
 import { useEffect, useId, useRef, useState } from "react";
 import {
   applyLearningCycleAction,
@@ -39,12 +41,13 @@ export function GeneratedResponseCycle({
   allowSkip = true,
   deferComparison = false,
 }: GeneratedResponseCycleProps) {
+  const [draftStorage] = useState(bindLearnerStorage);
   const headingId = useId();
   const [state, setState] = useState<LearningCycleState>(() => {
     const restored =
       storageKey && typeof window !== "undefined"
         ? restoreLearningCycleState(
-            window.sessionStorage.getItem(storageKey),
+            draftStorage.getItem(storageKey),
             prompt.interactionId,
           )
         : null;
@@ -59,9 +62,9 @@ export function GeneratedResponseCycle({
 
   useEffect(() => {
     if (storageKey) {
-      window.sessionStorage.setItem(storageKey, serializeLearningCycleState(state));
+      draftStorage.setItem(storageKey, serializeLearningCycleState(state));
     }
-  }, [state, storageKey]);
+  }, [state, storageKey, draftStorage]);
 
   useEffect(() => {
     if (state.phase !== "drafting") phaseHeading.current?.focus();
@@ -251,7 +254,7 @@ export function GeneratedResponseCycle({
               applyLearningCycleAction(state, { type: "comparison_viewed" }),
               { type: "cycle_completed" },
             );
-            if (storageKey) window.sessionStorage.setItem(storageKey, serializeLearningCycleState(completed));
+            if (storageKey) draftStorage.setItem(storageKey, serializeLearningCycleState(completed));
             setState(completed);
             onComplete?.(completed);
           }}>Continue</button>
@@ -293,7 +296,7 @@ export function GeneratedResponseCycle({
                   type: "cycle_completed",
                 });
                 if (storageKey) {
-                  window.sessionStorage.setItem(
+                  draftStorage.setItem(
                     storageKey,
                     serializeLearningCycleState(completed),
                   );

@@ -24,6 +24,13 @@ const caseAttempt: CaseAttempt = {
 };
 
 describe("pending attempt storage", () => {
+  it("never exposes or clears another user's pending save", () => {
+    window.sessionStorage.clear();
+    savePendingAttempt(window.sessionStorage, "case:shared", { ...caseAttempt, userId: "A" });
+    expect(loadPendingAttempt(window.sessionStorage, "case:shared", "B")).toBeNull();
+    clearPendingAttempt(window.sessionStorage, "case:shared", "B");
+    expect(loadPendingAttempt(window.sessionStorage, "case:shared", "A")).toEqual({ ...caseAttempt, userId: "A" });
+  });
   it("restores a pending payload with its stable attempt ID until cleared", () => {
     window.sessionStorage.clear();
 

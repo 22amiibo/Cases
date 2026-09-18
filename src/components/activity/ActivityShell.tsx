@@ -7,9 +7,10 @@ import type { ActivityEvent, CourseContext } from "@/core/activity";
 import { ActivityEventSchema } from "@/core/activity";
 import type { projectLearnerActivity } from "@/core/activity-projection";
 import type { LearnerExhibitDefinition } from "@/core/learner-case";
-import { getBrowserPracticeSession } from "@/data/browser-practice";
+import { bindLearnerStorage } from "@/data/learner-identity";
+import { saveOwnedAttempt } from "@/data/owned-saves";
+import { loadPendingAttempt, savePendingAttempt, clearPendingAttempt } from "@/data/pending-attempts";
 import type { ActivityAttemptRepository } from "@/data/v3-repository";
-import type { V3Repository } from "@/data/v3-repository";
 import type { ActivityReview } from "@/core/activity-review";
 import {
   InteractionRenderer,
@@ -27,16 +28,17 @@ type ActivityEventInput = ActivityEvent extends infer Event
   : never;
 type StoredRun = {
   attemptId: string;
+  userId?: string;
   startedAt: string;
   completedAt?: string;
   events: ActivityEvent[];
   courseContext?: CourseContext | null;
 };
 
-function readRun(key: string): StoredRun | null {
+function readRun(key: string, storage: ReturnType<typeof bindLearnerStorage>): StoredRun | null {
   if (typeof window === "undefined") return null;
   try {
-    const value = JSON.parse(window.sessionStorage.getItem(key) ?? "null") as Partial<StoredRun> | null;
+    const value = JSON.parse(storage.getItem(key) ?? "null") as Partial<StoredRun> | null;
     const events = ActivityEventSchema.array().safeParse(value?.events);
     return value && typeof value.attemptId === "string" &&
       typeof value.startedAt === "string" && events.success
@@ -67,14 +69,17 @@ export function ActivityShell({
   now?: () => Date;
 }) {
   const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
+  const [draftStorage] = useState(bindLearnerStorage);
+  const originUserId = userId ?? draftStorage.userId;
   const storageKey = `casework:v3-activity:${initial.id}:${initial.contentVersion}${courseRunSuffix(courseContext)}`;
-  const [restored] = useState(() => readRun(storageKey));
+  const [pending] = useState(() => typeof window === "undefined" ? null : loadPendingAttempt<StoredRun>(window.sessionStorage, storageKey, originUserId));
+  const [restored] = useState(() => pending ?? readRun(storageKey, draftStorage));
   const [attemptId] = useState(() => restored?.attemptId ?? createId());
   const [startedAt] = useState(() => restored?.startedAt ?? now().toISOString());
   const [completedAt, setCompletedAt] = useState(restored?.completedAt);
   const [events, setEvents] = useState<ActivityEvent[]>(restored?.events ?? []);
   const [view, setView] = useState(initial);
-  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "saving" | "error">(pending ? "error" : "idle");
   const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
   const [completionReview, setCompletionReview] = useState<ActivityReview | null>(null);
   const phaseHeading = useRef<HTMLHeadingElement>(null);
@@ -82,14 +87,14 @@ export function ActivityShell({
 
   useEffect(() => {
     if (events.length === 0 || saved.current) return;
-    window.sessionStorage.setItem(storageKey, JSON.stringify({
+    draftStorage.setItem(storageKey, JSON.stringify({
       attemptId,
       startedAt,
       ...(completedAt ? { completedAt } : {}),
       events,
       courseContext,
     } satisfies StoredRun));
-  }, [attemptId, completedAt, events, startedAt, storageKey, courseContext]);
+  }, [attemptId, completedAt, events, startedAt, storageKey, courseContext, draftStorage]);
 
   useEffect(() => {
     if (events.length === 0) return;
@@ -140,20 +145,12 @@ export function ActivityShell({
     return nextEvents;
   }
 
-  async function repositoryForSave() {
-    if (repository && userId) return { repository, userId };
-    const session = await getBrowserPracticeSession();
-    return {
-      repository: session.repository as V3Repository,
-      userId: session.userId,
-    };
-  }
-
   async function saveCompletion(finalEvents: ActivityEvent[]) {
     setStatus("saving");
     const finishedAt = completedAt ?? now().toISOString();
     setCompletedAt(finishedAt);
     try {
+      savePendingAttempt(window.sessionStorage, storageKey, { attemptId, userId: originUserId, startedAt, completedAt: finishedAt, events: finalEvents, courseContext });
       const response = await fetch(`/api/activities/${initial.id}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,10 +167,9 @@ export function ActivityShell({
         review: ActivityReview;
       };
       setCompletionReview(result.review);
-      const destination = await repositoryForSave();
-      await destination.repository.saveActivityAttempt({
+      await saveOwnedAttempt({ method: "saveActivityAttempt", attempt: {
         attemptId,
-        userId: destination.userId,
+        userId: originUserId,
         activityId: initial.id,
         contentVersion: initial.contentVersion,
         eventSchemaVersion: 3,
@@ -185,9 +181,10 @@ export function ActivityShell({
         diagnostics: result.diagnostics,
         courseContext,
         events: finalEvents,
-      });
+      } }, repository);
+      clearPendingAttempt(window.sessionStorage, storageKey, originUserId);
       saved.current = true;
-      window.sessionStorage.removeItem(storageKey);
+      draftStorage.removeItem(storageKey);
       setSavedAttemptId(attemptId);
       setStatus("idle");
     } catch {

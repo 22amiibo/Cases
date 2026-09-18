@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ActivityAttemptRepository } from "@/data/v3-repository";
 import { ActivityAttemptReview } from "./ActivityAttemptReview";
+import { MemoryPracticeRepository } from "@/data/memory-repository";
 
 function repository(attempt: Awaited<ReturnType<ActivityAttemptRepository["getActivityAttempt"]>>) {
   return {
@@ -13,6 +14,19 @@ function repository(attempt: Awaited<ReturnType<ActivityAttemptRepository["getAc
 }
 
 describe("ActivityAttemptReview", () => {
+  it.each(["A", "B"])("rejects a direct saved-attempt URL for %s when the other user owns it", async userId => {
+    const saved = new MemoryPracticeRepository();
+    await saved.saveActivityAttempt({
+      attemptId: "private-attempt", userId: userId === "A" ? "B" : "A",
+      activityId: "alpinefit-clarifying-v3", contentVersion: 1,
+      eventSchemaVersion: 3, scoringVersion: "v3", primarySkillId: "clarification",
+      startedAt: "2026-09-18T12:00:00.000Z", completedAt: "2026-09-18T12:02:00.000Z",
+      skillEvidence: [], diagnostics: [], courseContext: null, events: [],
+    });
+    render(<ActivityAttemptReview attemptId="private-attempt" repository={saved} userId={userId} />);
+    expect(await screen.findByRole("heading", { name: "Attempt unavailable" })).toBeVisible();
+    expect(screen.queryByText("Saved decisions")).toBeNull();
+  });
   it("loads an owned exact-version attempt and its committed events", async () => {
     const user = userEvent.setup();
     const attempt = {

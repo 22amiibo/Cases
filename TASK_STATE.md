@@ -8,15 +8,14 @@ deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-1. Deploy the verified application and complete the live wrong-unit → immediate
-   retry → successful completion smoke test.
+None. V2 is released.
 
 ## Current task
 
-The final V2 release blocker is fixed locally. `CaseGeneratedStep` now returns
-to its idle state after a generated event is saved, so an incorrect calculation
-can be retried immediately without refresh. Production migrations `002` and
-`003` remain applied; application deployment and live smoke are next.
+The final V2 release blocker is fixed and deployed. `CaseGeneratedStep` now
+returns to its idle state after a generated event is saved, so an incorrect
+calculation can be retried immediately without refresh. Production migrations
+`002` and `003` remain applied, and the production wrong-unit smoke passed.
 
 ## Completed tasks
 
@@ -36,8 +35,7 @@ can be retried immediately without refresh. Production migrations `002` and
 
 ## Remaining work
 
-- Commit the verified release fix, merge the latest `main` documentation, push
-  production, and run the live wrong-unit retry smoke.
+- No assigned release work remains.
 
 ## Important decisions and invariants
 
@@ -82,10 +80,14 @@ can be retried immediately without refresh. Production migrations `002` and
   passed 9 files / 52 tests and the complete AlpineFit browser journey. The
   full local gate passed 57 files / 271 tests, all 34 Playwright journeys,
   lint, typecheck, production build, and `git diff --check`.
+- Production deployment `a4c3f97` exposed the V2 API shape. The live AlpineFit
+  journey then passed wrong-unit grading, visible corrective feedback,
+  immediately enabled retry, and successful correction without refresh.
 
 ## Known deferred issues
 
-- Live deployment and its production smoke remain external release gates.
+- Live signed-in replay and rollback rehearsal remain optional operational
+  follow-ups; they are not blockers for the completed V2 release.
 
 ## Blockers
 
@@ -93,5 +95,5 @@ can be retried immediately without refresh. Production migrations `002` and
 
 ## Exact next action
 
-Commit the final V2 fix, preserve the two pre-existing untracked user items,
-merge the latest `main`, deploy, and verify wrong-unit retry live.
+Preserve the two pre-existing untracked user items. No further V2 release work
+is assigned.

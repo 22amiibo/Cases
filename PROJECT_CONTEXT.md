@@ -71,7 +71,7 @@ npm run build
 
 ## Progress Log
 
-### V2 final wrong-unit retry release fix — locally verified
+### V2 final wrong-unit retry release fix — deployed
 
 - Reproduced the release blocker: after a correct number with the wrong unit,
   corrective feedback appeared but the calculation action stayed disabled as
@@ -86,9 +86,12 @@ npm run build
   alongside refresh recovery, response revision, and answer secrecy.
 - Final local verification: 57 test files / 271 tests, all 34 Playwright
   journeys, lint, typecheck, production build, and `git diff --check` pass.
-- Next action: commit, merge the latest `main`, deploy, then run the live
-  wrong-unit → immediate retry → successful completion smoke before declaring
-  V2 released.
+- Production commit `a4c3f97` is live at `https://cases-pi-five.vercel.app`.
+  The production AlpineFit journey graded the wrong unit incorrect, displayed
+  corrective feedback, enabled retry immediately, and accepted the corrected
+  unit without refresh. Its precommit session responses contained neither the
+  authored numeric answer nor recommendation decision.
+- V2 is released. No further V2 release work is assigned.
 
 ### Post-plan case-flow remediation — complete
 

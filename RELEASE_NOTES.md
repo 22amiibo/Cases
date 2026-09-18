@@ -2,8 +2,8 @@
 
 Date: 2026-09-17
 
-Status: local release candidate. Production migrations are applied and the
-final wrong-unit retry blocker is verified; application deployment is pending.
+Status: released to production. Production migrations are applied and the
+wrong-unit feedback → immediate retry → successful completion smoke passed.
 
 ## Included
 
@@ -53,7 +53,8 @@ are intentionally not invented.
 | Transaction-scoped live RLS smoke | Complete, controller-confirmed: the owner could read the owned attempt and ordered events, cross-user reads returned no rows, and the smoke transaction was rolled back. No smoke identifiers are retained here. |
 | Credential hygiene | Complete, controller-confirmed: the temporary credential file used by the release controller was removed. |
 | Final local release gate | Complete: the wrong-unit regression failed before the fix and passed afterward; 57 test files / 271 tests, all 34 Playwright journeys, lint, typecheck, production build, and diff validation passed. |
-| Live wrong-unit retry smoke | Pending deployment. Verify corrective feedback, an immediately enabled retry, and successful completion without refresh. |
+| Production application deployment | Complete: commit `a4c3f97` reached `https://cases-pi-five.vercel.app` and exposed the V2 session API shape. |
+| Live wrong-unit retry smoke | Complete: production graded the wrong unit incorrect, displayed corrective feedback, enabled retry immediately, and accepted the corrected unit without refresh. |
 | Live signed-in save and exact-version replay | Pending approved release smoke. Record the saved attempt ID, content version, and replay result without learner content. |
-| Production answer-secrecy inspection | Pending approved deployment. Record the inspected precommit responses and result. |
+| Production answer-secrecy inspection | Complete for the AlpineFit release journey: precommit session responses contained neither the numeric answer nor recommendation decision. |
 | Rollback rehearsal | Pending approved release window. Record the V1 active-version selection and restoration result without deleting V2 rows. |

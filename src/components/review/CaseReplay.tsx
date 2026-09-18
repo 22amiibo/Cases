@@ -75,6 +75,9 @@ export function CaseReplay({ review }: CaseReplayProps) {
 
       <div className={styles.analysis}>
         <ScoreBreakdown scores={review.scores} />
+        {!review.exhibitScoreAvailable && (
+          <p>Exhibit interpretations are unscored in Interview Mode because authored insight selection was deferred to the debrief.</p>
+        )}
         <section className={styles.feedbackCard} aria-labelledby="feedback-title">
           <span>Deterministic feedback</span>
           <h2 id="feedback-title">What to carry forward</h2>

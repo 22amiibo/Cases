@@ -182,6 +182,7 @@ describe("MemoryPracticeRepository", () => {
       nodes: [],
       events: [],
       efficientPath: { label: "Cost path", nodeIds: ["costs"] },
+      exhibitScoreAvailable: true,
       scores: [{ id: "clarification", label: "Clarification", value: 1 }],
       feedback: [],
     };

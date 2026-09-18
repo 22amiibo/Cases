@@ -31,6 +31,7 @@ const review: LearnerCaseReview = {
   nodes: [],
   events: [],
   efficientPath: { label: "Direct path", nodeIds: [] },
+  exhibitScoreAvailable: true,
   scores: [],
   feedback: [],
 };
@@ -91,6 +92,7 @@ describe("ReviewSession framework recovery", () => {
     expect(JSON.parse(String(request.body))).toEqual({
       events: [frameworkEvent],
       contentVersion: 2,
+      mode: "practice",
     });
   });
 
@@ -142,6 +144,7 @@ describe("ReviewSession framework recovery", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       events,
       contentVersion: 2,
+      mode: "practice",
     });
   });
 
@@ -189,6 +192,7 @@ describe("ReviewSession framework recovery", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       events: [],
       contentVersion: 99,
+      mode: "practice",
     });
   });
 });

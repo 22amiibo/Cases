@@ -236,6 +236,62 @@ describe("toLearnerCaseReview", () => {
     });
   });
 
+  it("leaves deferred Interview exhibit interpretation unscored instead of awarding an inferred insight", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const review = toLearnerCaseReview(definition, [{
+      type: "exhibit_interpretation_submitted",
+      eventSchemaVersion: 2,
+      exhibitId: "cost-category",
+      responses: [{
+        responseId: "interview-exhibit-response",
+        interactionId: "cost-interpretation",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "exhibit_interpretation",
+        text: "Labor costs increased.",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "response_recorded", met: false }],
+      diagnostics: [],
+      insightIds: [],
+      authoredComparisonViewed: false,
+      atMs: 1,
+    }]);
+
+    expect(review.exhibitScoreAvailable).toBe(false);
+    expect(review.scores.find(({ id }) => id === "exhibit")).toBeUndefined();
+  });
+
+  it("materializes an Interview calculation diagnostic from the stored submission only in review", () => {
+    const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
+    const review = toLearnerCaseReview(definition, [{
+      type: "calculation_submitted",
+      eventSchemaVersion: 2,
+      taskId: "incremental-overtime-expense",
+      answer: 700000,
+      unit: "$",
+      responses: [{
+        responseId: "interview-calculation-response",
+        interactionId: "incremental-overtime-expense",
+        revision: 1,
+        revisionOf: null,
+        responseKind: "calculation",
+        text: "700000 $",
+        committedAtMs: 1,
+      }],
+      rubricOutcomes: [{ criterionId: "response_recorded", met: false }],
+      diagnostics: [],
+      authoredComparisonViewed: false,
+      atMs: 1,
+    }]);
+
+    expect(review.generatedResponses[0]).toMatchObject({
+      kind: "calculation",
+      diagnostics: [{ code: "arithmetic_error", source: "system", severity: "blocking" }],
+    });
+    expect(review.scores.find(({ id }) => id === "quantitative")?.value).toBe(0);
+  });
+
   it("replays the complete hypothesis and evidence-linked revision chain without a score", () => {
     const definition = CaseDefinitionSchema.parse({ ...alpineFitContent, version: 2 });
     const review = toLearnerCaseReview(definition, [{

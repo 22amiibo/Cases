@@ -54,6 +54,7 @@ test("AlpineFit V2 completes the full generated loop with refresh and retry", as
 
 test("AlpineFit Interview Mode defers authored feedback until the case is complete", async ({ page }) => {
   test.setTimeout(90_000);
+  await page.setViewportSize({ width: 320, height: 900 });
   const revealBodies: string[] = [];
   const responseReads: Promise<void>[] = [];
   page.on("response", (response) => {
@@ -76,4 +77,6 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
   expect(revealBodies.every((body) => !body.includes("Current overtime creates approximately $756,000"))).toBe(true);
   expect(revealBodies.every((body) => !body.includes("One defensible interpretation"))).toBe(true);
   await expect(page.getByRole("heading", { name: "Your case review" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

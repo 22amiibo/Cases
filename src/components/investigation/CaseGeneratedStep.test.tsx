@@ -44,13 +44,14 @@ function completedCycle() {
   return applyLearningCycleAction(cycle, { type: "cycle_completed" });
 }
 
-function Harness() {
+function Harness({ caseMode = "practice" }: { caseMode?: "practice" | "interview" }) {
   const [feedback, setFeedback] = useState<QuantitativeFeedback | null>(null);
   return (
     <>
       <CaseGeneratedStep
         caseId={definition.id}
         contentVersion={definition.version}
+        caseMode={caseMode}
         kind="calculation"
         itemId={calculation.id}
         prompt={projectLearningCyclePrompt(authored)}
@@ -114,5 +115,11 @@ describe("CaseGeneratedStep", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Correct756,000 $");
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not recover a Practice cycle when switching to Interview Mode", () => {
+    render(<Harness caseMode="interview" />);
+
+    expect(screen.getByLabelText("Your response")).toBeVisible();
   });
 });

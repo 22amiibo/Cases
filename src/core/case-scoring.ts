@@ -212,11 +212,6 @@ function scoreExhibits(
           : [],
       ),
     );
-    const deferredInterpretation = events.some(
-      (event) => event.type === "exhibit_interpretation_submitted" &&
-        event.exhibitId === exhibit.id && !event.authoredComparisonViewed,
-    );
-    if (deferredInterpretation) return 1;
     return Math.max(
       0,
       ...exhibit.insights

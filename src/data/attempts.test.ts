@@ -132,6 +132,7 @@ describe("practice attempt mapping", () => {
       nodes: [],
       events: [],
       efficientPath: { label: "Cost path", nodeIds: ["costs"] },
+      exhibitScoreAvailable: true,
       scores: [{ id: "structure", label: "Structure", value: 0.8 }],
       feedback: [],
     };

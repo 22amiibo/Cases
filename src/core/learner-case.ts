@@ -111,6 +111,7 @@ export type LearnerCaseReview = {
   events: Array<{ type: "node_investigated"; nodeId: string; atMs: number }>;
   efficientPath: { label: string; nodeIds: string[] };
   scores: LearnerScoreDimension[];
+  exhibitScoreAvailable: boolean;
   feedback: LearnerFeedback[];
 };
 
@@ -311,6 +312,9 @@ export function toLearnerCaseReview(
   events: CaseEvent[],
 ): LearnerCaseReview {
   const score = scoreCase(definition, events);
+  const exhibitScoreAvailable = !events.some(
+    (event) => event.type === "exhibit_interpretation_submitted" && !event.authoredComparisonViewed,
+  );
   const investigatedEvents = events.filter(
     (event): event is Extract<CaseEvent, { type: "node_investigated" }> =>
       event.type === "node_investigated",
@@ -446,10 +450,13 @@ export function toLearnerCaseReview(
       { id: "structure", label: "Structure", value: score.structure },
       { id: "prioritization", label: "Prioritization", value: score.prioritization },
       { id: "quantitative", label: "Quantitative", value: score.quantitative },
-      { id: "exhibit", label: "Exhibit reading", value: score.exhibit },
+      ...(exhibitScoreAvailable
+        ? [{ id: "exhibit" as const, label: "Exhibit reading", value: score.exhibit }]
+        : []),
       { id: "synthesis", label: "Synthesis", value: score.synthesis },
       { id: "recommendation", label: "Recommendation", value: score.recommendation },
     ],
+    exhibitScoreAvailable,
     feedback,
   };
 }

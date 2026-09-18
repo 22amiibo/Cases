@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CaseAttempt, DrillAttempt } from "./repository";
 import type { ActivityAttempt } from "@/core/activity";
+import type { V3CaseAttempt } from "./v3-repository";
 import {
   SupabasePracticeRepository,
   type PracticeDatabaseClient,
@@ -33,6 +34,24 @@ const caseAttempt: CaseAttempt = {
   completedAt: "2026-01-03T00:00:00.000Z",
 };
 
+const v3CaseAttempt: V3CaseAttempt = {
+  attemptId: "00000000-0000-4000-8000-000000000003",
+  userId: "user-1",
+  caseId: "alpinefit-profitability",
+  contentVersion: 2,
+  eventSchemaVersion: 2,
+  scoringVersion: "v3",
+  scaffoldingLevel: "beginner",
+  caseMode: "interview",
+  completedAt: "2026-01-04T00:00:00.000Z",
+  skillScores: { exhibit: 50 },
+  feedbackCodes: [],
+  skillEvidence: [],
+  diagnostics: [],
+  courseContext: null,
+  events: [{ type: "clarification_selected", clarificationId: "clarify-goal", atMs: 10 }],
+};
+
 function client(overrides: Partial<PracticeDatabaseClient> = {}) {
   return {
     insertDrillAttempt: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +75,54 @@ function client(overrides: Partial<PracticeDatabaseClient> = {}) {
 }
 
 describe("SupabasePracticeRepository", () => {
+  it("writes one idempotent V3 case path without a V2 conflict and reads it back", async () => {
+    const row = {
+      id: v3CaseAttempt.attemptId,
+      user_id: v3CaseAttempt.userId,
+      case_id: v3CaseAttempt.caseId,
+      skill_scores: v3CaseAttempt.skillScores,
+      feedback_codes: v3CaseAttempt.feedbackCodes,
+      completed_at: v3CaseAttempt.completedAt,
+      scoring_version: "v3",
+      content_version: 2,
+      event_schema_version: 2,
+      scaffolding_level: "beginner",
+      learning_evidence: null,
+      diagnostics: [],
+      case_mode: "interview",
+      skill_evidence: [],
+      course_id: null,
+      course_version: null,
+      course_step_id: null,
+    };
+    const savedRows = new Map<string, typeof row>();
+    const database = client({
+      insertV3CaseAttempt: vi.fn().mockImplementation(async (insert) => {
+        savedRows.set(insert.id, { ...row, ...insert });
+      }),
+      selectV3CaseAttempts: vi.fn().mockImplementation(async () => [...savedRows.values()]),
+      selectCaseEvents: vi.fn().mockResolvedValue([{ sequence: 0, event: v3CaseAttempt.events[0] }]),
+    });
+    const repository = new SupabasePracticeRepository(database);
+
+    await repository.saveV3CaseAttempt(v3CaseAttempt);
+    await repository.saveV3CaseAttempt(v3CaseAttempt);
+
+    expect(database.insertV3CaseAttempt).toHaveBeenCalledTimes(2);
+    expect(savedRows).toHaveLength(1);
+    expect(database.insertV3CaseAttempt).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: v3CaseAttempt.attemptId, scoring_version: "v3" }),
+    );
+    expect(database.insertV3CaseAttempt).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: v3CaseAttempt.attemptId, scoring_version: "v3" }),
+    );
+    expect(database.insertCaseAttempt).not.toHaveBeenCalled();
+    await expect(repository.listCourseEvidence("user-1")).resolves.toMatchObject({
+      caseAttempts: [{ attemptId: v3CaseAttempt.attemptId, caseMode: "interview" }],
+    });
+  });
   it("writes normalized drill attempts and complete case attempts", async () => {
     const database = client();
     const repository = new SupabasePracticeRepository(database);

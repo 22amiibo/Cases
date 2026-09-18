@@ -1,0 +1,97 @@
+.shell {
+  width: min(760px, 100%);
+  margin-inline: auto;
+  padding: clamp(28px, 6vw, 64px) 0;
+}
+
+.shell h1 {
+  margin: 8px 0 32px;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 450;
+  letter-spacing: -0.04em;
+}
+
+.shell button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 20px;
+  color: #fffdf6;
+  background: #234b38;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.shell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.eyebrow {
+  color: #9b4a29;
+  font-family: var(--font-geist-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.phase {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid #aeb6ad;
+  padding-top: 28px;
+}
+
+.phase fieldset {
+  display: grid;
+  gap: 12px;
+  border: 0;
+}
+
+.phase legend,
+.phase h2 {
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+}
+
+.phase label,
+.phase li {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #c4cbc3;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #fffef9;
+}
+
+.phase input {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.phase select {
+  margin-left: auto;
+  padding: 8px;
+}
+
+.phase ol {
+  display: grid;
+  gap: 10px;
+  list-style-position: inside;
+}
+
+.phase li span {
+  flex: 1;
+}
+
+.phase li button {
+  min-height: 36px;
+  padding-inline: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

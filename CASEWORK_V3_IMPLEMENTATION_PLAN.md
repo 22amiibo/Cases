@@ -848,7 +848,7 @@ V3 activity/case save RPCs, owned exact-attempt reads, and course evidence.
 - [x] Run focused data tests plus `npm run typecheck`.
 - [ ] Test the migration on a fresh database and a representative copy upgraded
   through migrations 001-003. Do not apply it to production.
-- [ ] Commit `feat: persist v3 activity and course evidence`.
+- [x] Commit `feat: persist v3 activity and course evidence` (`f0e0a83`).
 
 ### Task 5: Build one private vertical slice through the activity shell
 
@@ -868,15 +868,15 @@ V3 activity/case save RPCs, owned exact-attempt reads, and course evidence.
 **Produces:** One test-only activity that loads a learner-safe projection,
 commits, receives feedback, retries, completes, saves, restores, and replays.
 
-- [ ] Write route tests proving exact-version lookup, server-only reveal,
+- [x] Write route tests proving exact-version lookup, server-only reveal,
   validated course context, idempotent completion, and safe unknown-version
   failure.
-- [ ] Write component tests for native single/multi select, ranking controls,
+- [x] Write component tests for native single/multi select, ranking controls,
   categorization controls, focus movement, keyboard use, save error retry, and
   session recovery.
-- [ ] Implement the minimum shell and renderer needed by the test activity.
-- [ ] Run focused unit/component/route tests and one Playwright journey.
-- [ ] Commit `feat: prove v3 activity vertical slice`.
+- [x] Implement the minimum shell and renderer needed by the test activity.
+- [x] Run focused unit/component/route tests and one Playwright journey.
+- [x] Commit `feat: prove v3 activity vertical slice`.
 
 ### Task 6: Add the four flagship activity definitions
 

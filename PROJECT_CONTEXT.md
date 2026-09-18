@@ -71,6 +71,21 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 5: private activity vertical slice — ready to commit
+
+- Added exact-version session, commit, and completion routes around the pure
+  activity engine. Authored feedback remains server-only until commitment.
+- Added an accessible activity shell and native single/multi-select, ranking,
+  and categorization controls with committed-event recovery and phase focus.
+- Completion reuses a stable attempt ID, retains pending state until repository
+  save succeeds, and safely retries the same deterministic completion.
+- The internal test activity is available only outside production and is not in
+  the public active-content registry.
+- Validation: 7 focused files / 28 tests, 70 files / 330 full unit tests, one
+  Playwright journey, lint, typecheck, production build, and diff check pass.
+- Next action: Task 6, replace the private proof with four reviewed AlpineFit
+  flagship activity definitions and only their required interaction support.
+
 ### Casework V3 Task 4: additive persistence and repositories — ready to commit
 
 - Added migration `004_v3_learning.sql` for immutable activity attempts/events,
@@ -81,6 +96,7 @@ npm run build
   adapters for activity attempts, V3 cases, enrollments, and lesson evidence.
 - Focused validation: 4 files / 36 tests. Full unit validation: 65 files / 318
   tests. Lint, typecheck, and diff check pass.
+- Committed as `f0e0a83` (`feat: persist v3 activity and course evidence`).
 - The worktree has no Supabase CLI, PostgreSQL, or Docker runtime. Fresh and
   representative-upgrade database execution remains required before any live
   migration approval; migration contract tests are green and production was

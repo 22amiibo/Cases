@@ -777,3 +777,13 @@ export function evaluateActivityCompletion(
     }],
   };
 }
+
+export function replayActivityEvents(
+  definition: ActivityDefinition,
+  events: ActivityEvent[],
+) {
+  return events.reduce(
+    (state, event) => applyActivityEvent(definition, state, event),
+    createActivityState(definition),
+  );
+}

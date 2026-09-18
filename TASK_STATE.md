@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 5-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 6-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
@@ -17,9 +17,9 @@ V3.0 Tasks 5-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 4 adds additive V3 persistence and guest/Supabase repository adapters. It
-is ready to commit. Runtime database execution remains a pre-live migration
-gate because this worktree has no local Supabase CLI, PostgreSQL, or Docker.
+Task 5 proves the reusable activity path through learner-safe routes, native
+controls, session recovery, deterministic completion, and persistence. It is
+ready to commit.
 
 ## Completed tasks
 
@@ -32,8 +32,11 @@ gate because this worktree has no local Supabase CLI, PostgreSQL, or Docker.
   tests, lint, and typecheck pass.
 - V3.0 Task 3 is committed as `095c8fc`: 2 focused files / 16 tests, 64 files /
   310 tests in the full unit suite, lint, and typecheck pass.
-- V3.0 Task 4 is complete and ready to commit: 4 focused data files / 36 tests,
-  65 files / 318 tests in the full unit suite, lint, and typecheck pass.
+- V3.0 Task 4 is committed as `f0e0a83`: 4 focused data files / 36 tests, 65
+  files / 318 tests in the full unit suite, lint, and typecheck pass.
+- V3.0 Task 5 is complete and ready to commit: 7 focused files / 28 tests, 70
+  files / 330 tests in the full unit suite, one Playwright journey, lint,
+  typecheck, and production build pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -50,7 +53,7 @@ gate because this worktree has no local Supabase CLI, PostgreSQL, or Docker.
 
 ## Remaining work
 
-- Execute V3.0 Tasks 5-7, then stop for the mandatory owner playtest gate.
+- Execute V3.0 Tasks 6-7, then stop for the mandatory owner playtest gate.
 - Tasks 8-12 remain gated on a recorded `proceed` decision.
 
 ## Important decisions and invariants
@@ -113,5 +116,5 @@ gate because this worktree has no local Supabase CLI, PostgreSQL, or Docker.
 
 ## Exact next action
 
-Commit Task 4, then begin Task 5 with failing route and activity-shell tests.
-Do not apply migration `004` or deploy without separate owner approval.
+Commit Task 5, then author and validate exactly the four Task 6 flagship
+activities. Do not apply migration `004` or deploy without separate approval.

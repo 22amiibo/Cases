@@ -46,21 +46,28 @@ it("skips retired and missing options and ties by recency, severity, time, then 
   expect(choose([evidence(1), latest])?.explanation).toContain("comparison");
 });
 
-import { findRecoverableRuns } from "./v3-recommendations";
-it("offers only exact locally recoverable unfinished runs, keeping case mode and ignoring damaged storage", () => {
-  const resources = [{ kind: "activity" as const, ...activities[0] }, { kind: "case" as const, id: "alpinefit-profitability", title: "AlpineFit profitability", contentVersion: 2, status: "active" as const }];
-  const key = `casework:v3-activity:${activities[0].id}:1`;
-  const stored = { attemptId: "run", startedAt: "2026-09-01T00:00:00.000Z", events: [{ type: "activity_started", eventId: "e1", atMs: 0 }] };
-  expect(findRecoverableRuns([[key, JSON.stringify(stored)]], resources)[0]?.href).toContain("?version=1");
-  expect(findRecoverableRuns([[key, JSON.stringify({ ...stored, completedAt: "2026-09-02T00:00:00.000Z" })]], resources)).toEqual([]);
-  expect(findRecoverableRuns([[key, "invalid"], [key + "99", JSON.stringify(stored)]], resources)).toEqual([]);
-  expect(findRecoverableRuns([[key, JSON.stringify({ ...stored, events: [{ type: "unknown" }] })]], resources)).toEqual([]);
-  expect(findRecoverableRuns([["casework:guest-session:alpinefit-profitability:interview", JSON.stringify({ contentVersion: 2, runStartedAtMs: 1, events: [], clarificationDraftIds: ["objective"] })]], resources)[0]?.href).toBe("/cases/alpinefit-profitability?version=2&mode=interview");
-  expect(findRecoverableRuns([["casework:guest-session:alpinefit-profitability:cycle:opening", "{}"]], resources)).toEqual([]);
-});
 it("uses lower practice time to break equal-recency, equal-severity diagnostic ties", () => {
   const first = evidence(1, "low_value_question", "coaching");
   const second = evidence(1, "next_test_missing", "coaching"); second.attemptId = "other"; second.primarySkillId = "exhibit"; second.skillEvidence[0].skillId = "exhibit"; second.diagnostics[0].skillId = "exhibit";
   const options = activities.map(a => ({ ...a, estimatedMinutes: a.primarySkillId === "exhibit" ? 1 : 10 }));
   expect(choose([first, second], { activities: options })?.estimatedMinutes).toBe(1);
+});
+it("keeps a recent recurring blocker ahead of newer coaching after a subsequent strength", () => {
+  const otherSkill = evidence(4, "next_test_missing", "coaching");
+  otherSkill.attemptId = "exhibit"; otherSkill.primarySkillId = "exhibit";
+  otherSkill.skillEvidence[0].skillId = "exhibit"; otherSkill.diagnostics[0].skillId = "exhibit";
+  const attempts = [evidence(1, "low_value_question"), evidence(2, "low_value_question"), evidence(3, "strong_opening", "strength"), otherSkill];
+  const skills = buildV3Progress(attempts, []);
+  expect(skills.find(s => s.skillId === "clarification")?.diagnostics).toEqual([]);
+  expect(choose(attempts)).toMatchObject({ reason: "blocking" });
+  expect(choose(attempts)?.explanation).toContain("2 of your last 3");
+  expect(choose([...attempts, evidence(5, "strong_opening", "strength")])?.reason).toBe("coaching");
+});
+it("compares available transfer durations across skills with equally recent evidence", () => {
+  const opening = evidence(1, "strong_opening", "strength");
+  const ideas = evidence(1, "strong_brainstorm", "strength");
+  ideas.attemptId = "ideas"; ideas.activityId = "alpinefit-brainstorming-v3"; ideas.primarySkillId = "brainstorming";
+  ideas.skillEvidence[0].skillId = "brainstorming"; ideas.diagnostics[0].skillId = "brainstorming";
+  expect(choose([opening, ideas])).toMatchObject({ reason: "transfer", estimatedMinutes: 4 });
+  expect(choose([opening, ideas])?.href).toContain("clarifying");
 });

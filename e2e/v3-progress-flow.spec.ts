@@ -83,3 +83,17 @@ test("completed full-case diagnostics contribute reviewed current skill evidence
   await page.getByRole("link", { name: "View all activity" }).click();
   await expect(page.getByRole("link", { name: "Review AlpineFit profitability" })).toBeVisible();
 });
+
+test("damaged local histories and unsupported case modes cannot become the primary recommendation", async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("casework:v3-activity:alpinefit-clarifying-v3:1", JSON.stringify({ attemptId: "bad", startedAt: "2026-09-01T00:00:00.000Z", events: [{ type: "activity_started", eventId: "start", atMs: 0 }, { type: "selection_committed", eventId: "wrong", atMs: 1, interactionId: "nonexistent", selectedIds: ["nonexistent"] }] }));
+    sessionStorage.setItem("casework:guest-session:paypilot-growth:interview", JSON.stringify({ contentVersion: 2, runStartedAtMs: 1, events: [], clarificationDraftIds: ["objective"] }));
+    sessionStorage.setItem("casework:guest-session:alpinefit-profitability", JSON.stringify({ contentVersion: 2, runStartedAtMs: 1, events: [{ type: "node_investigated", atMs: 1, nodeId: "nonexistent" }] }));
+  });
+  const rejected = page.waitForResponse(response => response.url().includes("/api/activities/alpinefit-clarifying-v3/session") && response.status() === 400);
+  await page.goto("/progress");
+  await rejected;
+  await expect(page.getByRole("region", { name: "Continue", exact: true })).toContainText("No unfinished practice saved");
+  await expect(page.getByRole("region", { name: "Recommended next", exact: true })).toContainText("You have not tried this activity yet");
+  await expect(page.getByRole("link", { name: "Resume practice" })).toHaveCount(0);
+});

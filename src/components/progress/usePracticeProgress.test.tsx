@@ -16,7 +16,7 @@ it("loads repository evidence and local runs together without claiming readiness
   expect(result.current.status).toBe("loading");
   await act(async () => resolve(empty));
   expect(result.current.status).toBe("ready");
-  expect(result.current.localRuns).toEqual([["casework:v3-activity:a:1", "saved"]]);
+  expect(result.current.recoverableRuns).toEqual([]);
   expect(result.current.courseEvidence).toEqual(empty);
 });
 it("discards an earlier identity's delayed response and clears private evidence on change", async () => {
@@ -36,4 +36,39 @@ it("reports a failed evidence read instead of presenting it as no practice", asy
   mocks.session.mockResolvedValue({ userId: "guest", repository: { getSkillHistory: async () => [], listCourseEvidence: async () => { throw Error("offline"); } } });
   const { result } = renderHook(usePracticeProgress);
   await waitFor(() => expect(result.current.status).toBe("error"));
+});
+it.each(["SIGNED_IN", "SIGNED_OUT", "retry"])("invalidates a queued earlier-user result in the same %s batch", async (event) => {
+  let resolveOld!: (value: typeof empty) => void;
+  const oldEvidence = new Promise<typeof empty>(resolve => { resolveOld = resolve; });
+  mocks.session.mockResolvedValueOnce({ userId: "old", repository: { getSkillHistory: async () => [], listCourseEvidence: () => oldEvidence } });
+  const { result } = renderHook(usePracticeProgress);
+  await act(async () => {});
+  mocks.session.mockResolvedValue({ userId: "new", repository: { getSkillHistory: async () => [], listCourseEvidence: () => new Promise(() => {}) } });
+  await act(async () => {
+    if (event === "retry") result.current.retry();
+    else mocks.auth.mock.calls.at(-1)![0](event);
+    resolveOld({ ...empty, activityAttempts: [{ attemptId: "old-private" }] } as unknown as typeof empty);
+    for (let flush = 0; flush < 10; flush++) await Promise.resolve();
+  });
+  expect(result.current.status).toBe("loading");
+  expect(result.current.userId).toBeNull();
+  expect(result.current.activityAttempts).toEqual([]);
+});
+it.each([true, false])("waits for semantic replay before publishing local recovery (accepted: %s)", async (accepted) => {
+  const events = [{ type: "activity_started", eventId: "start", atMs: 0 }];
+  sessionStorage.setItem("casework:v3-activity:opening:1", JSON.stringify({ attemptId: "run", startedAt: "2026-09-01T00:00:00.000Z", events }));
+  let resolveReplay!: (response: Response) => void;
+  const fetchRun = vi.fn<typeof fetch>(() => new Promise<Response>(resolve => { resolveReplay = resolve; }));
+  vi.stubGlobal("fetch", fetchRun);
+  mocks.session.mockResolvedValue({ userId: "guest", repository: { getSkillHistory: async () => [], listCourseEvidence: async () => empty } });
+  const resources = [{ kind: "activity" as const, id: "opening", contentVersion: 1, title: "Opening", status: "active" as const }];
+  const { result } = renderHook(() => usePracticeProgress(resources));
+  await act(async () => {});
+  expect(result.current.status).toBe("loading");
+  expect(fetchRun).toHaveBeenCalledWith("/api/activities/opening/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: expect.any(String) });
+  expect(JSON.parse(fetchRun.mock.calls[0][1]!.body as string)).toEqual({ contentVersion: 1, events });
+  await act(async () => resolveReplay(new Response(null, { status: accepted ? 200 : 400 })));
+  expect(result.current.status).toBe("ready");
+  expect(result.current.recoverableRuns).toHaveLength(accepted ? 1 : 0);
+  vi.unstubAllGlobals();
 });

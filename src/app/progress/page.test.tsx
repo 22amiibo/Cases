@@ -95,7 +95,7 @@ it("uses learner-facing coaching language and prioritizes the progress sections"
 });
 
 it("shows five ordered areas and current evidence separately from earlier results", () => {
-  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], localRuns: [], retry: vi.fn() });
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], recoverableRuns: [], retry: vi.fn() });
   render(<ProgressPage />);
   const headings = screen.getAllByRole("heading", { level: 2 }).map(h => h.textContent);
   expect(headings.slice(0, 5)).toEqual(["Continue", "Recommended next", "Quick practice", "Skills snapshot", "Recent activity"]);
@@ -104,14 +104,21 @@ it("shows five ordered areas and current evidence separately from earlier result
   expect(document.body).not.toHaveTextContent(/scoringVersion|self_assessment|composite|readiness score/i);
 });
 it("puts a saved unfinished activity ahead of an unpracticed recommendation", () => {
-  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], localRuns: [["casework:v3-activity:alpinefit-clarifying-v3:1", JSON.stringify({ attemptId: "run", startedAt: "2026-09-01T00:00:00.000Z", events: [{ eventId: "start", type: "activity_started", atMs: 0 }] })]], retry: vi.fn() });
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], v3CaseAttempts: [], recoverableRuns: [{ title: "Choose the first AlpineFit question", href: "/practice/activities/alpinefit-clarifying-v3?version=1", updatedAt: "2026-09-01T00:00:00.000Z" }], retry: vi.fn() });
   render(<ProgressPage />);
   expect(within(screen.getByRole("region", { name: "Recommended next" })).getByRole("link")).toHaveAttribute("href", "/practice/activities/alpinefit-clarifying-v3?version=1");
   expect(screen.getByText(/Your unfinished practice is saved/)).toBeVisible();
 });
 it("includes current full cases in case history and never renders a missing case id", () => {
-  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], localRuns: [], v3CaseAttempts: [{ attemptId: "full-case", caseId: "missing-raw-case-id", contentVersion: 99, scoringVersion: "v3", completedAt: "2026-09-01T00:00:00Z", skillEvidence: [], diagnostics: [], events: [] }], retry: vi.fn() });
+  usePracticeProgress.mockReturnValue({ status: "ready", history: [], activityAttempts: [], recoverableRuns: [], v3CaseAttempts: [{ attemptId: "full-case", caseId: "missing-raw-case-id", contentVersion: 99, scoringVersion: "v3", completedAt: "2026-09-01T00:00:00Z", skillEvidence: [], diagnostics: [], events: [] }], retry: vi.fn() });
   render(<ProgressPage />);
   expect(within(screen.getByRole("region", { name: "Case history" })).getByRole("link", { name: "Review Case practice" })).toHaveAttribute("href", "/cases/missing-raw-case-id/attempts/full-case");
   expect(document.body).not.toHaveTextContent("missing-raw-case-id");
+});
+it.each(["v1", "v2"])("uses an active unpracticed lab for the primary action with only %s history", (scoringVersion) => {
+  usePracticeProgress.mockReturnValue({ status: "ready", activityAttempts: [], v3CaseAttempts: [], recoverableRuns: [], history: [{ attemptId: "earlier", attemptType: "drill", userId: "guest", skillId: "quantitative", score: 0, feedbackCodes: [], completedAt: "2026-09-17T00:00:00Z", scoringVersion, contentVersion: 2, eventSchemaVersion: 2, scaffoldingLevel: "beginner", diagnostics: [{ code: "unit_error", source: "system", severity: "coaching" }] }], retry: vi.fn() });
+  render(<ProgressPage />);
+  const primary = within(screen.getByRole("region", { name: "Recommended next" }));
+  expect(primary.getByRole("link")).toHaveAttribute("href", "/practice/activities/alpinefit-clarifying-v3?version=1");
+  expect(primary.getByText(/You have not tried this activity yet/)).toBeVisible();
 });

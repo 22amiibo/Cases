@@ -7,7 +7,7 @@ import { V3_SKILL_IDS, V3_SKILL_LABELS } from "./v3-taxonomy";
 
 export const V3_EVIDENCE_POLICY = Object.freeze({ recentAttempts: 3, recurringBlockerCount: 2, failedChecks: 2, consistentAttempts: 3, distinctContextsOrLevels: 2 });
 export type ProgressResource = {
-  kind: "activity" | "case"; id: string; contentVersion: number; title: string; status: "active" | "retired" | "draft";
+  kind: "activity" | "case"; id: string; contentVersion: number; title: string; status: "active" | "retired" | "draft"; supportedModes?: ("practice" | "interview")[];
 };
 export type CoachingDiagnostic = V3DiagnosticOutcome & { sourceLabel: string; explanation: string; completedAt: string; activityId?: string; recurring: boolean };
 const strengths = { structure: "strong_structure", prioritization: "strong_priority", quantitative: "strong_quantitative_reasoning", synthesis: "strong_synthesis", recommendation: "strong_recommendation" };
@@ -42,20 +42,22 @@ export function buildV3Progress(activities: ActivityAttempt[], cases: V3CaseAtte
     const breadth = new Set(evidence.map(e => e.contextId)).size >= V3_EVIDENCE_POLICY.distinctContextsOrLevels || new Set(evidence.map(e => e.difficulty)).size >= V3_EVIDENCE_POLICY.distinctContextsOrLevels;
     const status = applicable.length === 0 ? "Not started" : recurringCodes.length || latestChecksFailed ? "Needs practice" : applicable.length >= V3_EVIDENCE_POLICY.consistentAttempts && transferred > 0 && breadth ? "Consistent" : "Developing";
     const diagnostics: CoachingDiagnostic[] = [];
+    const recurringDiagnostics: CoachingDiagnostic[] = [];
     const seen = new Set<string>();
     for (const { attempt } of applicable) {
       for (const diagnostic of attempt.diagnostics.filter(d => d.skillId === skillId && d.severity !== "strength")) {
         const key = `${diagnostic.source}:${diagnostic.code}`;
+        const definition = getV3DiagnosticDefinition(diagnostic.code);
+        const described: CoachingDiagnostic = { ...diagnostic, sourceLabel: diagnostic.source === "self_assessment" ? "Your reflection" : "Coach feedback", explanation: definition?.explanation ?? diagnosticDefinitions[diagnostic.code as DiagnosticCode]?.explanation ?? "Review this skill and try another practice.", completedAt: attempt.completedAt, ...("activityId" in attempt ? { activityId: attempt.activityId } : {}), recurring: recurringCodes.includes(diagnostic.code) };
+        if (described.recurring && diagnostic.severity === "blocking" && recent.some(row => row.attempt === attempt) && !recurringDiagnostics.some(d => d.code === diagnostic.code && d.source === diagnostic.source)) recurringDiagnostics.push(described);
         if (seen.has(key)) continue;
         seen.add(key);
-        const definition = getV3DiagnosticDefinition(diagnostic.code);
         const strength = definition?.supersedingStrengthCode ?? strengths[skillId as keyof typeof strengths];
         const resolved = applicable.some(({ attempt: later }) => later.completedAt > attempt.completedAt && later.diagnostics.some(d => d.source === diagnostic.source && d.skillId === skillId && d.code === strength && d.severity === "strength"));
-        if (resolved) continue;
-        diagnostics.push({ ...diagnostic, sourceLabel: diagnostic.source === "self_assessment" ? "Your reflection" : "Coach feedback", explanation: definition?.explanation ?? diagnosticDefinitions[diagnostic.code as DiagnosticCode]?.explanation ?? "Review this skill and try another practice.", completedAt: attempt.completedAt, ...("activityId" in attempt ? { activityId: attempt.activityId } : {}), recurring: recurringCodes.includes(diagnostic.code) });
+        if (!resolved) diagnostics.push(described);
       }
     }
-    return { skillId, label: V3_SKILL_LABELS[skillId], status, reviewed: applicable.length, transferred, diagnostics, recurringCodes, latestCompletedAt: applicable[0]?.attempt.completedAt ?? null };
+    return { skillId, label: V3_SKILL_LABELS[skillId], status, reviewed: applicable.length, transferred, diagnostics, recurringDiagnostics, recurringCodes, latestCompletedAt: applicable[0]?.attempt.completedAt ?? null };
   });
 }
 

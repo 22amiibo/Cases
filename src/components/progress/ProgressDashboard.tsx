@@ -5,7 +5,7 @@ import { buildProgressDashboard, buildRecommendedSession } from "@/core/progress
 import { buildAchievements } from "@/core/progress-achievements";
 import { diagnosticDefinitions } from "@/core/diagnostics";
 import { buildUnifiedHistory, buildV3Progress, type ProgressResource } from "@/core/v3-progress";
-import { activityHref, findRecoverableRuns, selectV3Recommendation, type PracticeOption, type CourseRecommendationStep } from "@/core/v3-recommendations";
+import { activityHref, selectV3Recommendation, type PracticeOption, type CourseRecommendationStep } from "@/core/v3-recommendations";
 import { usePracticeProgress } from "@/components/progress/usePracticeProgress";
 import styles from "@/app/progress/progress.module.css";
 
@@ -18,7 +18,7 @@ function countLabel(count: number, singular: string) {
 }
 
 export function ProgressDashboard({ resources, activities, courseStep = null }: { resources: ProgressResource[]; activities: PracticeOption[]; courseStep?: CourseRecommendationStep | null }) {
-  const progress = usePracticeProgress();
+  const progress = usePracticeProgress(resources);
   const dashboard = buildProgressDashboard(progress.history);
   const recommendation = buildRecommendedSession(progress.history);
   const activityAttempts = progress.activityAttempts ?? [];
@@ -27,10 +27,9 @@ export function ProgressDashboard({ resources, activities, courseStep = null }: 
   const caseReplays = history.filter(item => item.kind === "case");
   const recent = history.slice(0, 6);
   const skills = buildV3Progress(activityAttempts, v3CaseAttempts);
-  const runs = findRecoverableRuns(progress.localRuns ?? [], resources);
+  const runs = progress.recoverableRuns ?? [];
   const coaching = selectV3Recommendation({ activities, attempts: activityAttempts, skills, runs, courseStep });
-  const useCurrent = activityAttempts.length > 0 || v3CaseAttempts.length > 0 || runs.length > 0 || !!courseStep || progress.history.length === 0;
-  const primary = useCurrent ? coaching : { title: recommendation.title, explanation: recommendation.explanation, href: recommendation.practice.href };
+  const primary = coaching;
   const quick = [...activities].sort((a, b) => a.estimatedMinutes - b.estimatedMinutes || a.id.localeCompare(b.id)).slice(0, 3);
   const achievements = buildAchievements(progress.history, activityAttempts, v3CaseAttempts);
 
@@ -50,7 +49,7 @@ export function ProgressDashboard({ resources, activities, courseStep = null }: 
       </section>
       <section className={styles.recommendation} aria-labelledby="recommended-next-heading">
         <p>Your next useful rep</p><h2 id="recommended-next-heading">Recommended next</h2>
-        {primary ? <><h3>{primary.title}</h3><span>{primary.explanation}</span><div><Link href={primary.href}>{useCurrent ? "Open recommended practice" : `Practice ${recommendation.practice.label}`} →</Link></div></> : <span>You have explored every available short practice. Revisit a skill from the practice library.</span>}
+        {primary ? <><h3>{primary.title}</h3><span>{primary.explanation}</span><div><Link href={primary.href}>Open recommended practice →</Link></div></> : <span>You have explored every available short practice. Revisit a skill from the practice library.</span>}
       </section>
       <section className={styles.replays} aria-labelledby="quick-practice-heading">
         <div className={styles.sectionIntro}><div><h2 id="quick-practice-heading">Quick practice</h2></div></div>
@@ -68,6 +67,7 @@ export function ProgressDashboard({ resources, activities, courseStep = null }: 
       </section>
 
       {progress.history.some(attempt => attempt.scoringVersion === "v2") && <>
+      <section className={styles.replays} aria-label="Earlier practice coaching"><p>From your earlier practice</p><h3>{recommendation.title}</h3><p>{recommendation.explanation}</p><Link href={recommendation.practice.href}>Practice {recommendation.practice.label} →</Link></section>
       <section className={styles.sectionIntro}><div><p>Current evidence</p><h2>Skills</h2></div><p>Statuses reflect reviewed practice and application in cases. Coaching points explain what to work on next.</p></section>
       <section className={styles.skills} aria-label="Skill progress">
         {dashboard.v2.skills.map((skill) => <article className={styles.skill} key={skill.skillId}>

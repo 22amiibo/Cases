@@ -1,5 +1,9 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getCaseDefinition } from "@/content/cases";
+import { toLearnerCaseDefinition } from "@/core/learner-case";
+import { serializeLearningCycleState } from "@/core/learning-cycle";
 import type {
   LearnerCaseDefinition,
   LearnerSessionView,
@@ -21,6 +25,7 @@ const caseDefinition: LearnerCaseDefinition = {
   clarificationOptions: [],
   openingPrompt: null,
   caseMode: "practice",
+  exhibitIds: [],
   scaffoldingLevel: "beginner",
 };
 
@@ -166,5 +171,58 @@ describe("InvestigationPanel grouped actions", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const request = fetchMock.mock.calls[1][1] as RequestInit;
     expect(JSON.parse(String(request.body))).toMatchObject({ events: [] });
+  });
+
+  it("clears this case's Practice exhibit state when restarting an expired workspace", async () => {
+    const user = userEvent.setup();
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+    const authored = definition.exhibits.find(({ id }) => id === "cost-category")!.interpretation!;
+    const cycle = serializeLearningCycleState({
+      interactionId: authored.interactionId,
+      phase: "complete",
+      responses: [{
+        responseId: "old-response",
+        interactionId: authored.interactionId,
+        revision: 1,
+        revisionOf: null,
+        responseKind: authored.responseKind,
+        text: "The prior run's interpretation.",
+        committedAtMs: 1,
+      }],
+      reveal: authored,
+      assessments: [{
+        responseId: "old-response",
+        outcomes: authored.criteria.map(({ id }) => ({ criterionId: id, met: true })),
+      }],
+      diagnostics: [],
+    });
+    const practiceKey = "casework:exhibit-cycle:cost-category";
+    const interviewKey = `${practiceKey}:alpinefit-profitability:interview`;
+    const otherCaseKey = "casework:exhibit-cycle:other-case-exhibit";
+    const insights = JSON.stringify([{ id: "old-insight", label: "The prior run's insight." }]);
+    for (const key of [practiceKey, interviewKey, otherCaseKey]) {
+      window.sessionStorage.setItem(key, cycle);
+      window.sessionStorage.setItem(`${key}:insights`, insights);
+    }
+    window.sessionStorage.setItem(
+      "casework:guest-session:alpinefit-profitability",
+      JSON.stringify({ contentVersion: 2, events: "invalid" }),
+    );
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(JSON.stringify(view), { status: 200 }),
+    );
+
+    render(<InvestigationPanel caseDefinition={toLearnerCaseDefinition(definition)} />);
+    expect(await screen.findByRole("heading", { name: "This case session expired" })).toBeVisible();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Start a fresh case" }));
+    expect(await screen.findByRole("heading", { name: "Choose the next question" })).toBeVisible();
+
+    expect(window.sessionStorage.getItem(practiceKey)).toBeNull();
+    expect(window.sessionStorage.getItem(`${practiceKey}:insights`)).toBeNull();
+    for (const key of [interviewKey, otherCaseKey]) {
+      expect(window.sessionStorage.getItem(key)).toBe(cycle);
+      expect(window.sessionStorage.getItem(`${key}:insights`)).toBe(insights);
+    }
   });
 });

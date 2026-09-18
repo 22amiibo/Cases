@@ -125,6 +125,7 @@ export type LearnerCaseDefinition = Pick<
   "id" | "version" | "title" | "category" | "difficulty" | "prompt" | "objective"
 > & {
   caseMode: CaseRunContext["mode"];
+  exhibitIds: string[];
   clarificationOptions: Array<{ id: string; label: string }>;
   openingPrompt: LearnerLearningCyclePrompt | null;
   scaffoldingLevel: "beginner" | "intermediate" | "interview" | null;
@@ -336,6 +337,7 @@ export function toLearnerCaseDefinition(
     prompt: definition.prompt,
     objective: definition.objective,
     caseMode: context.mode,
+    exhibitIds: definition.exhibits.map(({ id }) => id),
     scaffoldingLevel,
     clarificationOptions: definition.version >= 2 && definition.opening
       ? []

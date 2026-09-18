@@ -535,7 +535,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       window.sessionStorage,
       caseDefinition.id,
       caseDefinition.caseMode,
-      view?.exhibits.map(({ id }) => id) ?? [],
+      caseDefinition.exhibitIds,
     );
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
     elapsedOffset.current = 0;

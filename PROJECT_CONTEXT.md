@@ -72,6 +72,45 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Tasks 8–12 — local release candidate
+
+- The owner replaytest recorded `proceed` on 2026-09-18. Tasks 8–12 are now
+  implemented on `feature/casework-v3`; production migration and deployment
+  remain separately gated.
+- Task 8 added server-enforced AlpineFit Practice and Interview modes with
+  mode-isolated recovery, delayed Interview feedback, explicit timing, and
+  immutable attempt metadata.
+- Task 9 added exact-version chronological replay, evidence timing, historical
+  attempt routes, and evidence-backed learner debrief.
+- Task 10 added version-separated V3 skill evidence, deterministic
+  recommendations, resumable work, unified history, and learner-facing
+  Progress.
+- Task 11 published the exact nine-step Profitability course with derived
+  completion, exact course-context evidence, guest continuation, signed-in
+  cross-device continuation, and capstone debrief.
+- Task 12 adds shared Learn, Practice, Cases, and Progress navigation plus
+  focused keyboard, axe, 320/768/1440 reflow, network answer-secrecy, migration
+  ordering, and RLS contract coverage. `/drills` compatibility is preserved.
+- No inventory filters were added: four V3.0 lab cards and six mostly unique
+  case metadata combinations do not provide a useful filtering set yet.
+- Targeted pre-commit traffic checks keep selected authored feedback,
+  diagnostics, and option outcome mappings out of learner responses. Targeted
+  production-bundle inspection checked 23 browser chunks and found no selected
+  server-only authored feedback, criterion, or completed-case answer strings.
+- This worktree has no PostgreSQL, `psql`, Supabase CLI, or Docker runtime.
+  Static additive-migration and RLS policy checks pass, but a real fresh apply,
+  representative 001→004 upgrade, and transaction-scoped RLS execution remain
+  required in an isolated database before production approval.
+- Final local gate: lint and typecheck passed; 90 unit/component files / 480
+  tests passed; all 59 Playwright journeys passed; production build and
+  `git diff --check` passed. Exact evidence is recorded in `RELEASE_NOTES.md`.
+- Rollback disables V3 active content and the V3 navigation without deleting
+  immutable V3 attempts.
+- Next action: stop for separate owner authorization. Do not apply migration
+  `004`, deploy, or modify hosted resources until the database execution gate
+  is complete and the owner separately approves production migration and
+  deployment.
+
 ### Casework V3 Task 7 revision pass — awaiting owner replaytest
 
 - The owner recorded `revise and replaytest` after the first flagship-lab
@@ -1140,9 +1179,8 @@ npm run build
 
 ## Next Action
 
-Task 17 is implemented locally and its initial changes are committed as
-`a5390a7`. Review the fix commit, then have the controller apply migrations
-`002` and `003` under the required approval and record the transaction-scoped
-cross-user/RLS result in `RELEASE_NOTES.md`. Deployment still requires explicit
-owner approval and separate live sign-in/save, historical replay, rollback, and
-answer-secrecy evidence.
+V3.0 is a local release candidate. Stop for separate owner approval before
+applying migration `004` or deploying. First run the fresh database,
+representative 001→004 upgrade, and transaction-scoped RLS gate in an isolated
+PostgreSQL/Supabase environment. Rollback must disable V3 active content and
+navigation while retaining immutable V3 attempts.

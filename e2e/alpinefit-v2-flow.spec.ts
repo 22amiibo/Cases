@@ -57,9 +57,11 @@ test("AlpineFit Interview Mode defers authored feedback until the case is comple
   await page.setViewportSize({ width: 320, height: 900 });
   const revealBodies: Array<{ url: string; body: string }> = [];
   const responseReads: Promise<void>[] = [];
-  page.on("response", (response) => {
-    if (/\/api\/cases\/alpinefit-profitability\/(?:session|cycle\/(?:commit|complete)|hypotheses\/(?:commit|complete)|exhibits\/[^/]+\/commit)/.test(response.url())) {
-      responseReads.push(response.text().then((body) => { revealBodies.push({ url: response.url(), body }); }));
+  page.on("requestfinished", (request) => {
+    if (/\/api\/cases\/alpinefit-profitability\/(?:session|cycle\/(?:commit|complete)|hypotheses\/(?:commit|complete)|exhibits\/[^/]+\/commit)/.test(request.url())) {
+      responseReads.push(request.response().then(async (response) => {
+        if (response) revealBodies.push({ url: response.url(), body: await response.text() });
+      }));
     }
   });
 

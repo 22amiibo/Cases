@@ -203,12 +203,26 @@ test("guest can recover a failed AlpineFit V2 save without a duplicate attempt",
     const stored = window.sessionStorage.getItem("casework:practice-history");
     if (!stored) return null;
     const history = JSON.parse(stored) as {
-      caseAttempts: Array<{ caseId: string; contentVersion: number; events: unknown[] }>;
+      v3CaseAttempts: Array<{
+        caseId: string;
+        contentVersion: number;
+        scoringVersion: string;
+        caseMode: string;
+        events: unknown[];
+      }>;
     };
-    return { attempt: history.caseAttempts[0] ?? null, count: history.caseAttempts.length };
+    return {
+      attempt: history.v3CaseAttempts[0] ?? null,
+      count: history.v3CaseAttempts.length,
+    };
   });
   expect(savedAttempt).toMatchObject({
-    attempt: { caseId: "alpinefit-profitability", contentVersion: 2 },
+    attempt: {
+      caseId: "alpinefit-profitability",
+      contentVersion: 2,
+      scoringVersion: "v3",
+      caseMode: "practice",
+    },
     count: 1,
   });
   expect(savedAttempt?.attempt.events.length).toBeGreaterThan(10);

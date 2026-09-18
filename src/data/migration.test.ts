@@ -177,4 +177,36 @@ describe("V3 learning migration", () => {
     expect(sql).toContain("conflicting case attempt retry");
     expect(sql).toContain("conflicting case event retry");
   });
+
+  it("keeps every V3 table protected for both reads and writes", () => {
+    const sql = v3MigrationSql();
+    for (const table of [
+      "activity_attempts",
+      "activity_events",
+      "course_enrollments",
+      "course_step_events",
+    ]) {
+      expect(sql).toMatch(new RegExp(
+        `on public\\.${table} for all using \\(auth\\.uid\\(\\) = user_id\\) with check \\(auth\\.uid\\(\\) = user_id\\)`,
+      ));
+    }
+    expect(sql.match(/auth\.uid\(\) is distinct from p_user_id/g)).toHaveLength(2);
+  });
+
+  it("forms an ordered additive 001-to-004 upgrade contract", () => {
+    const migrations = [
+      migrationSql(),
+      v2MigrationSql(),
+      caseEventEvidenceMigrationSql(),
+      v3MigrationSql(),
+    ];
+    expect(migrations.every((sql) => !/drop table|truncate|delete from/.test(sql))).toBe(true);
+    expect(migrations[0]).toContain("create table public.case_attempts");
+    expect(migrations[1]).toContain("add column if not exists scoring_version");
+    expect(migrations[2]).toContain("drop constraint if exists case_attempts_v2_metadata_check");
+    expect(migrations[3]).toContain("drop constraint if exists case_attempts_v2_metadata_check");
+    expect(migrations[3]).toContain("scoring_version = 'v1'");
+    expect(migrations[3]).toContain("scoring_version = 'v2'");
+    expect(migrations[3]).toContain("scoring_version = 'v3'");
+  });
 });

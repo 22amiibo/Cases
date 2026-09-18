@@ -2,142 +2,92 @@
 
 ## Objective
 
-Implement the approved Casework V3.0 Profitability learning loop while
-preserving released V1/V2 behavior, immutable historical content, answer
-secrecy, deterministic evaluation, and existing user work.
+Prepare the Casework V3.0 Profitability learning loop as a local release
+candidate while preserving released V1/V2 behavior, immutable historical
+content, answer secrecy, deterministic evaluation, and existing user work.
 
-## Remaining task set
+## Current state
 
-V3.0 Tasks 9-12 remain after the completed Task 8 case-mode work.
+V3.0 Tasks 0–12 are implemented on `feature/casework-v3`. The owner replaytest
+recorded `proceed` on 2026-09-18 before Tasks 8–12 began. Production migration
+and deployment remain separately gated and have not been performed.
 
-## V3 planning
+Task 12 adds one shared primary navigation with the exact destinations Learn,
+Practice, Cases, and Progress. The navigation exposes the current section,
+works by keyboard, and reflows without horizontal overflow at 320px, 768px,
+and 1440px. `/drills` and its deep links remain available as the Legacy V1/V2
+library.
 
-`CASEWORK_V3_IMPLEMENTATION_PLAN.md` was approved for V3.0 implementation on
-2026-09-18. Production migration and deployment remain separately gated.
+No inventory filters were added. V3.0 has four lab groupings with three
+activities each and six cases whose case-type and industry combinations are
+mostly unique; filtering that inventory would add controls without helping a
+learner narrow a meaningful set. Existing activity and case metadata remains
+available for a later release with a larger published inventory.
 
-## Current task
+## Completed V3.0 tasks
 
-Task 8 is complete. AlpineFit now has explicit Practice and Interview modes
-with separate persisted workspaces, server-enforced policy, deferred Interview
-feedback, and mode-aware saved attempts.
+- Tasks 0–7 established the compatibility baseline, taxonomies, versioned
+  activity/course contracts, deterministic engine, additive persistence,
+  shared activity shell, four flagship labs with three repetitions each, and
+  the owner-approved Practice experience.
+- Task 8 added explicit AlpineFit Practice and Interview modes, server-enforced
+  policy, delayed Interview feedback, mode-isolated recovery, and immutable
+  mode persistence. Main commits: `6fd7c4f`, `f27b71d`, `173814f`, `c14bb40`,
+  and `8db3e0b`.
+- Task 9 added exact-version chronological case replay, evidence timing,
+  learner-facing debrief, historical attempt routes, and safe unavailable-
+  version summaries. Commits: `9e66576` and `3d723c7`.
+- Task 10 added version-separated V3 skill evidence, deterministic next-
+  practice selection, unified history, resumable work, and learner-facing
+  Progress. Commits: `713240d` and `0f3509c`.
+- Task 11 published the exact nine-step Profitability course with immutable
+  course-context evidence, guest continuation, signed-in cross-device
+  continuation, and capstone debrief. Commits: `1ccd8dc` and `c108739`.
+- Task 12 adds shared navigation and focused release-hardening coverage for
+  accessibility, keyboard use, responsive layout, pre-commit network answer
+  secrecy, additive migration ordering, and RLS policy contracts.
 
-## Completed tasks
+## Release verification
 
-- V3.0 Task 0 compatibility coverage and full baseline gate are complete and
-  committed as `578248d`: 58 test files / 276 tests, 34 Playwright journeys,
-  lint, typecheck, production build, and diff check pass.
-- V3.0 Task 1 taxonomy and exact case-metadata contracts are committed as
-  `f5b3fbf`: 3 focused files / 24 tests, lint, and typecheck pass.
-- V3.0 Task 2 contracts are committed as `7e7cd46`: 4 focused files / 20
-  tests, lint, and typecheck pass.
-- V3.0 Task 3 is committed as `095c8fc`: 2 focused files / 16 tests, 64 files /
-  310 tests in the full unit suite, lint, and typecheck pass.
-- V3.0 Task 4 is committed as `f0e0a83`: 4 focused data files / 36 tests, 65
-  files / 318 tests in the full unit suite, lint, and typecheck pass.
-- V3.0 Task 5 is committed as `126ea91`: 7 focused files / 28 tests, 70
-  files / 330 tests in the full unit suite, one Playwright journey, lint,
-  typecheck, and production build pass.
-- V3.0 Task 6 is committed as `2b81cd7`: 5 focused files / 35 tests, 71
-  files / 343 tests in the full unit suite, four phone-width axe-scanned
-  Playwright journeys, lint, typecheck, and production build pass.
-- V3.0 Task 7 implementation is complete: active and exact-version routes,
-  course-context validation, recent attempts, saved-attempt review, retired
-  history behavior, and preserved `/drills` compatibility are covered. The
-  full gate passes 75 test files / 352 tests, 40 Playwright journeys, lint,
-  typecheck, production build, and `git diff --check`.
-- The Task 7 revision pass expands every flagship lab to three varied
-  repetitions, strengthens Exhibit decisions and stable per-attempt ordering,
-  replaces unsupported inputs with structured feedback, adds resumable exit
-  and learner-centered completion review, rewrites Progress coaching, derives
-  lightweight achievements, and uses the static typography stack site-wide.
-  Validation passes 77 test files / 359 tests and 46 Playwright journeys,
-  plus lint, typecheck, production build, and `git diff --check`.
-- The Task 7 owner replaytest recorded `proceed` on 2026-09-18 in
-  `PRODUCT_DECISION_LEDGER.md`, opening Task 8.
-- V3.0 Task 8 is complete: AlpineFit Practice and Interview modes have
-  server-enforced policy and deferred Interview feedback, preserve mode timing
-  in case events, persist `caseMode` in V3 attempts, and pass focused, browser,
-  lint, typecheck, and production-build checks.
-- Tasks 1–11 are committed on `feature/case-practice-mvp`.
-- The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
-- Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
-- Task 13 committed as `3caf4d9` (`content: upgrade paypilot for v2 intermediate practice`).
-- Task 14 committed as `6cec8a8` (`content: add goldenloaf v2 transfer case`).
-- Task 15 committed as `9422518` (`feat: embed exact v2 practice in learn modules`).
-- Task 16 committed as `feat: add diagnostic v2 progress coaching`.
-- Task 17 adds owned exact-version historical replay, safe unavailable-version
-  summaries, Progress replay links, release documentation, and release gates.
-- Task 17 initial implementation committed as `a5390a7` (`chore: harden and
-  document casework v2 pilot`).
-- Final release fix adds a red-green component regression and extends the full
-  AlpineFit browser journey through wrong-unit feedback and same-session retry.
+- Final local command evidence is recorded in `RELEASE_NOTES.md` and
+  `PROJECT_CONTEXT.md`.
+- Targeted network checks confirm pre-commit V3 activity/case responses do not
+  expose selected authored evaluation strings, diagnostic codes, or option
+  outcome mappings.
+- Targeted built-client inspection confirms selected server-only authored
+  feedback, criterion, and completed-case answer strings are absent from 23
+  browser chunks.
+- Migration contract tests verify the additive 001→004 order, V1/V2/V3 row
+  branches, V3 table ownership policies, and caller identity checks in both V3
+  transactional save functions.
 
-## Remaining work
+## Pre-deployment operational gate
 
-- Complete V3.0 Tasks 9-12 according to the approved implementation plan.
+This worktree has no `psql`, PostgreSQL server, Supabase CLI, or Docker runtime,
+including their common macOS installation paths. Therefore a real fresh-schema
+apply, a representative 001→004 database upgrade, and transaction-scoped RLS
+execution could not run locally. Static SQL contract tests and repository
+cross-user tests are the maximum executable local evidence; real database
+execution remains required before production approval. Do not use hosted
+Supabase for that verification without separate owner authorization.
 
-## Important decisions and invariants
+## Important invariants
 
-- Deterministic/no-AI architecture; generated prose is never semantically scored.
-- Generate → Commit → Self-check → Compare → Diagnose → Retry; no authored answers or correctness metadata before commitment.
-- V1 content/history remains immutable and separate from V2 progress.
-- Historical attempts resolve their recorded content version.
-- Scratchpad content remains browser-local and is never persisted.
-- Reuse the shared V2 learning-cycle, case, and repository contracts; add no speculative abstractions or dependencies.
-- Completed cases expose explicit replay and fresh-practice entry points.
-- Exhausting every authored investigation is a valid path to synthesis; it must not require a nonexistent next investigation.
-- Do not stage or edit pre-existing `supabase/.temp/` or `src/content/drills/quantitative 2.json`.
-- `caseMode` is separate from scaffolding. Interview attempts record deferred
-  comparison timing as `authoredComparisonViewed: false`; Practice preserves
-  the existing immediate-feedback requirement.
-
-## Verification already performed
-
-- Task 12 fresh gate: 48 test files / 233 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 25 Playwright journeys passed.
-- Task 13 fresh gate: 50 test files / 240 tests passed; lint passed without warnings; typecheck, production build, and `git diff --check` passed; all 26 Playwright journeys passed.
-- Task 14 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 27 Playwright journeys passed.
-- Task 15 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 29 Playwright journeys passed, including exact Learn routing, answer secrecy, save retry, axe, and phone reflow checks.
-- Task 16 focused gate: 17 Progress core tests and 2 recommendation component tests passed; lint and typecheck passed; all 4 Progress Playwright journeys passed for guest/signed-in and empty/sparse/dense history behavior.
-- Task 16 fresh full gate: 53 test files / 253 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 31 Playwright journeys passed.
-- Post-plan case-flow remediation: 53 test files / 256 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 32 Playwright journeys passed, including exhausted NorthStar synthesis plus completed-case replay and fresh restart.
-- Task 17 full local gate: 54 test files / 262 tests passed; lint, typecheck,
-  production build, and `git diff --check` passed; all 33 Playwright journeys
-  passed, including signed-in unknown-version safety, axe, and 320px reflow.
-- Review fix round 1 focused repository/route regressions pass, and both the
-  successful ordered exact-V2 replay and unknown-version stop browser journeys
-  pass.
-- Review fix round 1 full local gate: 54 test files / 264 tests passed; lint,
-  typecheck, production build, and `git diff --check` passed; all 34 Playwright
-  journeys passed.
-- The migration SQL contract tests passed. The controller confirmed a linked
-  dry-run containing migrations `002` and `003`, confirmed checksummed schema
-  and data backups, applied both migrations, and confirmed that the remote list
-  aligns from `001` through `003`.
-- The transaction-scoped production RLS smoke passed: owner reads succeeded,
-  cross-user reads returned no rows, and the transaction rolled back. The
-  recoverable backup remains retained, and the temporary credential file was
-  removed. No credentials or user identifiers are recorded here.
-- Final wrong-unit release fix: the regression failed with the action stuck as
-  disabled “Saving,” then passed after the success-state reset. Focused checks
-  passed 9 files / 52 tests and the complete AlpineFit browser journey. The
-  full local gate passed 57 files / 272 tests, all 34 Playwright journeys,
-  lint, typecheck, production build, and `git diff --check`.
-- A directly related replay regression now proves repeated calculation attempts
-  render without duplicate React keys.
-- The production release exposed the V2 API shape. The live AlpineFit
-  journey then passed wrong-unit grading, visible corrective feedback,
-  immediately enabled retry, and successful correction without refresh.
-
-## Known deferred issues
-
-- Live signed-in replay and rollback rehearsal remain optional operational
-  follow-ups; they are not blockers for the completed V2 release.
-
-## Blockers
-
-- None currently known.
+- Deterministic/no-AI architecture; generated prose is never semantically
+  scored.
+- Authored answers and correctness metadata remain server-side until the legal
+  reveal point.
+- V1, V2, and V3 evidence remains semantically separate.
+- Historical attempts resolve the exact recorded content version.
+- Scratch work remains browser-local.
+- `caseMode` remains separate from V2 scaffolding.
+- Do not edit, stage, delete, or commit `supabase/.temp/` or
+  `src/content/drills/quantitative 2.json`.
 
 ## Exact next action
 
-Begin Task 9: add chronological replay and debrief using the persisted Task 8
-mode and exact-version case events.
+Stop. Obtain separate owner approval before applying migration `004` or
+deploying V3.0. Before production apply, execute the fresh database,
+representative 001→004 upgrade, and transaction-scoped RLS gate in an isolated
+PostgreSQL/Supabase environment and retain rollback evidence. Rollback disables
+V3 active content and the V3 navigation while retaining immutable V3 attempts.

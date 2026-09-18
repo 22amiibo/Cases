@@ -107,10 +107,15 @@ for (const viewport of [
     for (const route of [
       "/",
       "/learn",
+      "/learn/courses/profitability-v3?version=1",
       "/drills",
+      "/practice",
+      "/practice/clarifying",
+      "/practice/activities/alpinefit-clarifying-v3?version=1",
       "/cases",
       "/cases/alpinefit-profitability",
       "/progress",
+      "/progress/history",
     ]) {
       await page.goto(route);
       await expect(page.locator("body")).toBeVisible();

@@ -4,8 +4,8 @@
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task by task. Track work with the checkboxes in this file.
 
-Status: Approved for V3.0 implementation on 2026-09-18. Production database
-migration and deployment remain separately gated.
+Status: V3.0 implemented as a local release candidate on 2026-09-18.
+Production database migration and deployment remain separately gated.
 
 Prepared: 2026-09-17
 
@@ -971,12 +971,13 @@ AlpineFit completion in both modes without duplicating content.
 **Produces:** `buildCaseReplayTimeline`, historical route, and debrief sections
 for strengths, improvements, and exact next practice.
 
-- [ ] Test evidence timing, contrary evidence without update, repeated attempts,
+- [x] Test evidence timing, contrary evidence without update, repeated attempts,
   exact historical version, unavailable version, and cross-user absence.
-- [ ] Reuse existing review projections and repository reads; do not build a
+- [x] Reuse existing review projections and repository reads; do not build a
   parallel scoring engine or duplicate history API.
-- [ ] Add keyboard, axe, 320px, and signed-in exact-version browser coverage.
-- [ ] Commit `feat: add chronological case debrief`.
+- [x] Add keyboard, axe, 320px, and signed-in exact-version browser coverage.
+- [x] Commit `feat: add chronological case debrief` (`9e66576`; replay fix
+  `3d723c7`).
 
 ### Task 10: Add V3 Progress and deterministic recommendations
 
@@ -992,12 +993,13 @@ for strengths, improvements, and exact next practice.
 **Produces:** Version-separated evidence states, five ordered dashboard areas,
 unified activity/case history, and one explained recommendation.
 
-- [ ] Write policy tests for all four states, source labels, recurring blockers,
+- [x] Write policy tests for all four states, source labels, recurring blockers,
   successful transfer rotation, retired/missing resources, and V1/V2 isolation.
-- [ ] Write recommendation-order tests for all six priorities in Section 10.
-- [ ] Implement pure aggregators before page components.
-- [ ] Add guest and signed-in browser journeys, including identity change.
-- [ ] Commit `feat: add v3 progress coaching`.
+- [x] Write recommendation-order tests for all six priorities in Section 10.
+- [x] Implement pure aggregators before page components.
+- [x] Add guest and signed-in browser journeys, including identity change.
+- [x] Commit `feat: add v3 progress coaching` (`713240d`; policy fix
+  `0f3509c`).
 
 ### Task 11: Add course infrastructure and the Profitability course
 
@@ -1015,15 +1017,16 @@ unified activity/case history, and one explained recommendation.
 **Produces:** Exact nine-resource-step course, completion-page debrief,
 enrollment/continue behavior, and derived completion.
 
-- [ ] Test every exact resource reference, standalone-vs-course completion,
+- [x] Test every exact resource reference, standalone-vs-course completion,
   one-step-only completion, signed-in cross-device course continuation, retired
   course history, and guest session behavior.
-- [ ] Extend lesson practice references with a backward-compatible V3 activity
+- [x] Extend lesson practice references with a backward-compatible V3 activity
   shape `{ activityId, contentVersion }`; keep existing V2 `{ drillId,
   contentVersion: 2 }` objects byte-for-byte unchanged. Point the two new
   lessons to the exact Clarifying and Brainstorming activities.
-- [ ] Run a browser journey from enrollment through AlpineFit and debrief.
-- [ ] Commit `feat: add profitability learning course`.
+- [x] Run a browser journey from enrollment through AlpineFit and debrief.
+- [x] Commit `feat: add profitability learning course` (`1ccd8dc`; persistence
+  fix `c108739`).
 
 ### Task 12: Add shared navigation and harden V3.0
 
@@ -1036,18 +1039,22 @@ enrollment/continue behavior, and derived completion.
 
 **Produces:** Final V3.0 information architecture and a release candidate.
 
-- [ ] Make Learn, Practice, Cases, and Progress the exact primary navigation.
-- [ ] Add only filters backed by published V3.0 metadata/content.
-- [ ] Inspect client bundles and pre-commit network responses for authored-answer
+- [x] Make Learn, Practice, Cases, and Progress the exact primary navigation.
+- [x] Evaluate filters against published V3.0 metadata. No filter ships because
+  the four lab groupings and six mostly unique case combinations are too small
+  for useful narrowing.
+- [x] Inspect client bundles and pre-commit network responses for authored-answer
   leakage.
 - [ ] Run fresh migration, representative 001→004 upgrade, and transaction-
-  scoped RLS tests.
-- [ ] Run V1/V2 compatibility fixtures and all V3.0 browser journeys at 320px,
+  scoped RLS tests. No local PostgreSQL, `psql`, Supabase CLI, or Docker runtime
+  is available; additive/RLS SQL contracts are covered locally and executable
+  database verification remains a pre-deployment gate.
+- [x] Run V1/V2 compatibility fixtures and all V3.0 browser journeys at 320px,
   768px, and 1440px.
-- [ ] Run `npm run lint`, `npm run typecheck`, `npm test`,
+- [x] Run `npm run lint`, `npm run typecheck`, `npm test`,
   `npm run test:e2e`, `npm run build`, and `git diff --check` on a clean checkout.
-- [ ] Record exact evidence. Commit `chore: harden casework v3 profitability loop`.
-- [ ] Stop for separate production migration and deployment approval.
+- [x] Record exact evidence. Commit `chore: harden casework v3 profitability loop`.
+- [x] Stop for separate production migration and deployment approval.
 
 ## 14. V3.0 release acceptance
 

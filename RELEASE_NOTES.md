@@ -1,4 +1,68 @@
-# Casework V2 Wave 1 pilot release candidate
+# Casework Release Notes
+
+## V3.0 Profitability learning loop — local release candidate
+
+Date: 2026-09-18
+
+Status: Tasks 0–12 are implemented locally. Production migration and
+deployment have not been performed and require separate owner approval.
+
+### Included
+
+- Shared primary navigation with the exact destinations Learn, Practice,
+  Cases, and Progress; current-section state, keyboard use, and responsive
+  behavior are covered at 320px, 768px, and 1440px.
+- Four flagship Skill Labs with three reviewed repetitions each: Clarifying,
+  Exhibit Analysis, Brainstorming, and Hypothesis.
+- AlpineFit Practice and Interview modes with server-enforced policy and no
+  pre-completion Interview correctness reveal.
+- Exact-version chronological replay and an evidence-backed case debrief.
+- V3 Progress with resumable work, explained recommendations, skill evidence,
+  history, and training achievements kept separate from V1/V2 meaning.
+- One exact nine-step Profitability course ending in AlpineFit Practice Mode.
+- Guest session continuation and signed-in cross-device evidence through the
+  existing repository contracts.
+- Preserved `/drills` and `/drills/[skill]` compatibility.
+
+No inventory filters ship in V3.0. Four lab groupings and six mostly unique
+case metadata combinations are too small for filters to improve discovery.
+Published metadata remains available for later expansion.
+
+### Local verification
+
+- `npm run lint`: passed.
+- `npm run typecheck`: passed.
+- `npm test`: 90 files / 480 tests passed.
+- `npm run test:e2e`: all 59 Playwright journeys passed.
+- `npm run build`: passed; 22 static pages generated and all V3 routes included.
+- `git diff --check`: passed.
+- Pre-commit network inspection checks AlpineFit activity and case responses
+  for selected hidden authored feedback, diagnostic codes, and option outcome
+  mappings.
+- Built-client inspection checked 23 browser chunks; selected server-only
+  authored feedback, criterion, and completed-case answer strings were absent.
+- Static migration tests verify additive 001→004 ordering, V1/V2/V3 row
+  compatibility branches, all V3 ownership-policy read/write clauses, and the
+  caller identity guard in each V3 transactional save function.
+
+The full browser gate exposed one stale recovery assertion that still read the
+legacy `caseAttempts` array after AlpineFit became an explicit V3-mode attempt.
+The regression now verifies one retry-safe `v3CaseAttempts` Practice record.
+Response-body secrecy listeners also wait for completed requests or read a
+document before navigation so the checks cannot race navigation.
+
+### Remaining production gate
+
+This worktree has no PostgreSQL server, `psql`, Supabase CLI, or Docker runtime.
+A real fresh-schema apply, representative 001→004 database upgrade, and
+transaction-scoped RLS execution therefore remain required in an isolated
+database before production approval. Hosted Supabase was not touched.
+
+Rollback disables V3 active content and the V3 primary navigation while
+retaining the additive schema and immutable V3 attempts. It does not delete or
+rewrite learner history.
+
+## V2 Wave 1 pilot
 
 Date: 2026-09-17
 

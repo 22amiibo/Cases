@@ -280,6 +280,29 @@ The owner replaytest passed and authorized Task 8 to begin. The decision opens
 the explicit AlpineFit Practice and Interview mode work; later V3.0 tasks remain
 bounded by their own plan requirements.
 
+### V3.0 release-candidate record
+
+**State:** Tasks 8–12 implemented locally on 2026-09-18; production remains
+separately gated.
+
+The shared primary navigation is exactly Learn, Practice, Cases, and Progress.
+Legacy `/drills` routes remain valid but are not a fifth primary destination.
+Inventory filters remain deferred because V3.0 publishes only four lab
+groupings and six cases with mostly unique case-type/industry combinations;
+adding controls would not materially improve discovery.
+
+The release rollback is non-destructive: disable V3 active content and the V3
+navigation, retain migration `004` and every immutable V3 attempt, and keep
+exact-version historical reads available. No learner evidence is rewritten or
+deleted.
+
+Local verification includes static 001→004 and RLS policy contracts, repository
+ownership tests, targeted pre-commit network secrecy checks, and browser-chunk
+inspection. This worktree has no PostgreSQL/Supabase runtime, so fresh-schema,
+representative-upgrade, and transaction-scoped RLS execution remain a required
+pre-deployment gate. Hosted resources were not used. The next action requires
+separate owner approval for production migration and deployment.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

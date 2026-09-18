@@ -14,17 +14,18 @@ Complete Casework V2 implementation-plan Tasks 12–16 in order, preserving V1/V
 
 ## Current task
 
-Task 13 — upgrade PayPilot as the intermediate strategy case. Begin by reading the current V1/V2 case contracts and adding failing PayPilot V2 content/flow tests.
+Task 14 — upgrade GoldenLoaf as the lower-scaffolding transfer case. Begin with failing immutable-version, interview-scaffolding, answer-secrecy, and multiple-process-hypothesis tests.
 
 ## Completed tasks
 
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
-- Task 12 implementation is complete and freshly verified; its clean commit is the next repository action.
+- Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
+- Task 13 implementation and full verification are complete; its clean commit is the next repository action.
 
 ## Remaining work
 
-- Implement, verify, document, and commit Tasks 13–16 sequentially.
+- Verify and commit Task 13, then implement, verify, document, and commit Tasks 14–16 sequentially.
 - Run final verification for the assigned Tasks 12–16 and audit their acceptance criteria.
 
 ## Important decisions and invariants
@@ -41,6 +42,7 @@ Task 13 — upgrade PayPilot as the intermediate strategy case. Begin by reading
 ## Verification already performed
 
 - Task 12 fresh gate: 48 test files / 233 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 25 Playwright journeys passed.
+- Task 13 fresh gate: 50 test files / 240 tests passed; lint passed without warnings; typecheck, production build, and `git diff --check` passed; all 26 Playwright journeys passed.
 
 ## Known deferred issues
 
@@ -53,4 +55,4 @@ Task 13 — upgrade PayPilot as the intermediate strategy case. Begin by reading
 
 ## Exact next action
 
-Commit only intended Task 12 files as `content: complete v2 diagnostic drill pilot`, then inspect the PayPilot V1 definition, AlpineFit V2 implementation, versioned registries, and shared case-flow tests before writing Task 13 RED tests.
+Run the full Task 13 unit/static/build/browser gate, commit the intended Task 13 files as `content: upgrade paypilot for v2 intermediate practice`, then inspect GoldenLoaf V1 and add Task 14 RED tests.

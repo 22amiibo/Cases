@@ -5,6 +5,7 @@ import goldenLoafContent from "./goldenloaf-operations.json";
 import morningJetContent from "./morningjet-pricing-breakeven.json";
 import northStarContent from "./northstar-profitability.json";
 import payPilotContent from "./paypilot-growth.json";
+import payPilotV2Content from "./paypilot-growth-v2";
 import { CaseDefinitionSchema } from "@/core/schema";
 import { assertValidCase } from "@/core/validation";
 import { createVersionedRegistry } from "@/content/versioned-registry";
@@ -15,6 +16,7 @@ const authoredCases = [
   northStarContent,
   fleetFixContent,
   payPilotContent,
+  payPilotV2Content,
   goldenLoafContent,
   morningJetContent,
 ];
@@ -29,7 +31,7 @@ export const activeCaseVersions = Object.freeze({
   "alpinefit-profitability": 2,
   "northstar-profitability": 1,
   "fleetfix-market-entry": 1,
-  "paypilot-growth": 1,
+  "paypilot-growth": 2,
   "goldenloaf-operations": 1,
   "morningjet-pricing-breakeven": 1,
 }) as Readonly<Record<string, number>>;

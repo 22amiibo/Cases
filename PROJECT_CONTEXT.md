@@ -71,6 +71,27 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 13: PayPilot intermediate strategy case — complete
+
+- Added immutable PayPilot V2 content and made it active while preserving the
+  reviewed V1 definition and explicit historical lookup.
+- The shared V2 case flow now requires an intermediate-scaffolding decision
+  frame, strategic hypothesis, evidence-linked update, three exhibit
+  interpretations, quantitative reasoning, synthesis, and recommendation. All
+  intermediate cycles use neutral prompts with no answer-bearing guidance.
+- Authored installed-base cross-sell and geographic-expansion starting
+  hypotheses. Both efficient evidence routes complete legally; decisive
+  expansion economics require the expansion hypothesis to revise rather than
+  retain a contradicted claim.
+- Opening projections omit decision criteria, authored comparisons, question
+  responses, and recommendation answers until the generated response is
+  committed. Historical PayPilot V1 remains addressable at content version 1.
+- Focused verification covers both hypothesis routes, contrary-evidence
+  diagnostics, immutable lookup, answer secrecy, refresh recovery, the complete
+  browser journey, automated accessibility, and 320px reflow.
+- Next action: Task 14, GoldenLoaf V2 lower-scaffolding transfer content and
+  delayed-support verification.
+
 ### Casework V2 Task 12: Complete diagnostic drill pilot — complete
 
 - Added twelve immutable V2 transfer reps—two per skill—without editing the
@@ -825,9 +846,8 @@ npm run build
 
 ## Next Action
 
-Task 12 is complete and verified. Stop at its commit boundary. Task 13 is the
-PayPilot intermediate strategy case; do not begin it until the owner explicitly
-continues implementation.
+Task 13 is complete. Continue with Task 14, the GoldenLoaf lower-scaffolding
+transfer case, using the shared V2 case contracts.
 
 The owner could not complete the final manual replay because the completed-case
 screen exposed no replay or retry entry point. That product issue remains

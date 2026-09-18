@@ -28,6 +28,7 @@ test("Exhibit Analysis completes Observe, Prioritize, Interpret, Act", async ({ 
   await expect(page.getByRole("table", { name: /Operating cost by category data/ })).toBeVisible();
   await page.getByRole("radio", { name: /Club labor rose by/ }).check();
   await page.getByRole("button", { name: "Commit observe" }).click();
+  await expect(page.getByRole("radio", { name: "Prioritize the labor outlier" })).toBeVisible();
   await page.reload();
   await page.getByRole("radio", { name: "Prioritize the labor outlier" }).check();
   await page.getByRole("button", { name: "Commit prioritize" }).click();
@@ -62,6 +63,7 @@ test("Hypothesis updates a claim through two evidence rounds", async ({ page }) 
   await expect(page.getByText("Operating costs grew 17%, substantially faster than revenue.")).toHaveCount(0);
   await page.getByRole("radio", { name: /Revenue economics/ }).check();
   await page.getByRole("button", { name: "Commit hypothesis" }).click();
+  await expect(page.getByText("Operating costs grew 17%, substantially faster than revenue.")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Operating costs grew 17%, substantially faster than revenue.")).toBeVisible();
   await page.getByLabel("Status").selectOption("revise");

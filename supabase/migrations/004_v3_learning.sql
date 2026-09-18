@@ -87,7 +87,7 @@ alter table public.case_attempts
       and (learning_evidence is null or jsonb_typeof(learning_evidence) = 'object')
       and jsonb_typeof(diagnostics) = 'array'
       and case_mode is null and course_id is null and skill_evidence is null
-    ) or (
+    ) or coalesce((
       scoring_version = 'v3'
       and content_version > 0 and event_schema_version = 2
       and (scaffolding_level is null or scaffolding_level in ('beginner', 'intermediate', 'interview'))
@@ -95,7 +95,7 @@ alter table public.case_attempts
       and jsonb_typeof(diagnostics) = 'array'
       and jsonb_typeof(skill_evidence) = 'array'
       and case_mode in ('practice', 'interview')
-    )
+    ), false)
   );
 
 create index activity_attempts_user_completed_idx

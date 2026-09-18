@@ -22,6 +22,7 @@ test("guest completes all nine exact Profitability steps, AlpineFit, and the deb
   await page.getByRole("button", { name: "Start activity" }).click();
   await page.getByRole("radio", { name: /How is operating margin defined/ }).check();
   await page.getByRole("button", { name: "Commit answer" }).click();
+  await expect(page.getByText(/Operating margin is operating profit divided by revenue/)).toBeVisible();
   await page.reload();
   await expect(page.getByText(/Operating margin is operating profit divided by revenue/)).toBeVisible();
   await finishActivity(page);

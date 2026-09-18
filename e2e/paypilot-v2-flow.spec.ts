@@ -46,6 +46,7 @@ test("PayPilot V2 compares both strategy routes without leaking criteria", async
     .getByRole("combobox")
     .selectOption("installed-base-cross-sell");
   await page.getByRole("button", { name: "Start investigation" }).click();
+  await expect(page.getByRole("button", { name: "Assess the current customer base" })).toBeVisible();
   await page.reload();
 
   await page.getByRole("button", { name: "Assess the current customer base" }).click();

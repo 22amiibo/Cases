@@ -65,6 +65,7 @@ test("GoldenLoaf transfers the V2 loop with lower scaffolding", async ({ page })
   await page.getByLabel("Update decision").selectOption("revise");
   await page.getByLabel("Revised hypothesis").selectOption("baking-changeover-constraint");
   await page.getByRole("button", { name: "Save hypothesis update" }).click();
+  await expect(page.getByRole("button", { name: "Save hypothesis update" })).not.toBeVisible();
   await page.reload();
 
   const evidence = page.getByRole("region", { name: "What you know now" });

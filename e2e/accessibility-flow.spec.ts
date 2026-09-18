@@ -29,7 +29,7 @@ test("the required generated opening is keyboard operable", async ({ page }) => 
   await page.getByLabel("Over what period did performance change?").press("Space");
   await pressButton(page, "Save opening");
 
-  await expect(page.getByLabel("Concept to add")).toBeVisible();
+  await expect(page.getByLabel("Major area to add")).toBeVisible();
 });
 
 test("case routes show explicit missing, expired, and loading failure screens", async ({

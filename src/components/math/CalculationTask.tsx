@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { LearnerCalculationDefinition } from "@/core/learner-case";
 import type { CalculationDefinition } from "@/core/schema";
 import { withinTolerance } from "@/core/validation";
 import styles from "./CalculationTask.module.css";
@@ -10,7 +9,7 @@ export function CalculationTask({
   definition,
   onSubmit,
 }: {
-  definition: LearnerCalculationDefinition &
+  definition: Pick<CalculationDefinition, "id" | "prompt" | "unit"> &
     Partial<Pick<CalculationDefinition, "expectedAnswer" | "tolerance">>;
   onSubmit: (
     result: { taskId: string; answer: number },

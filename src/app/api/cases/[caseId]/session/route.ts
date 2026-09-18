@@ -108,14 +108,14 @@ export async function POST(
           investigatedNodeIds.has(nodeId),
         ),
       )
-      .map(({ id, prompt, unit, responseCycle }) => ({
-        id,
-        prompt,
-        unit,
-        ...(responseCycle
-          ? { responsePrompt: projectLearningCyclePrompt(responseCycle) }
-          : {}),
-      })),
+      .map(({ id, prompt, unit, unitOptions, responseCycle }) => responseCycle
+        ? {
+            id,
+            prompt,
+            responsePrompt: projectLearningCyclePrompt(responseCycle),
+            unitOptions: unitOptions ?? [unit],
+          }
+        : { id, prompt, unit }),
     completedCalculationIds: session.completedCalculationIds,
     interviewerResponse:
       lastInvestigation?.type === "node_investigated"

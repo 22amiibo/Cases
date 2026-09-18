@@ -36,8 +36,8 @@ async function completeNoCalculationCase(
   await page.getByLabel(clarification).check();
   await page.getByRole("button", { name: "Continue to framework" }).click();
   for (const conceptId of frameworkConceptIds) {
-    await page.getByLabel("Concept to add").selectOption(conceptId);
-    await page.getByRole("button", { name: "Add branch" }).click();
+    await page.getByLabel("Major area to add").selectOption(conceptId);
+    await page.getByRole("button", { name: "Add major area" }).click();
   }
   await page.getByRole("button", { name: "Submit framework" }).click();
 
@@ -76,7 +76,7 @@ test("home introduces deliberate case practice", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", {
-      name: "Practice case interviews by practicing the thinking.",
+      name: "Choose your next useful rep.",
     }),
   ).toBeVisible();
   await expect(
@@ -101,10 +101,10 @@ test("a second authored case opens with deterministic session data", async ({
     .getByLabel("Which performance measure should we explain?")
     .check();
   await page.getByRole("button", { name: "Continue to framework" }).click();
-  await page.getByLabel("Concept to add").selectOption("materials");
-  await page.getByRole("button", { name: "Add branch" }).click();
-  await page.getByLabel("Concept to add").selectOption("price");
-  await page.getByRole("button", { name: "Add branch" }).click();
+  await page.getByLabel("Major area to add").selectOption("materials");
+  await page.getByRole("button", { name: "Add major area" }).click();
+  await page.getByLabel("Major area to add").selectOption("price");
+  await page.getByRole("button", { name: "Add major area" }).click();
   await page.getByRole("button", { name: "Submit framework" }).click();
 
   await page.getByRole("button", { name: "Break down unit costs" }).click();

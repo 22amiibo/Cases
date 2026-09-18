@@ -14,8 +14,8 @@ describe("FrameworkBuilder", () => {
     const user = userEvent.setup();
     render(<FrameworkBuilder concepts={concepts} onSubmit={() => undefined} />);
 
-    await user.selectOptions(screen.getByLabelText("Concept to add"), "revenue");
-    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.selectOptions(screen.getByLabelText("Major area to add"), "revenue");
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
     expect(screen.getByRole("heading", { name: "Revenue" })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Remove Revenue" }));
@@ -27,15 +27,15 @@ describe("FrameworkBuilder", () => {
     const onSubmit = vi.fn();
     render(<FrameworkBuilder concepts={concepts} onSubmit={onSubmit} />);
 
-    await user.selectOptions(screen.getByLabelText("Concept to add"), "revenue");
-    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.selectOptions(screen.getByLabelText("Major area to add"), "revenue");
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
     await user.selectOptions(
-      screen.getByLabelText("Concept to add"),
+      screen.getByLabelText("Major area to add"),
       "variable_cost",
     );
-    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
     await user.click(
-      screen.getByRole("button", { name: "Start with Variable cost" }),
+      screen.getByRole("button", { name: "Investigate Variable cost first" }),
     );
     await user.click(screen.getByRole("button", { name: "Submit framework" }));
 
@@ -59,27 +59,27 @@ describe("FrameworkBuilder", () => {
       />,
     );
 
-    await user.selectOptions(screen.getByLabelText("Concept to add"), "revenue");
-    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.selectOptions(screen.getByLabelText("Major area to add"), "revenue");
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
     await user.selectOptions(
-      screen.getByLabelText("Concept to add"),
+      screen.getByLabelText("Major area to add"),
       "fixed_cost",
     );
-    await user.click(screen.getByRole("button", { name: "Add branch" }));
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
     await user.selectOptions(
-      screen.getByLabelText("Add a child to Revenue"),
+      screen.getByLabelText("Supporting point under Revenue"),
       "variable_cost",
     );
-    await user.click(screen.getAllByRole("button", { name: "Add child" })[0]);
+    await user.click(screen.getAllByRole("button", { name: "Add sub-point" })[0]);
     await user.click(screen.getByRole("button", { name: "Move Fixed cost up" }));
     await user.click(
-      screen.getByRole("button", { name: "Start with Variable cost" }),
+      screen.getByRole("button", { name: "Investigate Variable cost first" }),
     );
 
     const submit = screen.getByRole("button", { name: "Submit framework" });
     expect(submit).toBeDisabled();
     await user.type(
-      screen.getByLabelText("Why start with this branch?"),
+      screen.getByLabelText("Why investigate this area first?"),
       "Variable costs changed fastest, so I would isolate their drivers first.",
     );
     await user.click(submit);
@@ -96,5 +96,17 @@ describe("FrameworkBuilder", () => {
       rationale:
         "Variable costs changed fastest, so I would isolate their drivers first.",
     });
+  });
+
+  it("explains the completed framework in learner language", async () => {
+    const user = userEvent.setup();
+    render(<FrameworkBuilder concepts={concepts} onSubmit={() => undefined} />);
+
+    expect(screen.getByText(/major areas are the main explanations/i)).toBeVisible();
+    await user.selectOptions(screen.getByLabelText("Major area to add"), "revenue");
+    await user.click(screen.getByRole("button", { name: "Add major area" }));
+
+    expect(screen.getByText("Major area 1")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Investigate Revenue first" })).toBeVisible();
   });
 });

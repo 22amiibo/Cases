@@ -1,5 +1,6 @@
 import type { DrillDefinition, FrameworkSubmission } from "./schema";
 import { scoreFramework } from "./framework-scoring";
+import type { QuantitativeFeedback } from "./quantitative-feedback";
 import { withinTolerance } from "./validation";
 
 export type DrillResult = {
@@ -8,6 +9,7 @@ export type DrillResult = {
   pointsPossible: number;
   feedbackCode: string;
   conceptIdsPracticed: string[];
+  quantitativeFeedback?: QuantitativeFeedback;
 };
 
 export type PrioritizationSubmission = { optionId: string };
@@ -81,14 +83,29 @@ export function evaluateDrill(
     }
     case "quantitative": {
       const { answer, unit } = submission as QuantitativeSubmission;
-      const isCorrect =
-        unit === definition.requiredUnit &&
-        withinTolerance(answer, definition.expectedAnswer, definition.tolerance);
-      return result(
-        definition,
-        isCorrect ? 100 : 0,
-        isCorrect ? "correct_calculation" : "check_answer_and_unit",
+      const answerCorrect = withinTolerance(
+        answer,
+        definition.expectedAnswer,
+        definition.tolerance,
       );
+      const unitCorrect = unit === definition.requiredUnit;
+      const evaluated = result(
+        definition,
+        answerCorrect && unitCorrect ? 100 : 0,
+        answerCorrect && unitCorrect ? "correct_calculation" : "check_answer_and_unit",
+      );
+      return {
+        ...evaluated,
+        quantitativeFeedback: {
+          submittedAnswer: answer,
+          submittedUnit: unit,
+          answerCorrect,
+          unitCorrect,
+          correctAnswer: definition.expectedAnswer,
+          correctUnit: definition.requiredUnit,
+          explanation: definition.explanation,
+        },
+      };
     }
     case "exhibit": {
       const exhibitSubmission = submission as ExhibitSubmission;

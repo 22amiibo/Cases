@@ -5,25 +5,21 @@ import styles from "./page.module.css";
 
 const practicePaths = [
   {
-    eyebrow: "01 / Learn",
     title: "Learn the moves",
     description: "Read one concise lesson, then apply it in a matching drill.",
     href: "/learn",
   },
   {
-    eyebrow: "02 / Focus",
     title: "Practice a skill",
     description: "Sharpen one move at a time with short, scored drills.",
     href: "/drills",
   },
   {
-    eyebrow: "03 / Integrate",
     title: "Practice a case",
     description: "Work from an ambiguous prompt to a defensible recommendation.",
     href: "/cases",
   },
   {
-    eyebrow: "04 / Improve",
     title: "View progress",
     description: "See patterns in your reasoning and choose the next useful rep.",
     href: "/progress",
@@ -36,15 +32,14 @@ export default function Home() {
       <div className={styles.grain} aria-hidden="true" />
       <header className={styles.header}>
         <span className={styles.wordmark}>Casework</span>
-        <span className={styles.status}>Practice studio · opening soon</span>
+        <span className={styles.status}>Practice studio</span>
       </header>
 
       <section className={styles.hero}>
-        <p className={styles.kicker}>Build the judgment behind the framework.</p>
-        <h1>Practice case interviews by practicing the thinking.</h1>
+        <p className={styles.kicker}>Your practice desk</p>
+        <h1>Choose your next useful rep.</h1>
         <p className={styles.lede}>
-          Deliberate drills, realistic cases, and feedback you can trace back to
-          every decision—without AI guesswork.
+          Build one skill, work a complete case, or review what to practice next.
         </p>
       </section>
 
@@ -56,7 +51,6 @@ export default function Home() {
         {practicePaths.map((path) => {
           const content = (
             <>
-              <span>{path.eyebrow}</span>
               <h2>{path.title}</h2>
               <p>{path.description}</p>
             </>

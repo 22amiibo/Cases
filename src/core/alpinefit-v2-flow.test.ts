@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getCaseDefinition } from "@/content/cases";
-import { buildGeneratedCaseEvent } from "./case-learning";
+import { buildCaseQuantitativeFeedback, buildGeneratedCaseEvent } from "./case-learning";
 import { applyCaseEvent, createCaseSession, isSynthesisReady } from "./case-engine";
 import { getHypothesisSystemDiagnostic } from "./hypothesis";
 import {
@@ -45,6 +45,25 @@ function completedCycle(definition: AuthoredLearningCycle, responseId: string, a
 }
 
 describe("AlpineFit complete V2 journey", () => {
+  it("provides authored correction details after a quantitative answer is graded", () => {
+    const definition = getCaseDefinition("alpinefit-profitability", 2)!;
+    const calculation = definition.calculations[0];
+
+    expect(buildCaseQuantitativeFeedback(
+      definition,
+      calculation.id,
+      { answer: 75600, unit: "%" },
+    )).toMatchObject({
+      submittedAnswer: 75600,
+      submittedUnit: "%",
+      answerCorrect: false,
+      unitCorrect: false,
+      correctAnswer: 756000,
+      correctUnit: "$",
+      explanation: expect.stringContaining("$756,000"),
+    });
+  });
+
   it("enforces and completes opening through generated recommendation", () => {
     const definition = getCaseDefinition("alpinefit-profitability", 2)!;
     let session = createCaseSession(definition);

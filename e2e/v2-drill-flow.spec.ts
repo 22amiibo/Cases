@@ -27,11 +27,11 @@ test("structure V2 completes a generated response and framework checkpoint", asy
   await finishGeneratedCycle(page, "Split profit into revenue and cost, then investigate variable costs first.");
 
   for (const concept of ["Revenue", "Fixed cost", "Variable cost"]) {
-    await page.getByLabel("Concept to add").first().selectOption({ label: concept });
-    await page.getByRole("button", { name: "Add branch" }).first().click();
+    await page.getByLabel("Major area to add").first().selectOption({ label: concept });
+    await page.getByRole("button", { name: "Add major area" }).first().click();
   }
-  await page.getByRole("button", { name: "Start with Variable cost" }).first().click();
-  await page.getByLabel("Why start with this branch?").first().fill("Variable costs grew faster than revenue.");
+  await page.getByRole("button", { name: "Investigate Variable cost first" }).first().click();
+  await page.getByLabel("Why investigate this area first?").first().fill("Variable costs grew faster than revenue.");
   await page.getByRole("button", { name: "Submit framework" }).first().press("Enter");
   await expectAccessibleMobileCompletion(page, /strong structure · system/i);
 });
@@ -40,18 +40,30 @@ test("prioritization V2 reveals choices only after commitment", async ({ page })
   await page.goto("/drills/prioritization");
   await expect(page.getByLabel("Break down operating costs")).toHaveCount(0);
   await finishGeneratedCycle(page, "Break down costs to distinguish fixed from variable pressure.");
+  const orderBeforeRefresh = await page.getByRole("radio").evaluateAll((options) =>
+    options.map((option) => (option as HTMLInputElement).value),
+  );
+  await page.reload();
+  expect(await page.getByRole("radio").evaluateAll((options) =>
+    options.map((option) => (option as HTMLInputElement).value),
+  )).toEqual(orderBeforeRefresh);
   await page.getByLabel("Break down operating costs").check();
   await page.getByRole("button", { name: "Check decision" }).press("Enter");
   await expectAccessibleMobileCompletion(page, /strong priority · system/i);
 });
 
-test("quantitative V2 keeps reasoning separate from answer and unit", async ({ page }) => {
+test("quantitative V2 teaches after a wrong answer without revealing it early", async ({ page }) => {
   await page.goto("/drills/quantitative");
+  await expect(page.getByText(/Correct answer:/)).toHaveCount(0);
   await finishGeneratedCycle(page, "6 × 700 × $15 × 12; the result should be under $1m and material.");
-  await page.getByLabel("Answer", { exact: true }).fill("756000");
-  await page.getByLabel("Unit", { exact: true }).fill("$");
+  await page.getByLabel("Answer", { exact: true }).fill("75600");
+  await page.getByRole("combobox", { name: "Unit" }).click();
+  await page.getByRole("option", { name: "%" }).click();
   await page.getByRole("button", { name: "Check calculation" }).press("Enter");
-  await expectAccessibleMobileCompletion(page, /strong quantitative reasoning · system/i);
+  await expect(page.getByText("Your answer: 75,600 %")).toBeVisible();
+  await expect(page.getByText(/Correct answer:/)).toContainText("756,000 $");
+  await expect(page.getByText(/6 × 700 × \$15 × 12 = \$756,000 annually/)).toBeVisible();
+  await expectAccessibleMobileCompletion(page, /unit error · system/i);
 });
 
 test("exhibit V2 reveals interpretation choices only after commitment", async ({ page }) => {

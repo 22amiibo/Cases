@@ -8,7 +8,8 @@ async function completeQuantitativeDrill(
   unit: string,
 ) {
   await page.getByLabel("Your answer").fill(answer);
-  await page.getByLabel("Unit").selectOption(unit);
+  await page.getByRole("combobox", { name: "Unit" }).click();
+  await page.getByRole("option", { name: unit, exact: true }).click();
   await page.getByRole("button", { name: "Check answer" }).click();
   await expect(page.getByText("100 / 100")).toBeVisible();
 }

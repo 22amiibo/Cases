@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
 import { GeneratedResponseCycle } from "@/components/practice/GeneratedResponseCycle";
 import type { LearnerExhibitDefinition } from "@/core/learner-case";
@@ -119,6 +120,11 @@ function ExhibitInterpretationPractice({
     },
   );
   const [insightId, setInsightId] = useState("");
+  const orderedInsightOptions = useStableChoiceOrder(
+    insightOptions,
+    `casework:choice-seed:exhibit:${exhibit.id}`,
+    "insights",
+  );
 
   return (
     <div>
@@ -165,7 +171,7 @@ function ExhibitInterpretationPractice({
               onChange={(event) => setInsightId(event.target.value)}
             >
               <option value="">Choose an insight</option>
-              {insightOptions.map((option) => (
+              {orderedInsightOptions.map((option) => (
                 <option value={option.id} key={option.id}>{option.label}</option>
               ))}
             </select>

@@ -30,7 +30,7 @@
 
 .failureCard h1 {
   margin-top: 16px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(2.2rem, 6vw, 4.25rem);
   font-weight: 400;
   line-height: 0.98;
@@ -83,6 +83,12 @@
 .header a {
   color: #294c3b;
   font-weight: 750;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .prompt {
@@ -185,15 +191,17 @@
   align-items: start;
   border: 1px solid #d0d6cf;
   border-radius: 10px;
-  padding: 12px;
+  min-height: 3.5rem;
+  padding: 15px;
   color: #2e3c33;
   cursor: pointer;
-  line-height: 1.42;
+  font-size: 1rem;
+  line-height: 1.48;
 }
 
 .options input {
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   margin-top: 2px;
   accent-color: #294c3b;
 }
@@ -306,6 +314,11 @@
   }
 
   .header {
+    flex-direction: column;
+  }
+
+  .headerActions {
+    align-items: flex-start;
     flex-direction: column;
   }
 

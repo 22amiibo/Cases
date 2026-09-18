@@ -42,15 +42,15 @@ export async function completeAlpineFitV2(
   await page.getByLabel("Over what period did performance change?").check();
   await page.getByLabel("Is the issue concentrated in a product or geography?").check();
   await page.getByRole("button", { name: "Save opening" }).click();
-  await expect(page.getByLabel("Concept to add")).toBeVisible();
+  await expect(page.getByLabel("Major area to add")).toBeVisible();
   if (refresh) await page.reload();
 
-  await page.getByLabel("Concept to add").selectOption("revenue");
-  await page.getByRole("button", { name: "Add branch" }).click();
-  await page.getByLabel("Concept to add").selectOption("variable_cost");
-  await page.getByRole("button", { name: "Add branch" }).click();
-  await page.getByRole("button", { name: "Start with Variable cost" }).click();
-  await page.getByLabel("Why start with this branch?").fill("Costs grew faster than revenue, so test variable labor pressure first.");
+  await page.getByLabel("Major area to add").selectOption("revenue");
+  await page.getByRole("button", { name: "Add major area" }).click();
+  await page.getByLabel("Major area to add").selectOption("variable_cost");
+  await page.getByRole("button", { name: "Add major area" }).click();
+  await page.getByRole("button", { name: "Investigate Variable cost first" }).click();
+  await page.getByLabel("Why investigate this area first?").fill("Costs grew faster than revenue, so test variable labor pressure first.");
   await page.getByRole("button", { name: "Submit framework" }).click();
   await expect(page.getByLabel("Your response")).toBeVisible();
   if (refresh) await page.reload();
@@ -84,9 +84,11 @@ export async function completeAlpineFitV2(
   if (refresh) await page.reload();
 
   await completeGeneratedResponse(page.getByRole("region", { name: "calculation practice" }), "Six clubs times 3,600 hours times $35 is about $756,000 annually, a material staffing opportunity.");
-  await page.getByLabel("Calculated answer ($)").fill("756000");
+  await page.getByLabel("Calculated answer", { exact: true }).fill("756000");
+  await page.getByRole("combobox", { name: "Unit" }).click();
+  await page.getByRole("option", { name: "$", exact: true }).click();
   await page.getByRole("button", { name: "Save calculation" }).click();
-  await expect(page.getByLabel("Calculated answer ($)")).toHaveCount(0);
+  await expect(page.getByLabel("Calculated answer", { exact: true })).toHaveCount(0);
   if (refresh) await page.reload();
 
   await page.getByRole("button", { name: "Compare staff turnover" }).click();

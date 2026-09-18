@@ -112,7 +112,9 @@ export function FrameworkBuilder({
       <li className={styles.branch} key={branch.conceptId}>
         <div className={styles.branchHeader}>
           <div>
-            <span className={styles.depth}>Level {depth + 1}</span>
+            <span className={styles.depth}>
+              {depth === 0 ? `Major area ${index + 1}` : "Supporting point"}
+            </span>
             <h3>{concept.label}</h3>
           </div>
           <div className={styles.actions}>
@@ -143,9 +145,9 @@ export function FrameworkBuilder({
               }
               onClick={() => setPriorityConceptId(branch.conceptId)}
               aria-pressed={priorityConceptId === branch.conceptId}
-              aria-label={`Start with ${concept.label}`}
+              aria-label={`Investigate ${concept.label} first`}
             >
-              Start here
+              {priorityConceptId === branch.conceptId ? "Investigate first ✓" : "Investigate first"}
             </button>
             <button
               type="button"
@@ -160,7 +162,7 @@ export function FrameworkBuilder({
         {depth < 2 && availableChildren.length > 0 && (
           <div className={styles.childComposer}>
             <label>
-              Add a child to {concept.label}
+              Supporting point under {concept.label}
               <select
                 value={childSelections[branch.conceptId] ?? ""}
                 onChange={(event) =>
@@ -179,7 +181,7 @@ export function FrameworkBuilder({
               </select>
             </label>
             <button type="button" onClick={() => addChild(branch.conceptId)}>
-              Add child
+              Add sub-point
             </button>
           </div>
         )}
@@ -212,6 +214,13 @@ export function FrameworkBuilder({
         });
       }}
     >
+      <div className={styles.explainer}>
+        <strong>Build the logic of your answer.</strong>
+        <p>
+          Major areas are the main explanations you want to test. Add supporting
+          points beneath them, then mark the area you would investigate first.
+        </p>
+      </div>
       <div className={styles.composer}>
         <label>
           Search concepts
@@ -223,7 +232,7 @@ export function FrameworkBuilder({
           />
         </label>
         <label>
-          Concept to add
+          Major area to add
           <select
             value={selectedConceptId}
             onChange={(event) => setSelectedConceptId(event.target.value)}
@@ -241,12 +250,12 @@ export function FrameworkBuilder({
           onClick={addTopLevelBranch}
           disabled={!selectedConceptId || branches.length >= 4}
         >
-          Add branch
+          Add major area
         </button>
       </div>
 
       {branches.length === 0 ? (
-        <p className={styles.empty}>Build up to four distinct top-level branches.</p>
+        <p className={styles.empty}>Add up to four distinct major areas.</p>
       ) : (
         <ol className={styles.tree}>
           {branches.map((branch, index) => renderBranch(branch, 0, index))}
@@ -255,7 +264,7 @@ export function FrameworkBuilder({
 
       {requireRationale && (
         <label>
-          Why start with this branch?
+          Why investigate this area first?
           <textarea
             value={rationale}
             onChange={(event) => setRationale(event.target.value)}

@@ -1,0 +1,74 @@
+.correct {
+  display: flex;
+  max-width: 44rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 0.8rem;
+  padding: 1rem 1.15rem;
+  color: #214331;
+  background: #dceadd;
+}
+
+.correction {
+  display: grid;
+  max-width: 44rem;
+  gap: 1rem;
+  border: 1px solid #d3a18c;
+  border-radius: 1rem;
+  padding: clamp(1.1rem, 4vw, 1.75rem);
+  background: #fff3ed;
+}
+
+.correction > p:first-child {
+  color: #8a3e22;
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.correction dl,
+.correction dl div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.correction dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.correction dl div {
+  border-radius: 0.65rem;
+  padding: 0.8rem;
+  background: #fffdf8;
+}
+
+.correction dt {
+  color: #657168;
+  font-size: 0.78rem;
+}
+
+.correction dd {
+  font-weight: 700;
+}
+
+.answer {
+  font-size: 1.05rem;
+}
+
+.reasoning {
+  border-left: 3px solid #c45f2e;
+  padding-left: 1rem;
+}
+
+.reasoning p {
+  margin-top: 0.35rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 28rem) {
+  .correction dl {
+    grid-template-columns: 1fr;
+  }
+}

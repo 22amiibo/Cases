@@ -37,7 +37,7 @@
 
 .hypothesis h2 {
   margin: 8px 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 400;
   letter-spacing: -0.045em;
@@ -104,7 +104,7 @@
 }
 
 .intro h1 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(3rem, 7vw, 6rem);
   font-weight: 400;
   line-height: 0.95;
@@ -141,7 +141,7 @@
 
 .sectionIntro h2 {
   margin-top: 8px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(2rem, 4vw, 3.5rem);
   font-weight: 400;
   letter-spacing: -0.045em;
@@ -232,7 +232,7 @@
 
 .recommendation h2 {
   margin-top: 14px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(2rem, 4vw, 3.6rem);
   font-weight: 400;
   letter-spacing: -0.045em;

@@ -153,7 +153,11 @@ const alpineFitV2Content = {
     ...exhibit,
     interpretation: exhibitCycles[exhibit.id as keyof typeof exhibitCycles],
   })),
-  calculations: v1.calculations.map((item) => ({ ...item, responseCycle: calculation })),
+  calculations: v1.calculations.map((item) => ({
+    ...item,
+    unitOptions: ["$", "$/hour", "$m", "%"],
+    responseCycle: calculation,
+  })),
   synthesis: { responseCycle: synthesis },
   recommendation: { ...v1.recommendation, responseCycle: recommendation },
 };

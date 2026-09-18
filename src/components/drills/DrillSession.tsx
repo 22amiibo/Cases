@@ -9,7 +9,10 @@ import {
   type SynthesisSubmission,
 } from "@/core/drill-engine";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
+import { ChoiceListbox } from "@/components/forms/ChoiceListbox";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { ExhibitRenderer } from "@/components/exhibits/ExhibitRenderer";
+import { QuantitativeFeedbackPanel } from "@/components/practice/QuantitativeFeedbackPanel";
 import { createDrillAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { PracticeRepository } from "@/data/repository";
@@ -41,6 +44,20 @@ function pendingDrillKey(definitionId: string) {
 
 function formatFeedback(code: string) {
   return code.replaceAll("_", " ");
+}
+
+function feedbackMessage(code: string) {
+  const messages: Record<string, string> = {
+    strong_priority: "Your selected branch has the highest authored information value.",
+    check_priority: "Compare which branch would eliminate the most uncertainty first.",
+    correct_calculation: "Your numeric answer and unit both match the authored result.",
+    check_answer_and_unit: "Review both the numeric setup and the requested unit before trying again.",
+    strong_exhibit_chain: "Your observation, implication, and next investigation form a supported chain.",
+    check_exhibit_chain: "Separate what the exhibit shows from what it implies and what you would test next.",
+    strong_synthesis: "You selected decisive evidence and a useful next step.",
+    check_synthesis: "Use the strongest decision-relevant evidence and close with the next unresolved test.",
+  };
+  return messages[code] ?? "Review the highlighted reasoning move before the next repetition.";
 }
 
 export function DrillSession({
@@ -187,10 +204,9 @@ function HydratedDrillSession({
               {result.pointsEarned} / {result.pointsPossible}
             </strong>
             <h2>{formatFeedback(result.feedbackCode)}</h2>
-            <p>
-              Your score comes from the authored rubric for this exact reasoning
-              move—not a language model or hidden interpretation.
-            </p>
+            {result.quantitativeFeedback
+              ? <QuantitativeFeedbackPanel feedback={result.quantitativeFeedback} />
+              : <p>{feedbackMessage(result.feedbackCode)}</p>}
             <button type="button" onClick={next}>
               Next question
             </button>
@@ -210,20 +226,13 @@ function DrillInput({
 }) {
   switch (definition.skillId) {
     case "structure":
-      return (
-        <FrameworkBuilder
-          concepts={definition.conceptOptions.map((option) => ({
-            ...option,
-            aliases: [],
-          }))}
-          onSubmit={(submission: FrameworkSubmission) => onComplete(submission)}
-        />
-      );
+      return <StructureForm definition={definition} onComplete={onComplete} />;
     case "prioritization":
       return (
         <ChoiceForm
           label="Best next branch"
           options={definition.options}
+          orderKey={definition.id}
           onSubmit={(optionId) => onComplete({ optionId })}
         />
       );
@@ -236,16 +245,43 @@ function DrillInput({
   }
 }
 
+function StructureForm({
+  definition,
+  onComplete,
+}: {
+  definition: Extract<DrillDefinition, { skillId: "structure" }>;
+  onComplete: (submission: Parameters<typeof evaluateDrill>[1]) => void;
+}) {
+  const options = useStableChoiceOrder(
+    definition.conceptOptions,
+    `casework:choice-seed:legacy-drill:${definition.id}`,
+    "framework-concepts",
+  );
+  return (
+    <FrameworkBuilder
+      concepts={options.map((option) => ({ ...option, aliases: [] }))}
+      onSubmit={(submission: FrameworkSubmission) => onComplete(submission)}
+    />
+  );
+}
+
 function ChoiceForm({
   label,
   options,
+  orderKey,
   onSubmit,
 }: {
   label: string;
   options: Array<{ id: string; label: string }>;
+  orderKey: string;
   onSubmit: (id: string) => void;
 }) {
   const [value, setValue] = useState("");
+  const orderedOptions = useStableChoiceOrder(
+    options,
+    `casework:choice-seed:legacy-drill:${orderKey}`,
+    label,
+  );
   return (
     <form
       className={styles.form}
@@ -258,7 +294,7 @@ function ChoiceForm({
         {label}
         <select value={value} onChange={(event) => setValue(event.target.value)}>
           <option value="">Choose one</option>
-          {options.map((option) => (
+          {orderedOptions.map((option) => (
             <option value={option.id} key={option.id}>
               {option.label}
             </option>
@@ -282,6 +318,11 @@ function QuantitativeForm({
   const [answer, setAnswer] = useState("");
   const [unit, setUnit] = useState("");
   const units = [...new Set([definition.requiredUnit, "%", "$m", "units"] )];
+  const orderedUnits = useStableChoiceOrder(
+    units.map((value) => ({ id: value, label: value })),
+    `casework:choice-seed:legacy-drill:${definition.id}`,
+    "units",
+  );
 
   return (
     <form
@@ -301,17 +342,13 @@ function QuantitativeForm({
             onChange={(event) => setAnswer(event.target.value)}
           />
         </label>
-        <label>
-          Unit
-          <select value={unit} onChange={(event) => setUnit(event.target.value)}>
-            <option value="">Choose a unit</option>
-            {units.map((option) => (
-              <option value={option} key={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ChoiceListbox
+          label="Unit"
+          value={unit}
+          placeholder="Choose a unit"
+          options={orderedUnits}
+          onChange={setUnit}
+        />
       </div>
       <label>
         Scratch calculation (not graded)
@@ -347,25 +384,31 @@ function ExhibitForm({
           onComplete(submission);
         }}
       >
-        <OptionSelect label="What" options={definition.observationOptions} value={submission.observationId} onChange={(observationId) => setSubmission({ ...submission, observationId })} />
-        <OptionSelect label="So what" options={definition.implicationOptions} value={submission.implicationId} onChange={(implicationId) => setSubmission({ ...submission, implicationId })} />
-        <OptionSelect label="Now what" options={definition.nextInvestigationOptions} value={submission.nextInvestigationId} onChange={(nextInvestigationId) => setSubmission({ ...submission, nextInvestigationId })} />
+        <OptionSelect label="What" options={definition.observationOptions} value={submission.observationId} orderKey={definition.id} onChange={(observationId) => setSubmission({ ...submission, observationId })} />
+        <OptionSelect label="So what" options={definition.implicationOptions} value={submission.implicationId} orderKey={definition.id} onChange={(implicationId) => setSubmission({ ...submission, implicationId })} />
+        <OptionSelect label="Now what" options={definition.nextInvestigationOptions} value={submission.nextInvestigationId} orderKey={definition.id} onChange={(nextInvestigationId) => setSubmission({ ...submission, nextInvestigationId })} />
         <button type="submit" disabled={Object.values(submission).some((value) => !value)}>Check answer</button>
       </form>
     </div>
   );
 }
 
-function OptionSelect({ label, options, value, onChange }: { label: string; options: Array<{id: string; label: string}>; value: string; onChange: (id: string) => void }) {
-  return <label>{label}<select value={value} onChange={(event) => onChange(event.target.value)}><option value="">Choose one</option>{options.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>;
+function OptionSelect({ label, options, value, orderKey, onChange }: { label: string; options: Array<{id: string; label: string}>; value: string; orderKey: string; onChange: (id: string) => void }) {
+  const orderedOptions = useStableChoiceOrder(
+    options,
+    `casework:choice-seed:legacy-drill:${orderKey}`,
+    label,
+  );
+  return <label>{label}<select value={value} onChange={(event) => onChange(event.target.value)}><option value="">Choose one</option>{orderedOptions.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>;
 }
 
 function SynthesisForm({ definition, onComplete }: { definition: Extract<DrillDefinition, { skillId: "synthesis" }>; onComplete: (submission: SynthesisSubmission) => void }) {
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [nextStepId, setNextStepId] = useState("");
+  const orderedEvidence = useStableChoiceOrder(definition.evidenceOptions, `casework:choice-seed:legacy-drill:${definition.id}`, "evidence");
   return <form className={styles.form} onSubmit={(event) => { event.preventDefault(); onComplete({ evidenceIds, nextStepId }); }}>
-    <fieldset><legend>Choose two decision-relevant facts</legend>{definition.evidenceOptions.map((option) => <label className={styles.checkbox} key={option.id}><input type="checkbox" checked={evidenceIds.includes(option.id)} disabled={!evidenceIds.includes(option.id) && evidenceIds.length >= 2} onChange={(event) => setEvidenceIds((current) => event.target.checked ? [...current, option.id] : current.filter((id) => id !== option.id))} />{option.label}</label>)}</fieldset>
-    <OptionSelect label="Best next step" options={definition.nextStepOptions} value={nextStepId} onChange={setNextStepId} />
+    <fieldset><legend>Choose two decision-relevant facts</legend>{orderedEvidence.map((option) => <label className={styles.checkbox} key={option.id}><input type="checkbox" checked={evidenceIds.includes(option.id)} disabled={!evidenceIds.includes(option.id) && evidenceIds.length >= 2} onChange={(event) => setEvidenceIds((current) => event.target.checked ? [...current, option.id] : current.filter((id) => id !== option.id))} />{option.label}</label>)}</fieldset>
+    <OptionSelect label="Best next step" options={definition.nextStepOptions} value={nextStepId} orderKey={definition.id} onChange={setNextStepId} />
     <button type="submit" disabled={evidenceIds.length !== 2 || !nextStepId}>Check answer</button>
   </form>;
 }

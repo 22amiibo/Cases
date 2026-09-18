@@ -20,7 +20,7 @@
 
 .recommendation h2 {
   margin-top: 14px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(2rem, 4vw, 3.8rem);
   font-weight: 400;
   letter-spacing: -0.045em;

@@ -291,6 +291,7 @@ export const CalculationDefinitionSchema = z.object({
   id: IdentifierSchema,
   prompt: z.string().min(1),
   unit: z.string().min(1),
+  unitOptions: z.array(z.string().min(1)).min(2).optional(),
   formula: z.object({
     operation: z.enum(["sum", "subtract", "multiply", "divide", "percentage"]),
     inputs: z.array(z.number()).min(1),
@@ -300,6 +301,14 @@ export const CalculationDefinitionSchema = z.object({
   prerequisiteNodeIds: z.array(IdentifierSchema).default([]),
   evidenceFactId: IdentifierSchema,
   responseCycle: GeneratedResponseDefinitionSchema.optional(),
+}).superRefine((definition, context) => {
+  if (definition.unitOptions && !definition.unitOptions.includes(definition.unit)) {
+    context.addIssue({
+      code: "custom",
+      path: ["unitOptions"],
+      message: "Unit options must include the authored correct unit",
+    });
+  }
 });
 
 const RecommendationRubricSchema = z.object({
@@ -655,6 +664,7 @@ export const DrillDefinitionSchema = z.discriminatedUnion("skillId", [
     expectedAnswer: z.number(),
     tolerance: z.number().nonnegative(),
     requiredUnit: z.string().min(1),
+    explanation: z.string().min(1),
   }),
   DrillBaseSchema.extend({
     skillId: z.literal("exhibit"),
@@ -749,6 +759,15 @@ export const V2PracticeDrillDefinitionSchema = z.discriminatedUnion("skillId", [
       expectedAnswer: z.number(),
       tolerance: z.number().nonnegative(),
       requiredUnit: z.string().min(1),
+      unitOptions: z.array(z.string().min(1)).min(2),
+    }).superRefine((checkpoint, context) => {
+      if (!checkpoint.unitOptions.includes(checkpoint.requiredUnit)) {
+        context.addIssue({
+          code: "custom",
+          path: ["unitOptions"],
+          message: "Unit options must include the authored correct unit",
+        });
+      }
     }),
   }),
   V2DrillBaseSchema.extend({

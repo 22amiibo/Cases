@@ -71,6 +71,39 @@ npm run build
 
 ## Progress Log
 
+### Post-Task-11 owner playtest remediation — complete
+
+- The first owner playtest recorded `revise and replaytest`; it did not authorize
+  Task 12 or any later implementation.
+- Incorrect quantitative responses now show the submitted value and unit,
+  separate numeric/unit correctness, the authored correct answer, and authored
+  reasoning only after grading. This applies to AlpineFit V2, the quantitative
+  V2 rep, and the Legacy V1 quantitative drills; correct feedback stays concise.
+- Learner choices use seeded ID-based ordering that stays stable for the browser
+  session and across refresh/recovery. Learner payloads still exclude correctness
+  metadata and scoring never depends on display position.
+- The framework builder now explains major areas, supporting points, and what it
+  means to investigate an area first, with clearer hierarchy and learner-facing
+  controls while preserving the submitted V2 tree and rationale.
+- AlpineFit now has an optional, skippable, reopenable keyboard-accessible “How
+  this case works” walkthrough. It explains the workflow without revealing case
+  answers.
+- Choice rows and controls have larger targets. Scratchpad notes support bullet
+  continuation and Tab/Shift+Tab indentation, remain browser-session-only, and
+  are never added to graded or durable evidence.
+- The homepage is shorter for returning learners, decorative section numbering
+  and the requested AI phrase are removed, typography uses the system UI stack,
+  and quantitative units use a styled accessible listbox.
+- Verification: 47 unit/component files and 205 tests pass; typecheck, lint,
+  production build, and all 24 Playwright journeys pass with no skips. Browser
+  coverage includes stable order after refresh, educational wrong-answer
+  feedback, walkthrough focus/reopening, scratchpad behavior, axe, and 320px
+  reflow.
+- `supabase/.temp/` remains untracked and untouched.
+- Mandatory state: stop for owner re-playtest. Task 12 has not started. Only an
+  explicit post-re-playtest `proceed` decision may open Task 12; `revise again`
+  keeps work inside the existing Stage-One interaction.
+
 ### Casework V2 Task 11: AlpineFit beginner teaching case — complete
 
 - AlpineFit V2 is now the active version while the immutable V1 definition,
@@ -736,12 +769,13 @@ npm run build
 - Playwright commands need elevated execution in this environment because the
   sandbox cannot bind the local Next.js test port.
 - The current visual direction is editorial and calm: warm paper, deep green,
-  restrained orange, serif display typography, and high-information layouts.
+  restrained orange, a consistent system UI sans-serif stack, and
+  high-information layouts.
 
 ## Next Action
 
-Do not begin Task 12 or any later implementation. The owner must now playtest
-the first six V2 reps and AlpineFit V2, assess the learning-quality criteria in
-`CASEWORK_V2_IMPLEMENTATION_PLAN.md`, and record an explicit `proceed`, `revise
-and replaytest`, or `stop` decision in this context and the decision ledger.
+Do not begin Task 12 or any later implementation. The owner must now re-playtest
+the remediated six V2 reps and AlpineFit V2, assess the learning-quality criteria
+in `CASEWORK_V2_IMPLEMENTATION_PLAN.md`, and record an explicit `proceed`,
+`revise again`, or `stop` decision in this context and the decision ledger.
 Automated verification cannot pass this gate.

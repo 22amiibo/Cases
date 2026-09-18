@@ -189,6 +189,31 @@ case-based playtest. It offers more content but does not reduce the main risk.
 - The remaining 12 drills, PayPilot, and GoldenLoaf require an explicit
   post-playtest proceed decision.
 
+### Post-Task-11 gate record: revise and replaytest
+
+**Owner decision:** `revise and replaytest`.
+
+The first owner playtest did not authorize Task 12. It found that another
+learning-quality test would be distorted by generic quantitative corrections,
+predictable choice positions, unclear framework-builder language, missing case
+tool onboarding, small answer targets, limited scratchpad behavior, and several
+visual inconsistencies.
+
+The authorized remediation pass is limited to the existing Stage-One product:
+
+- educational post-grade quantitative correction without pre-commit answer
+  reveal;
+- stable session-level choice shuffling with ID-based scoring;
+- clearer framework hierarchy, prioritization meaning, and learner language;
+- optional, skippable, reopenable case-tool onboarding;
+- larger answer targets and note-like private scratch behavior; and
+- repeat-use homepage, typography, and accessible unit-picker cleanup.
+
+The remediation does not expand the case or drill set. Task 12, the remaining
+twelve V2 drills, PayPilot V2, GoldenLoaf V2, and all later work remain blocked
+until the owner re-playtests and explicitly records `proceed`. A `revise again`
+decision authorizes only another Stage-One remediation pass.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

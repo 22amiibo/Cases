@@ -48,7 +48,7 @@
 
 .intro h1 {
   max-width: 760px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-size: clamp(3rem, 7vw, 6.4rem);
   font-weight: 400;
   line-height: 0.95;

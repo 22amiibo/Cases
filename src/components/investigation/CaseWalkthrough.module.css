@@ -1,0 +1,80 @@
+.reopen {
+  min-height: 2.5rem;
+  border: 1px solid #829087;
+  border-radius: 999px;
+  padding: 0 0.9rem;
+  color: #294c3b;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(24, 33, 28, 0.58);
+}
+
+.dialog {
+  display: grid;
+  width: min(34rem, 100%);
+  gap: 1.1rem;
+  border-radius: 1.2rem;
+  padding: clamp(1.4rem, 5vw, 2.4rem);
+  color: #18211c;
+  background: #fffef9;
+  box-shadow: 0 1.5rem 5rem rgba(16, 24, 19, 0.3);
+  text-align: left;
+  text-transform: none;
+}
+
+.progress {
+  display: flex;
+  justify-content: space-between;
+  color: #9b4a29;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dialog h2 {
+  font-size: clamp(1.6rem, 5vw, 2.25rem);
+  letter-spacing: -0.04em;
+}
+
+.dialog p {
+  color: #536158;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.actions button {
+  min-height: 2.75rem;
+  border: 1px solid #294c3b;
+  border-radius: 999px;
+  padding: 0 1rem;
+  color: #fffdf6;
+  background: #294c3b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.actions .skip {
+  margin-right: auto;
+  color: #294c3b;
+  background: transparent;
+}

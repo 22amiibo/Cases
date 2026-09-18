@@ -6,11 +6,14 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import concepts from "@/content/concepts.json";
 import { FrameworkBuilder } from "@/components/framework/FrameworkBuilder";
 import { CalculationTask } from "@/components/math/CalculationTask";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
+import { QuantitativeFeedbackPanel } from "@/components/practice/QuantitativeFeedbackPanel";
 import { RecommendationBuilder } from "@/components/recommendation/RecommendationBuilder";
 import type { RevealedFact } from "@/core/case-engine";
 import { flattenFrameworkConceptIds } from "@/core/framework-events";
 import type { LearningCycleReveal } from "@/core/learning-cycle";
 import type { CommittedResponse } from "@/core/schema";
+import type { QuantitativeFeedback } from "@/core/quantitative-feedback";
 import { createCaseAttempt } from "@/data/attempts";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { CaseAttempt } from "@/data/repository";
@@ -37,6 +40,7 @@ import {
 } from "./HypothesisStep";
 import { Scratchpad } from "./Scratchpad";
 import { CaseGeneratedStep, clearCaseCycleStorage } from "./CaseGeneratedStep";
+import { CaseWalkthrough } from "./CaseWalkthrough";
 import styles from "./InvestigationPanel.module.css";
 
 type InvestigationPanelProps = {
@@ -180,6 +184,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   );
   const [synthesisEvidenceIds, setSynthesisEvidenceIds] = useState<string[]>([]);
   const [nextStepNodeId, setNextStepNodeId] = useState("");
+  const calculationFeedbackKey = `${storageKey}:quantitative-feedback`;
+  const [calculationFeedback, setCalculationFeedback] = useState<QuantitativeFeedback | null>(() => {
+    try {
+      return JSON.parse(window.sessionStorage.getItem(calculationFeedbackKey) ?? "null") as QuantitativeFeedback | null;
+    } catch {
+      return null;
+    }
+  });
 
   const { clarificationComplete, clarificationDraftIds, events } = workspace;
 
@@ -256,6 +268,11 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
 
   const facts = view?.facts ?? [];
   const availableActions = view?.availableActions ?? [];
+  const orderedAvailableActions = useStableChoiceOrder(
+    availableActions,
+    `casework:choice-seed:case:${caseDefinition.id}:${caseDefinition.version}`,
+    "investigation-actions",
+  );
   const selectedClarificationIds = useMemo(
     () => new Set(clarificationDraftIds),
     [clarificationDraftIds],
@@ -433,6 +450,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
   function startFreshCase() {
     window.sessionStorage.removeItem(storageKey);
     window.sessionStorage.removeItem(`${storageKey}:scratchpad`);
+    window.sessionStorage.removeItem(calculationFeedbackKey);
     clearHypothesisPracticeStorage(window.sessionStorage, caseDefinition.id);
     clearCaseCycleStorage(window.sessionStorage, caseDefinition.id);
     const emptyWorkspace = createEmptyWorkspace(caseDefinition.version);
@@ -472,7 +490,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
     <main className={styles.page}>
       <header className={styles.header}>
         <Link href="/cases">← All cases</Link>
-        <span>Guest session · {events.length} events saved</span>
+        <div className={styles.headerActions}>
+          <CaseWalkthrough />
+          <span>Guest session · {events.length} events saved</span>
+        </div>
       </header>
 
       <section className={styles.prompt} aria-labelledby="case-title">
@@ -591,7 +612,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   of authored evidence.
                 </p>
                 <div className={styles.actionList}>
-                  {availableActions.map((action) => (
+                  {orderedAvailableActions.map((action) => (
                     <button
                       type="button"
                       key={action.id}
@@ -624,10 +645,14 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   kind="calculation"
                   itemId={calculation.id}
                   prompt={calculation.responsePrompt}
-                  unit={calculation.unit}
+                  unitOptions={calculation.unitOptions}
                   events={events}
                   atMs={timestamp}
                   onEvent={recordGeneratedEvent}
+                  onQuantitativeFeedback={(feedback) => {
+                    setCalculationFeedback(feedback);
+                    window.sessionStorage.setItem(calculationFeedbackKey, JSON.stringify(feedback));
+                  }}
                 />
               ) : (
                 <CalculationTask
@@ -639,6 +664,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   }}
                 />
               ))}
+
+              {calculationFeedback && (
+                <QuantitativeFeedbackPanel feedback={calculationFeedback} />
+              )}
 
               {!view.hypothesis ? view.synthesis ? (
                 <CaseGeneratedStep

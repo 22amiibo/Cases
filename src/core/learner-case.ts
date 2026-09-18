@@ -27,10 +27,16 @@ export type LearnerExhibitDefinition = Omit<
   "sourceFactIds" | "insights" | "interpretation"
 > & { interpretationPrompt?: LearnerLearningCyclePrompt };
 
-export type LearnerCalculationDefinition = Pick<
-  CaseDefinition["calculations"][number],
-  "id" | "prompt" | "unit"
-> & { responsePrompt?: LearnerLearningCyclePrompt };
+export type LearnerCalculationDefinition =
+  | (Pick<CaseDefinition["calculations"][number], "id" | "prompt" | "unit"> & {
+      responsePrompt?: undefined;
+      unitOptions?: undefined;
+    })
+  | (Pick<CaseDefinition["calculations"][number], "id" | "prompt"> & {
+      responsePrompt: LearnerLearningCyclePrompt;
+      unitOptions: string[];
+      unit?: undefined;
+    });
 
 export type LearnerRecommendation = {
   decisions: Array<{ id: string; label: string }>;

@@ -30,5 +30,12 @@
   color: #18211c;
   background: #fffef9;
   font: inherit;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.help {
+  color: #536057;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }

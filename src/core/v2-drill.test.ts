@@ -67,7 +67,7 @@ describe("V2 practice drills", () => {
 
     cases.forEach(([skillId, submission, code]) => {
       expect(evaluateV2Checkpoint(definition(skillId), submission as never, "response-1"))
-        .toEqual({ diagnostics: [{ code, source: "system", severity: "strength", responseId: "response-1" }] });
+        .toMatchObject({ diagnostics: [{ code, source: "system", severity: "strength", responseId: "response-1" }] });
     });
   });
 
@@ -82,5 +82,25 @@ describe("V2 practice drills", () => {
       .diagnostics[0].code).toBe("unit_error");
     expect(evaluateV2Checkpoint(item, { answer: 75600, unit: "$" }, "response-1")
       .diagnostics[0].code).toBe("arithmetic_error");
+  });
+
+  it("returns educational quantitative feedback only after an answer is graded", () => {
+    const item = definition("quantitative");
+    const checkpoint = revealV2PracticeAfterCommit(item, responseFor(item)).checkpoint;
+
+    expect(JSON.stringify(projectV2PracticeDrill(item))).not.toContain("756000");
+    expect(JSON.stringify(checkpoint)).not.toContain("756000");
+    expect(evaluateV2Checkpoint(item, { answer: 75600, unit: "%" }, "response-1"))
+      .toMatchObject({
+        feedback: {
+          submittedAnswer: 75600,
+          submittedUnit: "%",
+          answerCorrect: false,
+          unitCorrect: false,
+          correctAnswer: 756000,
+          correctUnit: "$",
+          explanation: expect.stringContaining("756,000"),
+        },
+      });
   });
 });

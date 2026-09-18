@@ -3,6 +3,18 @@
   gap: 24px;
 }
 
+.explainer {
+  border-left: 3px solid #d28c5d;
+  padding: 0.2rem 0 0.2rem 1rem;
+}
+
+.explainer p {
+  max-width: 66ch;
+  margin-top: 0.35rem;
+  color: #58655d;
+  line-height: 1.5;
+}
+
 .composer {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
@@ -63,6 +75,12 @@
   border-radius: 14px;
   padding: 18px;
   background: rgba(255, 254, 249, 0.72);
+}
+
+.children .branch {
+  border-color: #d9ddd6;
+  padding: 14px;
+  background: #f6f3ea;
 }
 
 .branchHeader {

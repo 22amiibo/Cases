@@ -62,6 +62,7 @@ describe("evaluateDrill", () => {
       expectedAnswer: 25,
       tolerance: 0.1,
       requiredUnit: "$m",
+      explanation: "Subtract variable cost from price.",
     });
 
     expect(
@@ -70,6 +71,16 @@ describe("evaluateDrill", () => {
     expect(
       evaluateDrill(definition, { answer: 25.05, unit: "%" }).pointsEarned,
     ).toBe(0);
+    expect(evaluateDrill(definition, { answer: 20, unit: "%" }).quantitativeFeedback)
+      .toEqual({
+        submittedAnswer: 20,
+        submittedUnit: "%",
+        answerCorrect: false,
+        unitCorrect: false,
+        correctAnswer: 25,
+        correctUnit: "$m",
+        explanation: "Subtract variable cost from price.",
+      });
   });
 
   it("scores exhibit What, So what, and Now what independently", () => {

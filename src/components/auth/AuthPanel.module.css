@@ -23,7 +23,7 @@
 
 .panel h2 {
   margin-top: 8px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-geist-sans);
   font-weight: 400;
 }
 

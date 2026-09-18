@@ -60,9 +60,10 @@
   align-items: start;
   border: 1px solid #d0d6cf;
   border-radius: 10px;
-  padding: 12px;
+  min-height: 3.5rem;
+  padding: 15px;
   color: #2e3c33;
-  font-size: 0.94rem;
+  font-size: 1rem;
   font-weight: 650;
   letter-spacing: normal;
   line-height: 1.42;
@@ -70,8 +71,8 @@
 }
 
 .evidence input {
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   margin-top: 2px;
   accent-color: #294c3b;
 }

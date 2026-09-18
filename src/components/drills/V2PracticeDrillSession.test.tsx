@@ -58,7 +58,8 @@ describe("V2PracticeDrillSession", () => {
     await user.click(screen.getByRole("button", { name: "Finish practice" }));
 
     await user.type(screen.getByLabelText("Answer"), "756000");
-    await user.type(screen.getByLabelText("Unit"), "$");
+    await user.click(screen.getByRole("combobox", { name: "Unit" }));
+    await user.click(screen.getByRole("option", { name: "$" }));
     await user.click(screen.getByRole("button", { name: "Check calculation" }));
 
     expect(await screen.findByRole("heading", { name: "Practice complete" })).toBeVisible();
@@ -76,5 +77,61 @@ describe("V2PracticeDrillSession", () => {
         ]),
       }),
     });
+  });
+
+  it("shows the submitted answer, exact correction, and authored reasoning after a wrong result", async () => {
+    const user = userEvent.setup();
+    const repository: PracticeRepository = {
+      saveDrillAttempt: vi.fn().mockResolvedValue(undefined),
+      saveCaseAttempt: vi.fn().mockResolvedValue(undefined),
+      getSkillHistory: vi.fn().mockResolvedValue([]),
+      getCaseEvents: vi.fn().mockResolvedValue([]),
+    };
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { response?: Parameters<typeof revealV2PracticeAfterCommit>[1] };
+      if (body.response) {
+        return new Response(JSON.stringify(revealV2PracticeAfterCommit(authored, body.response)), { status: 200 });
+      }
+      return new Response(JSON.stringify({
+        diagnostics: [{
+          code: "unit_error",
+          source: "system",
+          severity: "blocking",
+          responseId: "response-1",
+        }],
+        feedback: {
+          submittedAnswer: 75600,
+          submittedUnit: "%",
+          answerCorrect: false,
+          unitCorrect: false,
+          correctAnswer: 756000,
+          correctUnit: "$",
+          explanation: authored.responseCycle.comparison.text,
+        },
+      }), { status: 200 });
+    });
+
+    render(
+      <V2PracticeDrillSession
+        definition={definition}
+        repository={repository}
+        userId="user-1"
+      />,
+    );
+
+    expect(screen.queryByText(/correct answer/i)).toBeNull();
+    await user.type(screen.getByLabelText("Your response"), "Multiply the clubs, hours, rate, and months.");
+    await user.click(screen.getByRole("button", { name: "Commit response" }));
+    await user.click(await screen.findByRole("button", { name: "Save self-check" }));
+    await user.click(screen.getByRole("button", { name: "View comparison" }));
+    await user.click(screen.getByRole("button", { name: "Finish practice" }));
+    await user.type(screen.getByLabelText("Answer"), "75600");
+    await user.click(screen.getByRole("combobox", { name: "Unit" }));
+    await user.click(screen.getByRole("option", { name: "%" }));
+    await user.click(screen.getByRole("button", { name: "Check calculation" }));
+
+    expect(await screen.findByText("Your answer: 75,600 %")).toBeVisible();
+    expect(screen.getByText(/Correct answer:/)).toHaveTextContent("756,000 $");
+    expect(screen.getByText(authored.responseCycle.comparison.text)).toBeVisible();
   });
 });

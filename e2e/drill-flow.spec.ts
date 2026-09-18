@@ -1,16 +1,19 @@
 import { expect, test } from "@playwright/test";
 
-test("completes a quantitative drill with immediate feedback", async ({ page }) => {
+test("a wrong quantitative drill answer gets educational feedback", async ({ page }) => {
   await page.goto("/drills");
   await expect(page.getByRole("heading", { name: "Choose one thinking move" })).toBeVisible();
 
   await page.getByRole("link", { name: /Quantitative reasoning/ }).click();
   await page.getByText("Open the 10-drill Legacy V1 library").click();
-  await page.getByLabel("Your answer").fill("25");
-  await page.getByLabel("Unit").selectOption("$/unit");
+  await page.getByLabel("Your answer").fill("20");
+  await page.getByRole("combobox", { name: "Unit" }).click();
+  await page.getByRole("option", { name: "%", exact: true }).click();
   await page.getByRole("button", { name: "Check answer" }).click();
 
-  await expect(page.getByText("100 / 100")).toBeVisible();
+  await expect(page.getByText("Your answer: 20 %")).toBeVisible();
+  await expect(page.getByText("Correct answer:")).toContainText("25 $/unit");
+  await expect(page.getByText("Subtract variable cost from price:")).toContainText("$80 - $55 = $25 per unit.");
   await expect(page.getByRole("button", { name: "Next question" })).toBeVisible();
 });
 

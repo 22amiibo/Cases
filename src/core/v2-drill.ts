@@ -8,7 +8,10 @@ import {
   type V2PracticeDrillDefinition,
 } from "./schema";
 import { withinTolerance } from "./validation";
+import type { QuantitativeFeedback } from "./quantitative-feedback";
 import { z } from "zod";
+
+export type { QuantitativeFeedback } from "./quantitative-feedback";
 
 export type V2CheckpointSubmission =
   | FrameworkSubmission
@@ -19,7 +22,7 @@ export type V2CheckpointSubmission =
 export type LearnerV2Checkpoint =
   | { kind: "framework"; conceptOptions: Array<{ id: string; label: string }> }
   | { kind: "choice"; label: string; options: Array<{ id: string; label: string }> }
-  | { kind: "quantitative"; requiredUnit: string }
+  | { kind: "quantitative"; unitOptions: string[] }
   | {
       kind: "synthesis";
       evidenceOptions: Array<{ id: string; label: string }>;
@@ -63,7 +66,7 @@ export function revealV2PracticeAfterCommit(
     case "quantitative":
       checkpoint = {
         kind: definition.checkpoint.kind,
-        requiredUnit: definition.checkpoint.requiredUnit,
+        unitOptions: [...definition.checkpoint.unitOptions],
       };
       break;
     case "synthesis":
@@ -87,6 +90,7 @@ export function evaluateV2Checkpoint(
 ) {
   let code: string;
   let severity: "strength" | "coaching" | "blocking";
+  let feedback: QuantitativeFeedback | undefined;
   switch (definition.checkpoint.kind) {
     case "framework": {
       const value = FrameworkSubmissionSchema.parse(submission);
@@ -108,6 +112,8 @@ export function evaluateV2Checkpoint(
     }
     case "quantitative": {
       const value = z.object({ answer: z.number().finite(), unit: z.string().min(1) }).parse(submission);
+      const answerCorrect = withinTolerance(value.answer, definition.checkpoint.expectedAnswer, definition.checkpoint.tolerance);
+      const unitCorrect = value.unit === definition.checkpoint.requiredUnit;
       if (value.unit !== definition.checkpoint.requiredUnit) {
         code = "unit_error";
         severity = "blocking";
@@ -118,6 +124,15 @@ export function evaluateV2Checkpoint(
         code = "strong_quantitative_reasoning";
         severity = "strength";
       }
+      feedback = {
+        submittedAnswer: value.answer,
+        submittedUnit: value.unit,
+        answerCorrect,
+        unitCorrect,
+        correctAnswer: definition.checkpoint.expectedAnswer,
+        correctUnit: definition.checkpoint.requiredUnit,
+        explanation: definition.responseCycle.comparison.text,
+      };
       break;
     }
     case "synthesis": {
@@ -143,5 +158,6 @@ export function evaluateV2Checkpoint(
   }
   return {
     diagnostics: [DiagnosticOutcomeSchema.parse({ code, source: "system", severity, responseId })],
+    ...(feedback ? { feedback } : {}),
   };
 }

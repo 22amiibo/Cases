@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import { GeneratedResponseCycle } from "@/components/practice/GeneratedResponseCycle";
 import { restoreLearningCycleState, type LearningCycleReveal, type LearningCycleState } from "@/core/learning-cycle";
 import type { LearnerSessionView } from "@/core/learner-case";
@@ -55,6 +56,11 @@ export function HypothesisStep({
   const [status, setStatus] = useState<"" | "retain" | "revise" | "reject">("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">("idle");
+  const orderedOptions = useStableChoiceOrder(
+    practice.options,
+    `casework:choice-seed:case:${caseId}`,
+    `hypothesis:${practice.phase}`,
+  );
 
   function toggleEvidence(id: string) {
     setEvidenceIds((current) => current.includes(id)
@@ -101,7 +107,7 @@ export function HypothesisStep({
       )}
       {cycle && practice.phase === "initial" && (
         <div className={styles.form}>
-          <label>Initial hypothesis<select value={hypothesisId} onChange={(event) => setHypothesisId(event.target.value)}><option value="">Choose a testable hypothesis</option>{practice.options.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
+          <label>Initial hypothesis<select value={hypothesisId} onChange={(event) => setHypothesisId(event.target.value)}><option value="">Choose a testable hypothesis</option>{orderedOptions.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
           <button type="button" disabled={!canSubmit || saveStatus === "saving"} onClick={() => void submit()}>Start investigation</button>
         </div>
       )}
@@ -112,7 +118,7 @@ export function HypothesisStep({
             {facts.map((fact) => <label key={fact.id}><input type="checkbox" checked={evidenceIds.includes(fact.id)} onChange={() => toggleEvidence(fact.id)} />{fact.text}</label>)}
           </fieldset>
           <label>Update decision<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="">Choose retain, revise, or reject</option><option value="retain">Retain the current hypothesis</option><option value="revise">Revise to a different hypothesis</option><option value="reject">Reject it without a replacement yet</option></select></label>
-          {status === "revise" && <label>Revised hypothesis<select value={hypothesisId} onChange={(event) => setHypothesisId(event.target.value)}><option value="">Choose a revised hypothesis</option>{practice.options.filter(({ id }) => id !== practice.currentHypothesisId).map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>}
+          {status === "revise" && <label>Revised hypothesis<select value={hypothesisId} onChange={(event) => setHypothesisId(event.target.value)}><option value="">Choose a revised hypothesis</option>{orderedOptions.filter(({ id }) => id !== practice.currentHypothesisId).map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>}
           <button type="button" disabled={!canSubmit || saveStatus === "saving"} onClick={() => void submit()}>Save hypothesis update</button>
         </div>
       )}

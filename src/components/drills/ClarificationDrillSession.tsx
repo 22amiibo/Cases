@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import type { ComponentProps } from "react";
 import { GeneratedResponseCycle } from "@/components/practice/GeneratedResponseCycle";
+import { useStableChoiceOrder } from "@/components/forms/useStableChoiceOrder";
 import type { projectClarificationDrill } from "@/core/clarification-drill";
 import {
   restoreLearningCycleState,
@@ -66,6 +67,11 @@ function HydratedClarificationDrillSession({
     diagnostics: DiagnosticOutcome[];
   } | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const orderedQuestionOptions = useStableChoiceOrder(
+    questionOptions,
+    `casework:choice-seed:v2-drill:${definition.id}`,
+    "questions",
+  );
 
   async function commitResponse(response: Parameters<
     ComponentProps<typeof GeneratedResponseCycle>["onCommit"]
@@ -139,8 +145,8 @@ function HydratedClarificationDrillSession({
         {!result && cycle && questionOptions.length > 0 && (
           <fieldset className={styles.form}>
             <legend>Choose the clarification questions you would ask</legend>
-            {questionOptions.map((option) => (
-              <label key={option.id}>
+            {orderedQuestionOptions.map((option) => (
+              <label className={styles.checkbox} key={option.id}>
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(option.id)}

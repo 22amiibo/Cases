@@ -2,6 +2,7 @@ import type { CaseSession } from "./case-engine";
 import type { AuthoredLearningCycle, LearningCycleState } from "./learning-cycle";
 import type { CaseDefinition, CaseEvent, DiagnosticOutcome } from "./schema";
 import { withinTolerance } from "./validation";
+import type { QuantitativeFeedback } from "./quantitative-feedback";
 
 export type CaseCycleKind = "opening" | "calculation" | "synthesis" | "recommendation";
 
@@ -140,5 +141,34 @@ export function buildGeneratedCaseEvent({
     evidenceIds,
     riskId: checkpoint.riskId,
     nextStepId: checkpoint.nextStepId,
+  };
+}
+
+export function buildCaseQuantitativeFeedback(
+  definition: CaseDefinition,
+  itemId: string | undefined,
+  checkpoint: Record<string, unknown>,
+): QuantitativeFeedback {
+  const calculation = definition.calculations.find(({ id }) => id === itemId);
+  if (
+    !calculation ||
+    typeof checkpoint.answer !== "number" ||
+    typeof checkpoint.unit !== "string" ||
+    !calculation.responseCycle
+  ) {
+    throw new Error("Invalid calculation checkpoint");
+  }
+  return {
+    submittedAnswer: checkpoint.answer,
+    submittedUnit: checkpoint.unit,
+    answerCorrect: withinTolerance(
+      checkpoint.answer,
+      calculation.expectedAnswer,
+      calculation.tolerance,
+    ),
+    unitCorrect: checkpoint.unit === calculation.unit,
+    correctAnswer: calculation.expectedAnswer,
+    correctUnit: calculation.unit,
+    explanation: calculation.responseCycle.comparison.text,
   };
 }

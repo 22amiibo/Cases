@@ -119,7 +119,7 @@ test("a second authored case opens with deterministic session data", async ({
   await expect(page.getByText("Guest session · 3 events saved")).toBeVisible();
 });
 
-test("no-calculation cases can synthesize and complete", async ({ page }) => {
+test("the legacy no-calculation case can synthesize and complete", async ({ page }) => {
   await completeNoCalculationCase(page, {
     title: "NorthStar's margin squeeze",
     startLink: "Start NorthStar's margin squeeze",
@@ -139,25 +139,6 @@ test("no-calculation cases can synthesize and complete", async ({ page }) => {
     recommendationEvidence: [/Raw-material/, /annual renewal/],
     riskId: "customer-pushback",
     nextStepId: "renewal-pilot",
-  });
-
-  await completeNoCalculationCase(page, {
-    title: "GoldenLoaf's delayed orders",
-    startLink: "Start GoldenLoaf's delayed orders",
-    clarification: "Which service outcome should we improve?",
-    frameworkConceptIds: ["capacity", "utilization"],
-    investigationActions: [
-      "Compare capacity by production stage",
-      "Inspect oven utilization and queues",
-      "Analyze oven changeovers",
-      "Review the production-sequencing pilot",
-    ],
-    synthesisEvidence: [/Process Capacity/, /Changeover Capacity Loss/],
-    nextInvestigationId: "peak-coverage",
-    decisionId: "sequence-and-flex",
-    recommendationEvidence: [/Daily effective capacity/, /Cleaning and temperature/],
-    riskId: "freshness-window",
-    nextStepId: "four-week-rollout",
   });
 });
 

@@ -24,7 +24,9 @@ export default function CasesPage() {
           <article className={styles.caseCard} key={caseDefinition.id}>
             <div>
               <span>
-                {caseDefinition.category} · {caseDefinition.difficulty}
+                {caseDefinition.category} · {caseDefinition.opening?.responseCycle.scaffoldingLevel === "interview"
+                  ? "lower-scaffolding transfer"
+                  : caseDefinition.difficulty}
               </span>
               <h2>{caseDefinition.title}</h2>
               <p>{caseDefinition.objective}</p>

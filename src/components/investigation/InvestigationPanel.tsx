@@ -492,7 +492,10 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
       </header>
 
       <section className={styles.prompt} aria-labelledby="case-title">
-        <p>Case prompt · {caseDefinition.category}</p>
+        <p>
+          Case prompt · {caseDefinition.category}
+          {caseDefinition.scaffoldingLevel === "interview" && " · lower-scaffolding transfer"}
+        </p>
         <h1 id="case-title">{caseDefinition.title}</h1>
         <p>{caseDefinition.prompt}</p>
         <aside>

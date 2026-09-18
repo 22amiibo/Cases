@@ -2,6 +2,7 @@ import alpineFitContent from "./alpinefit-profitability.json";
 import alpineFitV2Content from "./alpinefit-profitability-v2";
 import fleetFixContent from "./fleetfix-market-entry.json";
 import goldenLoafContent from "./goldenloaf-operations.json";
+import goldenLoafV2Content from "./goldenloaf-operations-v2";
 import morningJetContent from "./morningjet-pricing-breakeven.json";
 import northStarContent from "./northstar-profitability.json";
 import payPilotContent from "./paypilot-growth.json";
@@ -18,6 +19,7 @@ const authoredCases = [
   payPilotContent,
   payPilotV2Content,
   goldenLoafContent,
+  goldenLoafV2Content,
   morningJetContent,
 ];
 
@@ -32,7 +34,7 @@ export const activeCaseVersions = Object.freeze({
   "northstar-profitability": 1,
   "fleetfix-market-entry": 1,
   "paypilot-growth": 2,
-  "goldenloaf-operations": 1,
+  "goldenloaf-operations": 2,
   "morningjet-pricing-breakeven": 1,
 }) as Readonly<Record<string, number>>;
 

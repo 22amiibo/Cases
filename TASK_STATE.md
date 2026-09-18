@@ -14,18 +14,19 @@ Complete Casework V2 implementation-plan Tasks 12–16 in order, preserving V1/V
 
 ## Current task
 
-Task 14 — upgrade GoldenLoaf as the lower-scaffolding transfer case. Begin with failing immutable-version, interview-scaffolding, answer-secrecy, and multiple-process-hypothesis tests.
+Task 15 — bind concise lessons to exact embedded V2 reps. Inspect the current lesson registry and Learn page, then add failing route/content-integrity tests before changing production code.
 
 ## Completed tasks
 
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
-- Task 13 implementation and full verification are complete; its clean commit is the next repository action.
+- Task 13 committed as `3caf4d9` (`content: upgrade paypilot for v2 intermediate practice`).
+- Task 14 implementation and full verification are complete; its clean commit is the next repository action.
 
 ## Remaining work
 
-- Verify and commit Task 13, then implement, verify, document, and commit Tasks 14–16 sequentially.
+- Verify and commit Task 14, then implement, verify, document, and commit Tasks 15–16 sequentially.
 - Run final verification for the assigned Tasks 12–16 and audit their acceptance criteria.
 
 ## Important decisions and invariants
@@ -43,6 +44,7 @@ Task 14 — upgrade GoldenLoaf as the lower-scaffolding transfer case. Begin wit
 
 - Task 12 fresh gate: 48 test files / 233 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 25 Playwright journeys passed.
 - Task 13 fresh gate: 50 test files / 240 tests passed; lint passed without warnings; typecheck, production build, and `git diff --check` passed; all 26 Playwright journeys passed.
+- Task 14 fresh gate: 52 test files / 246 tests passed; lint, typecheck, production build, and `git diff --check` passed; all 27 Playwright journeys passed.
 
 ## Known deferred issues
 
@@ -55,4 +57,4 @@ Task 14 — upgrade GoldenLoaf as the lower-scaffolding transfer case. Begin wit
 
 ## Exact next action
 
-Run the full Task 13 unit/static/build/browser gate, commit the intended Task 13 files as `content: upgrade paypilot for v2 intermediate practice`, then inspect GoldenLoaf V1 and add Task 14 RED tests.
+Run the full Task 14 unit/static/build/browser gate, commit the intended Task 14 files as `content: add goldenloaf v2 transfer case`, then inspect the lesson registry and Learn page for Task 15.

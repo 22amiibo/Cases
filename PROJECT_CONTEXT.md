@@ -71,6 +71,26 @@ npm run build
 
 ## Progress Log
 
+### Casework V2 Task 14: GoldenLoaf lower-scaffolding transfer — complete
+
+- Added immutable GoldenLoaf V2 content and made it active while preserving the
+  V1 definition and historical lookup.
+- Every generated checkpoint uses the `interview` scaffolding contract with a
+  neutral prompt and no answer-bearing guidance. The case library and workspace
+  explicitly label the experience “lower-scaffolding transfer,” not full
+  Interview Mode.
+- Added legal demand/mix-pressure and baking/changeover starting hypotheses.
+  The complete browser route revises from the broader demand/mix claim to the
+  oven constraint, then carries process capacity, premium mix, quality, and
+  peak-demand evidence through synthesis and recommendation.
+- Authored comparisons and structured choices remain hidden until commitment at
+  each defined reasoning checkpoint. Feedback still follows the existing
+  checkpoint review contract; full end-only Interview Mode remains deferred.
+- Focused verification covers both initial hypotheses, V1/V2 lookup, answer
+  secrecy, refresh recovery, complete hypothesis/recommendation review,
+  keyboard-native controls, axe, and 320px reflow.
+- Next action: Task 15, bind each concise lesson to an exact versioned V2 rep.
+
 ### Casework V2 Task 13: PayPilot intermediate strategy case — complete
 
 - Added immutable PayPilot V2 content and made it active while preserving the
@@ -846,8 +866,8 @@ npm run build
 
 ## Next Action
 
-Task 13 is complete. Continue with Task 14, the GoldenLoaf lower-scaffolding
-transfer case, using the shared V2 case contracts.
+Task 14 is complete. Continue with Task 15, exact V2 practice bindings in the
+Learn section.
 
 The owner could not complete the final manual replay because the completed-case
 screen exposed no replay or retry entry point. That product issue remains

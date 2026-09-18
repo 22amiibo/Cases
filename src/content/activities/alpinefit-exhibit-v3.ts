@@ -1,0 +1,71 @@
+import { ActivityDefinitionSchema } from "@/core/activity";
+
+export const alpinefitExhibitV3 = ActivityDefinitionSchema.parse({
+  id: "alpinefit-exhibit-v3",
+  contentVersion: 1,
+  eventSchemaVersion: 3,
+  scoringVersion: "v3",
+  status: "active",
+  title: "Turn AlpineFit cost data into an action",
+  labId: "exhibit",
+  primarySkillId: "exhibit",
+  secondarySkillIds: ["prioritization"],
+  difficulty: "beginner",
+  estimatedMinutes: 8,
+  caseTypeIds: ["profitability"],
+  industryIds: ["fitness"],
+  interaction: {
+    type: "exhibit_chain",
+    interactionId: "alpinefit-cost-chain",
+    prompt: "Move from observation to the highest-value next action.",
+    caseId: "alpinefit-profitability",
+    caseContentVersion: 2,
+    exhibitId: "cost-category",
+    observationOptions: [
+      { id: "labor-outlier", label: "Club labor rose by $6.2m, far more than other categories", outcomeId: "strong" },
+      { id: "all-costs-up", label: "Every cost category increased", outcomeId: "reasonable" },
+      { id: "occupancy-outlier", label: "Occupancy produced most of the increase", outcomeId: "weak" },
+    ],
+    priorityOptions: [
+      { id: "labor-priority", label: "Prioritize the labor outlier", outcomeId: "strong" },
+      { id: "all-categories", label: "Treat every category as equally important", outcomeId: "weak" },
+    ],
+    interpretationOptions: [
+      { id: "margin-pressure", label: "Labor is the leading margin-pressure candidate", outcomeId: "strong" },
+      { id: "labor-cause-proven", label: "The exhibit proves why labor increased", outcomeId: "weak" },
+    ],
+    actionOptions: [
+      { id: "location-cut", label: "Break labor down by club and driver", outcomeId: "strong" },
+      { id: "broad-cost-review", label: "Review the other cost categories before narrowing", outcomeId: "reasonable" },
+      { id: "raise-prices", label: "Raise membership prices immediately", outcomeId: "weak" },
+    ],
+    outcomeIds: ["strong", "reasonable", "weak"],
+  },
+  feedback: { paths: [
+    {
+      id: "strong",
+      classification: "strong",
+      diagnosticCodes: ["strong_exhibit_chain"],
+      explanation: "You connected the labor outlier to margin pressure and a focused next cut.",
+      principle: "Separate observation, implication, and action.",
+      nextAction: "Test where labor pressure is concentrated and what drives it.",
+    },
+    {
+      id: "reasonable",
+      classification: "reasonable",
+      diagnosticCodes: ["next_test_missing"],
+      explanation: "Your read is supported, but the next action could narrow the cause faster.",
+      principle: "Use the strongest comparison to choose the next cut.",
+      nextAction: "Break labor down by club and by overtime, vacancies, and turnover.",
+    },
+    {
+      id: "weak",
+      classification: "unsupported",
+      diagnosticCodes: ["observation_error"],
+      explanation: "At least one link in the chain is not supported by the exhibit.",
+      principle: "Do not infer beyond what the exhibit shows.",
+      nextAction: "Start with the largest category change, then state a testable implication.",
+    },
+  ] },
+  takeaway: "A useful exhibit read moves from a precise comparison to a focused test.",
+});

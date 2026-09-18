@@ -876,7 +876,7 @@ commits, receives feedback, retries, completes, saves, restores, and replays.
   session recovery.
 - [x] Implement the minimum shell and renderer needed by the test activity.
 - [x] Run focused unit/component/route tests and one Playwright journey.
-- [x] Commit `feat: prove v3 activity vertical slice`.
+- [x] Commit `feat: prove v3 activity vertical slice` (`126ea91`).
 
 ### Task 6: Add the four flagship activity definitions
 
@@ -895,18 +895,18 @@ hypothesis choices, `GeneratedResponseCycle`, and `ExhibitRenderer`.
 
 **Produces:** Four active exact-version activities meeting Section 12.
 
-- [ ] Author fixtures first for strong, reasonable, and weak legal paths and
+- [x] Author fixtures first for strong, reasonable, and weak legal paths and
   expected source-labeled diagnostics.
-- [ ] Implement Clarifying by adapting the existing exact interviewer responses;
+- [x] Implement Clarifying by adapting the existing exact interviewer responses;
   do not copy and silently edit them.
-- [ ] Implement Exhibit Analysis with accessible table alternative and the four
+- [x] Implement Exhibit Analysis with accessible table alternative and the four
   required reasoning stages.
-- [ ] Implement Brainstorming with authored category coverage, overlap removal,
+- [x] Implement Brainstorming with authored category coverage, overlap removal,
   and prioritization; do not reward raw count.
-- [ ] Implement Hypothesis with at least two evidence-linked update rounds.
-- [ ] Add pre-commit leakage, retry, refresh, keyboard, touch-equivalent, axe,
+- [x] Implement Hypothesis with at least two evidence-linked update rounds.
+- [x] Add pre-commit leakage, retry, refresh, keyboard, touch-equivalent, axe,
   and 320px checks for each interaction family.
-- [ ] Run focused suites and commit `content: add v3 flagship skill activities`.
+- [x] Run focused suites and commit `content: add v3 flagship skill activities`.
 
 ### Task 7: Publish Practice routes and stop for the learning-quality gate
 

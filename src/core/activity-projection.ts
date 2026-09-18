@@ -59,6 +59,9 @@ export function projectLearnerActivity(
       break;
     case "hypothesis_sequence": {
       const commits = current.events.filter(({ type }) => type === "hypothesis_committed");
+      const latest = [...commits].reverse().find((event) =>
+        event.type === "hypothesis_committed" && event.hypothesisId !== null,
+      );
       const evidence = commits.length > 0
         ? interaction.evidenceSteps[commits.length - 1]
         : undefined;
@@ -66,6 +69,11 @@ export function projectLearnerActivity(
         type: interaction.type,
         interactionId: interaction.interactionId,
         prompt: interaction.prompt,
+        hypotheses: interaction.hypotheses,
+        phase: commits.length === 0 ? "initial" : "update",
+        stepId: evidence?.id ?? "initial",
+        currentHypothesisId:
+          latest?.type === "hypothesis_committed" ? latest.hypothesisId : null,
         ...(evidence
           ? { evidence: { id: evidence.id, evidenceId: evidence.evidenceId, text: evidence.text } }
           : {}),
@@ -74,6 +82,15 @@ export function projectLearnerActivity(
     }
     case "exhibit_chain": {
       const commits = current.events.filter(({ type }) => type === "exhibit_committed");
+      const stages = ["observe", "prioritize", "interpret", "act"] as const;
+      const stage = stages[commits.length] ?? "act";
+      const authoredOptions = stage === "observe"
+        ? interaction.observationOptions
+        : stage === "prioritize"
+          ? interaction.priorityOptions
+          : stage === "interpret"
+            ? interaction.interpretationOptions
+            : interaction.actionOptions;
       learnerInteraction = {
         type: interaction.type,
         interactionId: interaction.interactionId,
@@ -81,12 +98,8 @@ export function projectLearnerActivity(
         caseId: interaction.caseId,
         caseContentVersion: interaction.caseContentVersion,
         exhibitId: interaction.exhibitId,
-        ...(commits.length >= 1
-          ? { observationOptions: interaction.observationOptions.map(({ id, label }) => ({ id, label })) }
-          : {}),
-        ...(commits.length >= 3
-          ? { actionOptions: interaction.actionOptions.map(({ id, label }) => ({ id, label })) }
-          : {}),
+        stage,
+        options: authoredOptions.map(({ id, label }) => ({ id, label })),
       };
       break;
     }

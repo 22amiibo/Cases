@@ -142,6 +142,8 @@ const BrainstormInteractionSchema = z.object({
   categories: z.array(RankedItemSchema).min(2),
   ideas: z.array(RankedItemSchema.extend({
     categoryIds: z.array(IdentifierSchema).min(1),
+    relevant: z.boolean(),
+    redundantWithIds: z.array(IdentifierSchema).default([]),
   })).min(2),
   minimumCategoryCoverage: z.number().int().positive(),
   maximumPriorityIdeas: z.number().int().positive(),
@@ -151,15 +153,19 @@ const BrainstormInteractionSchema = z.object({
   uniqueIds(categoryIds, context, ["categories"]);
   uniqueIds(interaction.ideas.map(({ id }) => id), context, ["ideas"]);
   uniqueIds(interaction.outcomeIds, context, ["outcomeIds"]);
-  interaction.ideas.forEach((idea, index) => idea.categoryIds.forEach((categoryId) => {
-    if (!categoryIds.includes(categoryId)) {
-      context.addIssue({
-        code: "custom",
-        message: "Idea references an unknown category",
-        path: ["ideas", index, "categoryIds"],
-      });
-    }
-  }));
+  const ideaIds = interaction.ideas.map(({ id }) => id);
+  interaction.ideas.forEach((idea, index) => {
+    idea.categoryIds.forEach((categoryId) => {
+      if (!categoryIds.includes(categoryId)) {
+        context.addIssue({ code: "custom", message: "Idea references an unknown category", path: ["ideas", index, "categoryIds"] });
+      }
+    });
+    idea.redundantWithIds.forEach((ideaId) => {
+      if (!ideaIds.includes(ideaId) || ideaId === idea.id) {
+        context.addIssue({ code: "custom", message: "Idea references an invalid overlap", path: ["ideas", index, "redundantWithIds"] });
+      }
+    });
+  });
   if (interaction.minimumCategoryCoverage > categoryIds.length) {
     context.addIssue({
       code: "custom",
@@ -207,11 +213,18 @@ const ExhibitInteractionSchema = z.object({
   caseContentVersion: z.number().int().positive(),
   exhibitId: IdentifierSchema,
   observationOptions: z.array(ChoiceSchema).min(2),
+  priorityOptions: z.array(ChoiceSchema).min(2),
+  interpretationOptions: z.array(ChoiceSchema).min(2),
   actionOptions: z.array(ChoiceSchema).min(2),
   outcomeIds: OutcomeIdsSchema,
 }).superRefine((interaction, context) => {
   const outcomeIds = new Set(interaction.outcomeIds);
-  for (const field of ["observationOptions", "actionOptions"] as const) {
+  for (const field of [
+    "observationOptions",
+    "priorityOptions",
+    "interpretationOptions",
+    "actionOptions",
+  ] as const) {
     uniqueIds(interaction[field].map(({ id }) => id), context, [field]);
     interaction[field].forEach((option, index) => {
       if (!outcomeIds.has(option.outcomeId)) {
@@ -320,6 +333,7 @@ export const ActivityEventSchema = z.union([
   TimedActivityEventSchema.extend({
     type: z.literal("brainstorm_committed"),
     interactionId: IdentifierSchema,
+    selectedIdeaIds: z.array(IdentifierSchema).min(1),
     placements: z.array(z.object({
       ideaId: IdentifierSchema,
       categoryId: IdentifierSchema,
@@ -475,6 +489,9 @@ function weakestOutcome(
   outcomeIds: string[],
   selectedOutcomeIds: string[],
 ) {
+  if (selectedOutcomeIds.length === 0) {
+    throw new Error("Interaction result must include an evaluated choice");
+  }
   const indexes = selectedOutcomeIds.map((id) => outcomeIds.indexOf(id));
   if (indexes.some((index) => index < 0)) {
     throw new Error("Interaction result references an unknown outcome");
@@ -572,16 +589,38 @@ function evaluateCommit(
     interaction.type === "brainstorm_builder" &&
     event.type === "brainstorm_committed"
   ) {
-    const categories = new Set(event.placements.map(({ categoryId }) => categoryId));
-    const knownIdeas = new Set(interaction.ideas.map(({ id }) => id));
-    const strong =
-      categories.size >= interaction.minimumCategoryCoverage &&
-      event.priorityIdeaIds.length <= interaction.maximumPriorityIdeas &&
-      event.priorityIdeaIds.every((id) => knownIdeas.has(id));
+    const selected = new Set(event.selectedIdeaIds);
+    const ideas = new Map(interaction.ideas.map((idea) => [idea.id, idea]));
+    const categoryIds = new Set(interaction.categories.map(({ id }) => id));
+    const placements = new Map(event.placements.map(({ ideaId, categoryId }) => [ideaId, categoryId]));
+    if (
+      selected.size !== event.selectedIdeaIds.length ||
+      placements.size !== selected.size ||
+      [...selected].some((id) => !ideas.has(id) || !placements.has(id)) ||
+      [...placements].some(([id, categoryId]) =>
+        !selected.has(id) || !categoryIds.has(categoryId)) ||
+      event.priorityIdeaIds.some((id) => !selected.has(id)) ||
+      new Set(event.priorityIdeaIds).size !== event.priorityIdeaIds.length ||
+      event.priorityIdeaIds.length > interaction.maximumPriorityIdeas
+    ) throw new Error("Brainstorm commitment contains invalid ideas or placements");
+    const selectedIdeas = [...selected].map((id) => ideas.get(id)!);
+    const hasWeakSelection = selectedIdeas.some((idea) =>
+      !idea.relevant ||
+      !idea.categoryIds.includes(placements.get(idea.id) ?? "") ||
+      idea.redundantWithIds.some((id) => selected.has(id)),
+    );
+    const coverage = new Set(placements.values()).size;
+    const outcomeId = hasWeakSelection
+      ? interaction.outcomeIds.at(-1)!
+      : coverage >= interaction.minimumCategoryCoverage
+        ? interaction.outcomeIds[0]
+        : coverage === interaction.minimumCategoryCoverage - 1
+          ? interaction.outcomeIds[1] ?? interaction.outcomeIds.at(-1)!
+          : interaction.outcomeIds[2] ?? interaction.outcomeIds.at(-1)!;
     return {
       phase: "feedback",
       reviewStep: "decision",
-      outcomeId: strong ? interaction.outcomeIds[0] : interaction.outcomeIds.at(-1)!,
+      outcomeId,
     };
   }
 
@@ -589,7 +628,8 @@ function evaluateCommit(
     interaction.type === "hypothesis_sequence" &&
     event.type === "hypothesis_committed"
   ) {
-    const prior = previousCommits(state, "hypothesis_committed");
+    const prior = previousCommits(state, "hypothesis_committed")
+      .flatMap((candidate) => candidate.type === "hypothesis_committed" ? [candidate] : []);
     const hypothesisIds = new Set(interaction.hypotheses.map(({ id }) => id));
     if (prior.length === 0) {
       if (
@@ -605,20 +645,32 @@ function evaluateCommit(
       !step ||
       event.status === "form" ||
       event.stepId !== step.id ||
-      !event.evidenceIds.includes(step.evidenceId) ||
-      (event.status === "reject" ? event.hypothesisId !== null : !event.hypothesisId)
+      event.evidenceIds.some((id) => id !== step.evidenceId) ||
+      (event.status === "reject" ? event.hypothesisId !== null : !event.hypothesisId) ||
+      (event.hypothesisId !== null && !hypothesisIds.has(event.hypothesisId))
     ) throw new Error("Hypothesis update does not match the revealed evidence step");
-    const contradicted = event.hypothesisId
-      ? step.contradictedHypothesisIds.includes(event.hypothesisId)
-      : false;
     const isFinal = prior.length === interaction.evidenceSteps.length;
+    const updates = [...prior.slice(1), event];
+    const missingEvidence = updates.some((update, index) =>
+      !update.evidenceIds.includes(interaction.evidenceSteps[index].evidenceId),
+    );
+    const contradictedRetained = updates.some((update, index) =>
+      update.status === "retain" &&
+      update.hypothesisId !== null &&
+      interaction.evidenceSteps[index].contradictedHypothesisIds.includes(update.hypothesisId),
+    );
+    const revised = updates.some(({ status }) => status === "revise" || status === "reject");
     return {
       phase: isFinal ? "feedback" : "interaction",
       reviewStep: isFinal ? "decision" : null,
       outcomeId: isFinal
-        ? contradicted && event.status === "retain"
-          ? interaction.outcomeIds.at(-1)!
-          : interaction.outcomeIds[0]
+        ? missingEvidence
+          ? interaction.outcomeIds[2] ?? interaction.outcomeIds.at(-1)!
+          : contradictedRetained
+            ? interaction.outcomeIds.at(-1)!
+          : revised
+            ? interaction.outcomeIds[0]
+            : interaction.outcomeIds[1] ?? interaction.outcomeIds[0]
         : null,
     };
   }
@@ -641,9 +693,13 @@ function evaluateCommit(
       event,
     ].flatMap((candidate) => {
       if (candidate.type !== "exhibit_committed") return [];
-      const options = candidate.stage === "act"
-        ? interaction.actionOptions
-        : interaction.observationOptions;
+      const options = candidate.stage === "observe"
+        ? interaction.observationOptions
+        : candidate.stage === "prioritize"
+          ? interaction.priorityOptions
+          : candidate.stage === "interpret"
+            ? interaction.interpretationOptions
+            : interaction.actionOptions;
       return candidate.selectedIds.map((id) => {
         const option = options.find((choice) => choice.id === id);
         if (!option) throw new Error(`Unknown exhibit choice: ${id}`);

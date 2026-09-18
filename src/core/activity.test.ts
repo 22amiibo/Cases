@@ -146,6 +146,14 @@ describe("ActivityDefinitionSchema", () => {
           { id: "labor", label: "Labor is the outlier", outcomeId: "missing" },
           { id: "flat", label: "Every category is flat", outcomeId: "weak" },
         ],
+        priorityOptions: [
+          { id: "labor-first", label: "Prioritize labor", outcomeId: "strong" },
+          { id: "all-first", label: "Prioritize all costs", outcomeId: "weak" },
+        ],
+        interpretationOptions: [
+          { id: "margin", label: "Labor may pressure margin", outcomeId: "strong" },
+          { id: "none", label: "There is no implication", outcomeId: "weak" },
+        ],
         actionOptions: [
           { id: "clubs", label: "Compare clubs", outcomeId: "strong" },
           { id: "history", label: "Ask for history", outcomeId: "weak" },

@@ -8,7 +8,7 @@ secrecy, deterministic evaluation, and existing user work.
 
 ## Remaining task set
 
-V3.0 Tasks 6-12 remain. Task 7 is a mandatory owner playtest gate.
+V3.0 Tasks 7-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## V3 planning
 
@@ -17,8 +17,8 @@ V3.0 Tasks 6-12 remain. Task 7 is a mandatory owner playtest gate.
 
 ## Current task
 
-Task 5 proves the reusable activity path through learner-safe routes, native
-controls, session recovery, deterministic completion, and persistence. It is
+Task 6 adds one complete AlpineFit activity for each flagship lab with focused
+specialized controls and deterministic strong/reasonable/weak paths. It is
 ready to commit.
 
 ## Completed tasks
@@ -34,9 +34,12 @@ ready to commit.
   310 tests in the full unit suite, lint, and typecheck pass.
 - V3.0 Task 4 is committed as `f0e0a83`: 4 focused data files / 36 tests, 65
   files / 318 tests in the full unit suite, lint, and typecheck pass.
-- V3.0 Task 5 is complete and ready to commit: 7 focused files / 28 tests, 70
+- V3.0 Task 5 is committed as `126ea91`: 7 focused files / 28 tests, 70
   files / 330 tests in the full unit suite, one Playwright journey, lint,
   typecheck, and production build pass.
+- V3.0 Task 6 is complete and ready to commit: 5 focused files / 35 tests, 71
+  files / 343 tests in the full unit suite, four phone-width axe-scanned
+  Playwright journeys, lint, typecheck, and production build pass.
 - Tasks 1–11 are committed on `feature/case-practice-mvp`.
 - The post-Task-11 owner gate records `proceed` in `PRODUCT_DECISION_LEDGER.md`.
 - Task 12 committed as `666fa19` (`content: complete v2 diagnostic drill pilot`).
@@ -53,7 +56,7 @@ ready to commit.
 
 ## Remaining work
 
-- Execute V3.0 Tasks 6-7, then stop for the mandatory owner playtest gate.
+- Execute V3.0 Task 7, then stop for the mandatory owner playtest gate.
 - Tasks 8-12 remain gated on a recorded `proceed` decision.
 
 ## Important decisions and invariants
@@ -116,5 +119,5 @@ ready to commit.
 
 ## Exact next action
 
-Commit Task 5, then author and validate exactly the four Task 6 flagship
-activities. Do not apply migration `004` or deploy without separate approval.
+Commit Task 6, publish the four Practice routes in Task 7, then stop for the
+mandatory owner playtest gate. Do not begin Task 8 without `proceed`.

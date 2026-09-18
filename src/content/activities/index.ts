@@ -1,6 +1,10 @@
 import { ActivityDefinitionSchema, type ActivityDefinition } from "@/core/activity";
 import { getV3DiagnosticDefinition } from "@/core/v3-diagnostics";
 import { createVersionedRegistry } from "@/content/versioned-registry";
+import { alpinefitBrainstormingV3 } from "./alpinefit-brainstorming-v3";
+import { alpinefitClarifyingV3 } from "./alpinefit-clarifying-v3";
+import { alpinefitExhibitV3 } from "./alpinefit-exhibit-v3";
+import { alpinefitHypothesisV3 } from "./alpinefit-hypothesis-v3";
 
 export function createActivityRegistry(
   definitions: unknown[],
@@ -33,8 +37,18 @@ export function createActivityRegistry(
   return registry;
 }
 
-export const activityDefinitions: ActivityDefinition[] = [];
-export const activeActivityVersions = Object.freeze({}) as Readonly<Record<string, number>>;
+export const activityDefinitions: ActivityDefinition[] = [
+  alpinefitClarifyingV3,
+  alpinefitExhibitV3,
+  alpinefitBrainstormingV3,
+  alpinefitHypothesisV3,
+];
+export const activeActivityVersions = Object.freeze({
+  "alpinefit-clarifying-v3": 1,
+  "alpinefit-exhibit-v3": 1,
+  "alpinefit-brainstorming-v3": 1,
+  "alpinefit-hypothesis-v3": 1,
+});
 const activityRegistry = createActivityRegistry(activityDefinitions, activeActivityVersions);
 
 const privateTestActivity = ActivityDefinitionSchema.parse({

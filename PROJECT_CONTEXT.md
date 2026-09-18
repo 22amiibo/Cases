@@ -71,6 +71,24 @@ npm run build
 
 ## Progress Log
 
+### Casework V3 Task 6: four flagship activities — ready to commit
+
+- Added one active AlpineFit activity for Clarifying, Exhibit Analysis,
+  Brainstorming, and Hypothesis with authored strong, reasonable, and weak paths.
+- Clarifying derives exact question labels and interviewer responses from the
+  released V2 definition. Exhibit renders the released case exhibit with its
+  visible table alternative and enforces Observe, Prioritize, Interpret, Act.
+- Brainstorming records selected ideas, category placement, overlap removal,
+  and priorities. Hypothesis records a starting claim and two evidence-linked
+  update rounds without scoring free text.
+- Pre-commit leakage and retry coverage passes for all four definitions. Four
+  phone-width browser journeys pass refresh recovery, native controls, axe, and
+  horizontal-overflow checks.
+- Validation: 5 focused files / 35 tests, 71 files / 343 full unit tests, four
+  Playwright journeys, lint, typecheck, production build, and diff check pass.
+- Next action: Task 7, publish the Practice hub, lab pages, and owned attempt
+  review, then stop for the required owner learning-quality playtest.
+
 ### Casework V3 Task 5: private activity vertical slice — ready to commit
 
 - Added exact-version session, commit, and completion routes around the pure
@@ -83,6 +101,7 @@ npm run build
   the public active-content registry.
 - Validation: 7 focused files / 28 tests, 70 files / 330 full unit tests, one
   Playwright journey, lint, typecheck, production build, and diff check pass.
+- Committed as `126ea91` (`feat: prove v3 activity vertical slice`).
 - Next action: Task 6, replace the private proof with four reviewed AlpineFit
   flagship activity definitions and only their required interaction support.
 

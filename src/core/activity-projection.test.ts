@@ -77,6 +77,10 @@ describe("projectLearnerActivity", () => {
         type: "hypothesis_sequence",
         interactionId: "alpinefit-hypothesis",
         prompt: "Form a testable starting hypothesis.",
+        hypotheses: [
+          { id: "revenue", label: "Revenue pressure is the cause" },
+          { id: "labor", label: "Labor pressure is the cause" },
+        ],
       },
     });
     for (const hidden of [
@@ -87,7 +91,6 @@ describe("projectLearnerActivity", () => {
       "feedback",
       "takeaway",
       "contradictedHypothesisIds",
-      "Labor pressure is the cause",
       "Labor grew faster than revenue",
       "Hidden explanation",
     ]) {

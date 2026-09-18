@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ActivityEvent, CourseContext } from "@/core/activity";
 import { ActivityEventSchema } from "@/core/activity";
 import type { projectLearnerActivity } from "@/core/activity-projection";
+import type { LearnerExhibitDefinition } from "@/core/learner-case";
 import { getBrowserPracticeSession } from "@/data/browser-practice";
 import type { ActivityAttemptRepository } from "@/data/v3-repository";
 import type { V3Repository } from "@/data/v3-repository";
@@ -46,6 +47,7 @@ export function ActivityShell({
   repository,
   userId,
   courseContext = null,
+  exhibit,
   createId = () => crypto.randomUUID(),
   now = () => new Date(),
 }: {
@@ -53,6 +55,7 @@ export function ActivityShell({
   repository?: ActivityAttemptRepository;
   userId?: string;
   courseContext?: CourseContext | null;
+  exhibit?: LearnerExhibitDefinition;
   createId?: () => string;
   now?: () => Date;
 }) {
@@ -209,6 +212,7 @@ export function ActivityShell({
           <InteractionRenderer
             interaction={interaction}
             disabled={status === "saving"}
+            exhibit={exhibit}
             onCommit={(event) => void sendEvent(event).catch(() => undefined)}
           />
         </div>

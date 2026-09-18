@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { LearnerExhibitDefinition } from "@/core/learner-case";
+import { BrainstormBuilder } from "./BrainstormBuilder";
+import { ExhibitChain } from "./ExhibitChain";
+import { HypothesisSequence } from "./HypothesisSequence";
 
 type Choice = { id: string; label: string };
 export type LearnerInteraction =
@@ -13,6 +17,31 @@ export type LearnerInteraction =
       prompt: string;
       categories: Choice[];
       items: Choice[];
+    }
+  | {
+      type: "brainstorm_builder";
+      interactionId: string;
+      prompt: string;
+      categories: Choice[];
+      ideas: Choice[];
+      maximumPriorityIdeas: number;
+    }
+  | {
+      type: "hypothesis_sequence";
+      interactionId: string;
+      prompt: string;
+      hypotheses: Choice[];
+      phase: "initial" | "update";
+      stepId: string;
+      currentHypothesisId: string | null;
+      evidence?: { id: string; evidenceId: string; text: string };
+    }
+  | {
+      type: "exhibit_chain";
+      interactionId: string;
+      prompt: string;
+      stage: "observe" | "prioritize" | "interpret" | "act";
+      options: Choice[];
     };
 
 export type InteractionCommit =
@@ -22,16 +51,41 @@ export type InteractionCommit =
       type: "categorization_committed";
       interactionId: string;
       placements: Array<{ itemId: string; categoryId: string }>;
+    }
+  | {
+      type: "brainstorm_committed";
+      interactionId: string;
+      selectedIdeaIds: string[];
+      placements: Array<{ ideaId: string; categoryId: string }>;
+      priorityIdeaIds: string[];
+    }
+  | {
+      type: "hypothesis_committed";
+      interactionId: string;
+      stepId: string;
+      status: "form" | "retain" | "revise" | "reject";
+      hypothesisId: string | null;
+      evidenceIds: string[];
+      rationale: string;
+    }
+  | {
+      type: "exhibit_committed";
+      interactionId: string;
+      stage: "observe" | "prioritize" | "interpret" | "act";
+      selectedIds: string[];
+      response?: string;
     };
 
 export function InteractionRenderer({
   interaction,
   onCommit,
   disabled,
+  exhibit,
 }: {
   interaction: LearnerInteraction;
   onCommit: (event: InteractionCommit) => void;
   disabled: boolean;
+  exhibit?: LearnerExhibitDefinition;
 }) {
   if (interaction.type === "single_select" || interaction.type === "multi_select") {
     return <SelectInteraction
@@ -48,6 +102,17 @@ export function InteractionRenderer({
       onCommit={onCommit}
       disabled={disabled}
     />;
+  }
+  if (interaction.type === "brainstorm_builder") {
+    return <BrainstormBuilder interaction={interaction} onCommit={onCommit} disabled={disabled} />;
+  }
+  if (interaction.type === "hypothesis_sequence") {
+    return <HypothesisSequence interaction={interaction} onCommit={onCommit} disabled={disabled} />;
+  }
+  if (interaction.type === "exhibit_chain") {
+    return exhibit
+      ? <ExhibitChain interaction={interaction} exhibit={exhibit} onCommit={onCommit} disabled={disabled} />
+      : <p role="alert">The exhibit is unavailable.</p>;
   }
   return <CategorizationInteraction
     key={interaction.interactionId}

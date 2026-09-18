@@ -681,7 +681,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                   atMs={timestamp}
                   onEvent={recordGeneratedEvent}
                 />
-              ) : <SynthesisStep
+              ) : caseDefinition.version < 2 ? <SynthesisStep
                 facts={facts}
                 evidenceIds={synthesisEvidenceIds}
                 nextStepNodeId={nextStepNodeId}
@@ -697,7 +697,7 @@ function HydratedInvestigationPanel({ caseDefinition }: InvestigationPanelProps)
                 }
                 onNextStepChange={setNextStepNodeId}
                 onSubmit={submitSynthesis}
-              /> : null}
+              /> : null : null}
             </>
           )}
 

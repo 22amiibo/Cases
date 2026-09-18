@@ -214,6 +214,12 @@ twelve V2 drills, PayPilot V2, GoldenLoaf V2, and all later work remain blocked
 until the owner re-playtests and explicitly records `proceed`. A `revise again`
 decision authorizes only another Stage-One remediation pass.
 
+The owner re-playtest subsequently found an empty “Next investigation” menu in
+AlpineFit V2. This was a premature Legacy V1 synthesis fallback, not a missing
+authored V2 choice. The fallback is now version-gated to V1 and a browser
+regression confirms it stays hidden while AlpineFit's generated synthesis is
+not ready. This correction does not open Task 12; the re-playtest gate remains.
+
 ## Wave 1 P0 Preconditions
 
 These defects and data protections must be completed before collecting or

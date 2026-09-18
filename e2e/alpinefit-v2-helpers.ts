@@ -75,6 +75,8 @@ export async function completeAlpineFitV2(
   if (refresh) await page.reload();
 
   await page.getByRole("button", { name: "Inspect variable costs" }).click();
+  await expect(page.getByRole("button", { name: "Inspect club labor" })).toBeVisible();
+  await expect(page.getByLabel("Next investigation")).toHaveCount(0);
   await page.getByRole("button", { name: "Inspect club labor" }).click();
   await page.getByRole("button", { name: "Inspect overtime usage" }).click();
   await completeGeneratedResponse(page.getByRole("region", { name: "What you know now" }), "Six clubs have much higher overtime and turnover; quantify the premium and inspect vacancies.");

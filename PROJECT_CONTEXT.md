@@ -94,6 +94,11 @@ npm run build
 - The homepage is shorter for returning learners, decorative section numbering
   and the requested AI phrase are removed, typography uses the system UI stack,
   and quantitative units use a styled accessible listbox.
+- During the owner re-playtest, AlpineFit V2 exposed the Legacy V1 synthesis
+  form before the generated V2 synthesis checkpoint was ready, producing an
+  empty “Next investigation” menu. The fallback is now restricted to V1;
+  AlpineFit remains in investigation until its V2 synthesis prerequisites are
+  complete. The focused AlpineFit browser regression passes.
 - Verification: 47 unit/component files and 205 tests pass; typecheck, lint,
   production build, and all 24 Playwright journeys pass with no skips. Browser
   coverage includes stable order after refresh, educational wrong-answer

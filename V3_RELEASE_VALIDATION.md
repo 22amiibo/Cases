@@ -1,6 +1,6 @@
 # Release candidate
 
-**Current verdict (2026-09-18): BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE.** The identity-isolation release defect is fixed and validated at **`628ada71d99e3ce115c3ba8f26e00518e5164336`**. Real Auth/PostgREST, pending-save recovery, and prior-V2 compatibility rehearsals pass. Target-production configuration, grants, checkpoint, and deployment identity remain unverified. See “Identity-isolation fix and final continuation” below. Earlier sections are preserved as chronological evidence and are superseded where explicitly updated.
+**Current verdict (2026-09-19 UTC): BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE.** Remaining scope: backup/recovery evidence only. The owner reports that production target, migrations 001–003, unapplied 004, absent V3 sentinels, grants/RLS/RPC inspection, and V2 compatibility have been established. Candidate **`628ada71d99e3ce115c3ba8f26e00518e5164336`** is unchanged. A production logical backup and isolated restore could not begin because no production PostgreSQL connection is configured in this session. See “Backup/recovery-only continuation” below. Earlier evidence is preserved chronologically; owner-reported production findings are not represented as fresh agent observations.
 
 - Validation date: 2026-09-18 (America/Chicago).
 - Repository/worktree: Casework, `.worktrees/casework-v3`.
@@ -591,4 +591,61 @@ The fix commit contains only the 22 source/test files needed for the identity re
 
 **BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
 
-The release-blocking identity defect is fixed at `628ada71d99e3ce115c3ba8f26e00518e5164336`, with fresh real Auth/PostgREST ownership/pending recovery, prior-V2 compatibility, and regression evidence. Target-production configuration, grants, checkpoint and deployment identity cannot be verified with the available authorized access. Stop here pending that evidence and separate owner approval. No production migration or deployment was performed.
+The release-blocking identity defect is fixed at `628ada71d99e3ce115c3ba8f26e00518e5164336`, with fresh real Auth/PostgREST ownership/pending recovery, prior-V2 compatibility, and regression evidence. The later backup/recovery-only continuation below supersedes this section's remaining-blocker assessment. No production migration or deployment was performed.
+
+# Backup/recovery-only continuation — 2026-09-19 UTC
+
+## Scope and evidence provenance
+
+Owner-specified target: Supabase project `vvyozwyodgyszkzuuznr`. The owner reports production ledger 001–003 only, unapplied 004, no V3 sentinel objects, matching corrected 004 checksum, inspected production grants/RLS/RPCs, compatible deployed V2, Supabase Free without managed backups/PITR, and no existing restore rehearsal. These are accepted as supplied context; no production connection was available to recapture them. This continuation does not reopen application validation or change its scope.
+
+Local preflight at `2026-09-19T00:27:51Z`: branch `feature/casework-v3`; code candidate `628ada71d99e3ce115c3ba8f26e00518e5164336`; starting HEAD `d8964dc3eb9bad0cc0cfc9344a84c0a5adf75090` differs from the candidate only in this report. Corrected 004 SHA-256 independently rechecked as `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844`. Native `pg_dump` and `pg_restore` 17.11 are installed. Production server version remains to be read before choosing a compatible client/restore server.
+
+Connection discovery examined environment-variable names and presence of conventional local libpq service/password and app environment files, without printing credentials. No PostgreSQL/Supabase connection environment was present; checked service/password files and app `.env.local` files were absent. No Supabase connector is exposed. Protected `supabase/.temp/` was not inspected, edited, staged, or deleted. No production request, backup extraction, password reset, linking, role creation, migration, deployment, or data modification occurred.
+
+## Backup and restore outcome
+
+| Required evidence | Current result |
+| --- | --- |
+| Fresh production capture timestamp/ledger/counts/catalog | Not captured; local preflight time above is not a production snapshot timestamp |
+| Source project | `vvyozwyodgyszkzuuznr`, owner identified; live connection not yet verified |
+| Backup creation time, filename/artifact ID, size, format | No backup created; unavailable |
+| Backup SHA-256 | Unavailable; no artifact exists |
+| Isolated restore target and start/end times | Not created or started for this continuation |
+| Restore errors/warnings | No restore attempted; no claim of a failed backup/restore |
+| Ledger/schema/catalog/ACL/RLS comparison | Not executed |
+| profiles/drill_attempts/case_attempts/case_events count comparison | Not executed; no production row counts supplied or invented |
+| V2 sign-in/save/history/replay against restored production backup | Not executed; earlier synthetic application recovery evidence remains valid but does not prove backup restoration |
+
+## Proposed extraction and isolated restore procedure — not executed
+
+1. Use an existing authorized PostgreSQL connection for the confirmed project, supplied through a private libpq service file and mode-0600 password file. Require TLS and identify the source from its direct host or session-pooler host/user pairing. Do not use a browser API key as a database password, reset a password, create a role, link the CLI, or let the CLI provision a temporary login. Use the session pooler or direct connection, not the transaction pooler.
+2. Read server version and extension/schema dependencies first. Supabase's supported logical-backup procedure exports roles, schema and data, with migration history and custom auth/storage changes handled explicitly. Its CLI implementation requires Docker, unavailable here. The proposed native alternative is a compatible `pg_dump` custom archive plus password-free role/ACL metadata. Final scope must be resolved from live catalog inspection before extraction; a public-only dump is insufficient because profiles reference `auth.users`, the signup trigger belongs to `auth`, and the migration ledger belongs to `supabase_migrations`. Do not silently exclude inaccessible managed objects or extension dependencies and call the result complete.
+3. Create private backup storage outside Git, outside temporary cleanup locations, with directory mode0700 and files mode0600 on encrypted local storage. Verify storage protection and retention before writing production data. Keep raw dumps and private error logs out of chat and release documentation. Retain the immutable original archive and a sanitized metadata manifest; no backup upload is authorized by this task.
+4. Open a bounded `REPEATABLE READ READ ONLY` transaction on production. Record UTC snapshot time, migration ledger, aggregate counts for the four application tables, canonical catalog metadata and an exported snapshot. Hold the transaction only while needed. Run `pg_dump --format=custom --snapshot=<exported-snapshot> --lock-wait-timeout=5s` through the same source service, with read-only session defaults and output directed straight to the private archive. Never enable row-security filtering to make an incomplete dump succeed. This makes the count/catalog baseline and application-data export refer to the same snapshot despite concurrent writes. Sequence counters are not MVCC snapshots and require separately documented safe next-value checks.
+5. Include required schema/data/dependencies, constraints, indexes, functions, triggers, RLS policies, grants/default grants and migration history; capture necessary role attributes/membership without password hashes. Explicitly inventory non-database dependencies such as Auth configuration, Storage objects and encryption prerequisites. Any unsupported dependency blocks a complete recovery claim. Close the source transaction promptly; record dump exit status, UTC completion, tool versions, bytes and SHA-256 without displaying dump contents.
+6. Create a new isolated local database/cluster with compatible PostgreSQL/extensions, private filesystem permissions and no externally reachable listener. Do not restore into any existing validation database containing other evidence. Inspect restored definitions before enabling services; keep scheduled jobs, external webhooks, replication, mail and other outbound effects disabled. Restore required roles and archive using `pg_restore --exit-on-error --single-transaction` against an explicitly verified local target, without `--clean` or a production service. Preserve ownership/ACL semantics or record every necessary platform adaptation; never suppress errors and call the restore successful.
+7. Before any test writes, compare the snapshot ledger, schemas, tables, columns/defaults/identity settings, constraints, indexes, RPC/function definitions and security settings, trigger definitions/enabled state, RLS policies, ACLs/default ACLs, and exact aggregate counts. Compare canonical metadata, not database-local OIDs. Document all platform differences and ensure sequences cannot collide with restored rows. Report only aggregate comparisons, metadata and digests; never production user records.
+8. If practical, connect the retained exact V2 build to isolated Auth/PostgREST using new local keys and local mail capture. Use a newly created synthetic test account for sign-in/save/history/replay after baseline comparison; never send mail to restored production users or reuse production session/signing credentials. Record new test rows separately from restored baseline counts. Stop services after validation and retain the private backup plus sanitized evidence.
+
+References: [Supabase logical backup/restore](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore) documents separate migration history and custom auth/storage handling. [PostgreSQL pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) documents synchronized snapshots, archive format and client/server compatibility. Neither reference constitutes evidence that this backup was executed.
+
+## Recovery procedure and limitations
+
+**A. Application rollback:** for an application-only regression, restore the recorded known-good V2 deployment under separate owner authority. Keep schema004 and all V2/V3 attempts/events/course evidence. Verify routing, Auth, save/history/replay and retained V3 rows. V3 history can be temporarily unavailable in the V2 UI. Do not restore an old database merely to disable V3.
+
+**B. Database recovery:** use only for corruption, loss, security or catalog failure. Under explicit incident authority, contain affected traffic and preserve the current database/evidence and all recoverable post-checkpoint writes. Verify the retained archive checksum; restore into a separate replacement environment using the successful rehearsal's exact dependency/role/restore procedure once demonstrated. Compare checkpoint ledger/schema/RLS/grants/counts. Review and reconcile later writes before cutover, including deletions and ownership—not only new inserts. If later writes depend on004, restore its reviewed schema on the recovery target before reconciling those V3 records. Revalidate constraints, ownership, version separation, replay, and application service, then seek explicit cutover authority. Do not overwrite production with an old snapshot automatically.
+
+A point-in-time logical backup excludes later commits. Without WAL/PITR or another complete change record, lost post-snapshot writes may be unrecoverable; do not promise lossless reconciliation. The checkpoint will need refreshing close to the separately approved migration. This environment has no demonstrated production-backup restoration yet, so the database recovery process is proposed, not certified.
+
+## Remaining blocker and proposed rollout
+
+Blocking prerequisite: securely configured existing source database connection. The owner was asked to provide only a libpq service name and private configuration file paths, never credential contents. Once available, execute the snapshot backup/isolated restore procedure above and record actual metadata/results here. No additional application regression run is needed for this report-only update.
+
+After successful restore validation only: (1) refresh/check the production checkpoint and unchanged001–003 baseline; (2) retain exact known-good deployment and assign recovery/monitoring owners; (3) obtain separate migration and deployment approval for candidate `628ada71d99e3ce115c3ba8f26e00518e5164336`; (4) confirm the migration dry-run proposes only corrected004; (5) under migration authority apply004 and verify ledger/catalog/RLS/grants/history and V2 compatibility; (6) under deployment authority promote the pinned candidate; (7) run owned/cross-user, persistence/retry/replay/course/identity-transition smoke checks; (8) monitor and invoke the appropriate recovery path on failure. None of those production actions was executed here.
+
+## Current final verdict
+
+**BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
+
+The remaining blocker is access needed to create and restore-test a logical backup. This is not a demonstrated backup/restore failure. Product candidate and migrations are unchanged; prior application and migration test evidence is retained. Production remains untouched.

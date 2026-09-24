@@ -1,6 +1,6 @@
 # Release candidate
 
-**Current verdict (2026-09-19 UTC): BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE.** Remaining scope: backup/recovery evidence only. The owner reports that production target, migrations 001–003, unapplied 004, absent V3 sentinels, grants/RLS/RPC inspection, and V2 compatibility have been established. Candidate **`628ada71d99e3ce115c3ba8f26e00518e5164336`** is unchanged. A production logical backup and isolated restore could not begin because no production PostgreSQL connection is configured in this session. See “Backup/recovery-only continuation” below. Earlier evidence is preserved chronologically; owner-reported production findings are not represented as fresh agent observations.
+**Current verdict (2026-09-20 UTC): RELEASED — PRODUCTION LIVE WITH LIMITED POST-DEPLOY BROWSER SMOKE.** Owner-authorized migration004 and candidate **`628ada71d99e3ce115c3ba8f26e00518e5164336`** were deployed successfully. Database verification and corrected V2 write/replay compatibility passed; the Vercel deployment is Ready and owns the production alias. The owner's normal Chrome session remains signed in, but the isolated Chromium harness could not complete the authenticated V3 journey, so the remaining focused browser flows are recorded as unverified rather than passed. See “Owner-authorized production rollout” at the end.
 
 - Validation date: 2026-09-18 (America/Chicago).
 - Repository/worktree: Casework, `.worktrees/casework-v3`.
@@ -8,7 +8,7 @@
 - Original candidate: `94249c5b1d272a3c01bc6be0905e64c536f61a22`.
 - Revised candidate validated: `3b0e6be478c9905ae442570fa08283c4c1c07635` (`fix: enforce v3 case metadata during release validation`). **The candidate commit changed.** The original candidate is not approved: validation found and corrected a V3 metadata constraint defect.
 - Validator: Codex; local macOS ARM64, Node 26.4.0, npm 11.17.0, PostgreSQL 17.11, Supabase CLI 2.117.0, Chromium/Playwright 1.63.0, Next.js 16.3.5.
-- Production databases, deployment settings, and production data were not accessed or changed. No production migration or deployment occurred.
+- At the time of this original validation section, no production migration or deployment had occurred. The later owner-authorized production rollout is recorded at the end of this report.
 
 ## Integrity and environment
 
@@ -649,3 +649,227 @@ After successful restore validation only: (1) refresh/check the production check
 **BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
 
 The remaining blocker is access needed to create and restore-test a logical backup. This is not a demonstrated backup/restore failure. Product candidate and migrations are unchanged; prior application and migration test evidence is retained. Production remains untouched.
+
+# Executed logical backup and isolated restore — 2026-09-20 UTC
+
+This section supersedes the preceding connection-blocked backup verdict. **The database logical recovery rehearsal passed within the platform limits below.** It does not authorize migration, deployment, production restore, or a traffic cutover, and it does not certify a complete managed-Supabase recovery.
+
+## Scope and source safety
+
+The owner authorized use of the existing `casework_prod_read` service for read-only backup, isolated restore, verification, and this report update. Neither `~/.pg_service.conf` nor `~/.pgpass` was opened, printed, copied, or modified by the agent during this continuation; libpq used them for its authorized authentication. No credentials or production records are included here or added to Git.
+
+Client-side connection metadata confirmed TLS and the expected Session Pooler/project username for `vvyozwyodgyszkzuuznr`. Source PostgreSQL is **17.6**; native `psql`, `pg_dump`, `pg_restore`, and the local server are **17.11 (Homebrew)**. FileVault was confirmed enabled before extraction. Backup storage is outside the repository and temporary cleanup locations, with directory mode0700 and regular evidence/archive files mode0600. Retention is until owner-authorized disposal; nothing was uploaded.
+
+Source metadata/count capture used an explicit `REPEATABLE READ READ ONLY` transaction with bounded query/lock/idle timeouts. The dump imported its exported snapshot, used custom format and a five-second lock wait limit, and had a 120-second client process bound. No schema/data filters, RLS filtering, or missing-object exclusions were used. The source transaction was closed immediately after extraction. `pg_dump` explicitly establishes a read-only transaction itself; this does not depend on pooler handling of startup `PGOPTIONS`. [PostgreSQL 17 pg_dump implementation](https://github.com/postgres/postgres/blob/REL_17_STABLE/src/bin/pg_dump/pg_dump.c), [pg_dump documentation](https://www.postgresql.org/docs/17/app-pgdump.html).
+
+No production DDL, DML, role change, password reset, configuration change, migration, deployment, CLI linking, or restore was performed.
+
+## Retained checkpoint
+
+Private bundle directory:
+
+`/Users/noahmartz/CaseworkBackups/production-20260920T020212Z/`
+
+| Evidence | Observed result |
+| --- | --- |
+| Source snapshot capture UTC | `2026-09-20T02:02:13.255852Z` |
+| Dump started UTC | `2026-09-20T02:02:17.209655Z` |
+| Dump completed UTC | `2026-09-20T02:02:35.274245Z` |
+| Archive | `production.dump`, custom format, 330,508 bytes |
+| SHA-256 | `dc489dcda6544aa116e86f021dfedede34a68a886164c241fc4e60fe1f9bf6f2` |
+| Dump exit / warnings | 0 / none |
+| Migration ledger | Exactly `001`, `002`, `003`; full ledger rows matched after restore |
+| V3 sentinel tables | Absent after restore; 004 was not applied |
+| Final restore UTC | `2026-09-20T02:04:20.838317Z` to `2026-09-20T02:04:21.116891Z` |
+| Final restore exit / warnings | 0 / none; metadata supplement succeeded |
+| Retained verification script | Passed at `2026-09-20T02:09:54.923810Z` |
+| Local cluster stopped UTC | `2026-09-20T02:10:27.101452Z`; stop exit0, not-running status confirmed |
+
+The original archive checksum was reverified after restoration and at shutdown. A preliminary successful dump and its diagnostic rehearsal artifacts remain in the separate private `production-20260920T015253Z` directory; the checkpoint above is the final verified bundle. An earlier capture/parser failure produced no certified archive. Those attempts are not counted as additional successful final rehearsals.
+
+## Restore method and required supplements
+
+The final target was a new `restore-cluster` beneath the private bundle, database `casework_restore`, Unix socket beneath the same private directory, port55439. TCP listening was disabled, socket permissions were0700, WAL senders and logical replication workers were disabled, and there were no subscriptions. No Auth, PostgREST, application, mail, scheduler, or external webhook service was started. Existing unrelated databases/services were not used. Both preliminary clusters created by this continuation were stopped too.
+
+The archive was restored with `pg_restore --exit-on-error --single-transaction`. The source schemas `auth`, `extensions`, `graphql`, `graphql_public`, `pgbouncer`, `public`, `realtime`, `storage`, `supabase_migrations`, and `vault` were retained. No application migrations were applied locally as a substitute for restoring the archive.
+
+The recovery bundle must include its metadata and procedure, **not only `production.dump`**:
+
+- Password-free role attributes, role settings, and memberships were restored from captured metadata. A preliminary attempt with a differently named bootstrap superuser failed to preserve the source grantor semantics before loading data; the final fresh cluster used `supabase_admin` as its bootstrap role and preserved the captured membership grantors/options.
+- Source extension versions and owners were preserved. The `extensions` and `vault` schemas and their four extensions were precreated under the captured owners; the restore list skips only their already-satisfied creation commands. Their contents, data, comments, ACLs, and all other archive entries remain included. Local `postgres` was temporarily elevated only while installing its extensions and returned to its captured non-superuser attributes before the archive restore. `plpgsql` already existed under the matching bootstrap owner.
+- Vault0.3.1 was built from official [Supabase Vault source](https://github.com/supabase/vault/tree/e68456a5c0a020294b2f4b00400abacd3f857cbb) using existing local PostgreSQL/libsodium and installed as five previously absent local extension files. No existing file was overwritten or unrelated server restarted. Source, build provenance, and installed-file paths are retained in the private bundle. Vault was not preloaded and no production encryption root key was acquired.
+- The archive-only trial did not recreate explicit grants for the two GraphQL schemas. `local-metadata-supplement.sql` restores their captured grants, including grant options, and the source database-level grants on the differently named local database. These are explicit local recovery steps, not ignored mismatches.
+- Database ownership, UTF8 encoding, ICU provider, `en-US` ICU locale, and `en_US.UTF-8` collate/ctype settings were reproduced. The remaining ICU-version difference is documented below.
+
+Durable evidence includes `manifest.json`, password-free source/restored role and membership metadata, private catalog/ledger metadata, aggregate count and sequence manifests, `restore-status.json`, `verification-summary.json`, `shutdown-status.json`, `artifact-checksums.json`, `local-extension-prerequisites.sql`, `restore-list.txt`, `local-metadata-supplement.sql`, and `RECOVERY-NOTES.md`. The exact capture/restore scripts and runnable `verify-used.py` plus `catalog-query.sql` are retained there. Raw database data and private logs remain outside Git. These scripts target the recorded local paths and intentionally do not overwrite existing rehearsal directories; another rehearsal needs explicitly selected fresh local paths.
+
+## Verification results
+
+All **44** captured table counts matched before any application test writes. Application counts were:
+
+| Table | Source snapshot | Restored |
+| --- | ---: | ---: |
+| `public.profiles` | 1 | 1 |
+| `public.drill_attempts` | 13 | 13 |
+| `public.case_attempts` | 1 | 1 |
+| `public.case_events` | 8 | 8 |
+
+The full `supabase_migrations.schema_migrations` contents matched. The restored `auth.users` and `auth.identities` each contained one row; no account identifiers or records were displayed. The Auth, Realtime, and Storage migration-history counts also matched.
+
+Canonical comparison passed for all captured groups: **10 schemas, 5 extensions including owners/versions, 50 relations including owners/ACLs/RLS flags, 471 columns, 151 constraints, 149 indexes, 103 functions including definitions/owners/security/settings/ACLs, 4 RLS policies, 6 ordinary triggers, 6 event triggers, 24 default-ACL entries, 47 enum labels, 3 view definitions, and 1 publication with no publication-table mappings**. Role attributes/settings and role memberships matched; database owner and grants matched too.
+
+Normalization removes ACL-array ordering, physical attribute-number gaps left by dropped columns, timezone formatting of the same expiration instant, and equivalent timeout units (`60000` milliseconds versus `1min`). Logical column order is checked separately and matched. Function definitions, privilege grantors/options, constraint/index definitions, ownership, and RLS expressions were not normalized away. The retained verification script asserts these results and fails on a mismatch. These are catalog, ledger, and aggregate-count comparisons; no claim of a separate row-by-row application-data digest comparison is made.
+
+All three sequence definitions and captured states matched. Independent checks showed safe next values for `auth.refresh_tokens_id_seq`, `public.case_events_id_seq`, and `realtime.subscription_id_seq`. Sequence states are not MVCC snapshots; this comparison and safe-next-value check supplement the shared table snapshot.
+
+## Platform limits and release consequence
+
+- **Collation runtime differs:** source ICU collation version `153.121`, local `153.136`, despite matching provider/locale. Source server17.6 and local17.11 also differ. Successful local index/constraint creation and catalog comparison do not certify identical text ordering for all possible values on a replacement platform. Match production's runtime or explicitly validate/reindex for the replacement runtime before a real recovery/cutover.
+- **Application service recovery was not certified against this backup.** The captured `authenticator` role requires `supautils, safeupdate` session-preload libraries, which this local runtime does not provide. Its role configuration was preserved, not weakened to run an HTTP smoke test. No V2 sign-in/save/history/replay test against these restored production rows was run. Earlier synthetic real Auth/PostgREST and V2 recovery results above remain prior evidence, not new evidence from this backup.
+- **External configuration remains separate:** Supabase Auth/provider/SMTP settings, signing/encryption root keys, PostgreSQL role passwords, Vercel configuration, and any external service configuration are not in this logical bundle. Their recovery was not attempted. Vault secrets, Storage buckets/objects, and PostgreSQL large objects were all empty at capture; there were no external Storage objects to extract for this checkpoint. The bundle does not prove that an arbitrary replacement managed project will work without its service/configuration prerequisites. [Supabase backup/restore considerations](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore).
+- **Retention/recovery-point limit:** this is an on-device, FileVault-protected logical checkpoint, not an off-device disaster-recovery copy or WAL/PITR. Later commits are excluded. Refresh the checkpoint and verify unchanged baseline before any separately authorized migration; do not overwrite production with this older snapshot or promise recovery of later writes.
+
+**Updated verdict: PASS — scoped database logical backup/restore verification; complete platform/application recovery remains unverified.** The missing-connection/no-tested-logical-backup blocker is resolved. The platform limits above prevent promoting this into an unconditional complete-recovery or release-approval claim. Application candidate and migration004 are unchanged; its SHA-256 remains `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844`. Production migration and deployment remain prohibited without separate owner approval.
+
+# Independent service-based backup continuation — 2026-09-20 UTC
+
+## Provenance and immediate stop condition
+
+This continuation began at report-only HEAD `c00efff94280f2bf7e3cf42ac2d7c44de6d17428` on `feature/casework-v3`. Candidate remains `628ada71d99e3ce115c3ba8f26e00518e5164336`; corrected004 hash remains `dfd1e8d456b8f3aa06f98ffd581f8e8b6454565a2d4ab019a98014a7d409e844`. The preceding “Executed logical backup and isolated restore” section appeared as a concurrent, uncommitted report addition during this run. It is preserved verbatim and is not attributed to this run. Its `CaseworkBackups` bundle is distinct from the `casework-release-backups` bundle below; timestamps, checksums, targets and methods must not be mixed.
+
+**Observed production drift:** snapshot `2026-09-20T02:12:12.091097Z` contained ledger `[001,002,003]`. A supplemental metadata-only `BEGIN READ ONLY` query at `2026-09-20T02:24:58.771291Z` returned `[001,002,003,004]`. All production commands in this continuation were read-only. No source migration, deployment, role/configuration change, password reset, row mutation or restore was executed by this agent. The actor, deployment state and actual applied004 definition were not investigated after the drift was detected. Further production requests stopped. The previously proposed “apply only004” rollout must not be executed against this now-changed ledger.
+
+## Backup artifact and production baseline
+
+Used only the owner-configured `casework_prod_read` service. The agent did not open, display, copy or modify either credential file; only file modes were inspected, and libpq consumed them for authentication. Initial metadata retrieval confirmed PostgreSQL17.6 and ledger001–003. Full certificate/hostname verification initially failed with system CAs; the public Supabase Root2021 CA was retrieved over HTTPS and supplied explicitly. Subsequent source connections used `sslmode=verify-full`, confirmed TLS and project identity `vvyozwyodgyszkzuuznr`. No production SSL setting changed.
+
+Private artifact directory, outside Git and temporary cleanup locations:
+
+`/Users/noahmartz/casework-release-backups/v3-restore-20260920-RBy8f8/`
+
+FileVault is enabled; directory permissions0700, archive/role files0600. No backup was uploaded or committed. The original artifacts were not edited during restoration.
+
+| Artifact/evidence | Actual value |
+| --- | --- |
+| Snapshot UTC | `2026-09-20T02:12:12.091097Z` |
+| Dump start / bundle completion UTC | `2026-09-20T02:12:12.652Z` / `2026-09-20T02:12:33.652Z` |
+| Source | Supabase `vvyozwyodgyszkzuuznr`, PostgreSQL17.6, Session Pooler |
+| Tools | `pg_dump`, `pg_dumpall`, `pg_restore`, `psql`17.11 Homebrew |
+| Format | Full PostgreSQL custom archive; separate password-free role SQL |
+| Archive | `production.dump`, **330,508 bytes** |
+| Archive SHA-256 | `4cf357fd63235f25f9604c578a1779bb3a1729102bbf9a01a40c5c67149118fe` |
+| Role artifact | `roles.sql`, **6,173 bytes** |
+| Roles SHA-256 | `1d9d73893833db279d49aab8407deddfe21e43749215f035f2d66d9f42b50616` |
+| Dump/roles/snapshot stderr | Empty; successful exit |
+| Baseline ledger | `001`, `002`, `003` |
+
+The baseline catalog and counts were captured in an explicit repeatable-read/read-only transaction. `pg_dump --format=custom --snapshot=<exported snapshot> --lock-wait-timeout=5s` used that same live snapshot. Read-only session defaults and bounded SQL/lock/idle timeouts were requested; no table/schema filtering or `--enable-row-security` was used. The transaction was rolled back immediately after extraction. Roles were exported with `pg_dumpall --roles-only --no-role-passwords`; no role password hashes are present. The manifest's completion timestamp includes this role export, which is a separate catalog read rather than part of the table snapshot.
+
+| Application table | Snapshot count | Pristine restore count | Original count after smoke, excluding new test user |
+| --- | ---: | ---: | ---: |
+| profiles | 1 | 1 | 1 |
+| drill_attempts | 13 | 13 | 13 |
+| case_attempts | 1 | 1 | 1 |
+| case_events | 8 | 8 | 8 |
+
+Auth users and identities each had one row and matched on restoration. Storage objects and Vault secrets each had zero rows. No production user-level records or identifiers were printed. The archive necessarily contains private Auth/application data and must remain private.
+
+## Isolated restore and catalog verification
+
+Target: a new PostgreSQL17.11 cluster in the private directory above, database `casework_restored`, private Unix socket, port55442, `listen_addresses=''`, socket permissions0700, host authentication rejected. A separate database `casework_restore_smoke` was cloned from the verified restore for the browser test. No production connection settings were passed to either local service. The pristine restore was retained unchanged through the smoke test.
+
+Restore start/end: `2026-09-20T02:15:27.072Z` / `2026-09-20T02:15:27.504Z`. Used `psql --single-transaction --set ON_ERROR_STOP=1` for role definitions and `pg_restore --exit-on-error --single-transaction` for the unfiltered archive. No application migrations were run as a substitute for restoration.
+
+Observed and resolved local differences:
+
+- The first role restore failed atomically on an explicit managed-platform membership grantor. A derived `roles.local.sql` substitutes only `GRANTED BY supabase_admin` with the local bootstrap superuser `casework_restore_admin`. All70 captured CREATE/ALTER/GRANT statements subsequently matched after this declared substitution; membership recipients/options, role attributes and settings were preserved. The original role artifact remains intact.
+- Installed local Vault0.3.1 from official source tagv0.3.1, commit `6e0cd916242d922a646e4d611cc215e09dd429f4`, using existing libsodium. Build prerequisite issues (gettext include and Homebrew's unavailable SDK path) were resolved locally. No production encryption key was obtained, and no Vault data required decryption.
+- Native extension installation changed extension-member owners/ACLs, and archive-only restoration omitted explicit grants on the empty GraphQL schemas. `restore-platform-metadata.sql`, generated from the captured baseline, restored60 affected schema/relation/function metadata objects on the local target. This supplement is required for the reported comparison, not an ignored mismatch or production change.
+- Restore processes warned that `/dev/null` used as a deliberately empty local password file was not a plain file. Connections used the isolated socket; final checks used a new empty local0600 file. No database restore errors occurred after the role adaptation.
+
+Canonical comparison passed for the captured groups: **9 schemas, 5 extension names/versions, 50 relations including ownership/ACL/RLS flags, 471 columns, 151 constraints, 149 indexes, 102 functions including definitions/ownership/security/settings/ACLs, 6 ordinary triggers, 4 policies, 24 default ACL entries, three ledger versions, and the aggregate counts above**. All application-schema objects matched even before platform metadata supplementation. The signup trigger on `auth.users` matched too.
+
+Normalization sorts ACL arrays and converts physical attribute positions to logical ordinal positions because dropped columns leave numbering holes. Definitions, grantors/options, column types/defaults/nullability, ownership, RLS expressions and function security were not removed from comparison. `canonical-comparison.json` records all groups passing. Case-event sequence next-value safety also passed.
+
+Scope limitations discovered before finalization:
+
+- The initial metadata query used `NOT LIKE 'pg_%'`, which also excluded the platform `pgbouncer` schema. The archive was unfiltered and did include it, but the9-schema/102-function comparison does **not** claim complete metadata comparison of `pgbouncer`. The supplemental production query captured that schema, its one function, six event triggers,47 enum labels and three views privately; these were not folded into the snapshot comparison after the production ledger drift was detected. The separate preceding report describes its own broader comparison.
+- This local target used UTF8 with C locale, whereas supplemental source metadata reports ICU/en-US, collate/ctype `en_US.UTF-8`, collation version153.121. Application save/replay passed, but this rehearsal does not establish equivalent collation behavior, database-level grants or extension-container ownership on a final replacement platform. Use a matching Supabase/runtime target and verify these before an actual database cutover. Do not call this a complete managed-platform recovery proof.
+
+## V2 application compatibility against restored data
+
+**1 real browser journey passed, 0 failed, 5.4s** (test duration4.7s). All219 tracked files in the retained V2 export matched `c9dde86b0529901a7bcee801fcb8e070f72b8b86` before rebuilding. Its production build succeeded with newly generated local public configuration.
+
+Browser → local Supabase Authv2.197.0 → fresh JWT → PostgREST16.3 → restored smoke clone was real. Auth was started with `serve`, without applying Auth migrations. SMTP was a local sink; no mail was sent to production users. A new local `casework_restore_authenticator` role was used with the same anon/authenticated/service-role memberships and NOINHERIT; the source authenticator's unsupported `supautils,safeupdate` preload configuration remained preserved. This adapter is a documented local service limitation, not evidence those production platform libraries were restored.
+
+The synthetic account signed in via the V2 form and real magic link, initially saw no original user's attempts, completed AlpineFitV2 with refresh, saved through `save_case_attempt_v2`, opened Progress/history, replayed the saved attempt and refreshed replay. No production user session or identity was used. Afterward, SQL aggregate SHA-256 comparisons showed every original application row unchanged across all four tables, excluding only the synthetic user's newly added data. This compares restored rows before/after the local smoke; it is not an independent source-to-archive row-digest claim.
+
+Final local verification at `2026-09-20T02:22:02.179Z` passed preservation, sequence safety, disabled TCP, and pristine ledger001–003. All application/Auth/PostgREST/mail/gateway processes created by this run and its PostgreSQL cluster were stopped. Listener checks returned no remaining listeners on their ports. Database files and evidence remain retained.
+
+## Recovery bundle and procedure
+
+Retain the entire private recovery bundle, not only the archive. Relevant files include `manifest.json`, `baseline.json`, `roles.sql`, `roles.local.sql`, `restore-platform-metadata.sql`, `catalog-query.sql`, `restore-result.json`, `canonical-comparison.json`, `role-comparison.json`, `final-verification.json`, `smoke-result.json`, build/browser logs, and retained extraction/restore/test scripts. `recovery-artifacts.json` lists sizes and hashes of the13 core procedure/backup files. Local test keys/session material and raw logs must never be published.
+
+Supplement hashes: `roles.local.sql` SHA-256 `c552842689d3a6e097969d352310f275b1d09f7ea56f4b015f1bc0f6d81b9e31`; `restore-platform-metadata.sql` SHA-256 `cde3dc8136ed3fc5b31ae45adaec2ab19fcefd0ab42e6727943810d9805771de`; `recovery-artifacts.json` SHA-256 `f70c5d5d146ee7525ba7dd674d70aac676f35b7f3689674eec635b2fd9031520`. Private baseline/supplemental metadata is part of the recovery record; no backup content is embedded here.
+
+**Normal application rollback:** retain004 and all post-migration history; restore the exact recorded known-good V2 deployment under separate owner authority, then verify Auth/save/history/replay. The earlier mixed-V3-data rehearsal remains the compatibility evidence; this run independently establishes V2 usability of this pre-004 restored backup.
+
+**Database incident recovery:** under separate incident authority, contain the failure and preserve current data/evidence. Verify the archive checksum. Restore into a new compatible target, restore required role/extension/schema/ACL metadata using the recorded process, and verify ledger/catalog/RLS/aggregate counts before serving traffic. Reconcile every recoverable post-checkpoint change, including deletes and ownership changes. If later records require004, first apply the separately reviewed schema on the recovery target, then reconcile those records and test versions/replay. Restore external Auth/SMTP/signing/API/deployment configuration through their own secure operational records. Validate the final target's collation and platform dependencies before authorizing cutover. Never automatically replace the live database with this earlier snapshot.
+
+This backup predates the observed004 ledger entry. It excludes later commits; those may be unrecoverable without another complete change record. Local FileVault storage is not an off-device disaster-recovery copy. No off-device transfer, production recovery, traffic cutover or destructive operation is authorized or demonstrated.
+
+## Revised proposed rollout — halted pending drift reconciliation
+
+1. Owner identifies the actor/time and exact004 contents applied during this validation, plus actual current deployment. Preserve both timestamped ledger observations. Do not rerun004 or repair the ledger.
+2. Independently compare current004 constraints/functions/grants/RLS with the reviewed migration and candidate. If the original defective004 or another variant was applied, require a separately reviewed forward correction; never assume the local file checksum proves the live migration contents.
+3. Refresh and restore-test a current checkpoint, retaining this pre-004 backup and reconciling post-snapshot writes. Confirm platform recovery prerequisites and the known-good rollback deployment.
+4. Obtain separate owner approval for any required forward database action and for application deployment. An already-correct004 does not need reapplication.
+5. Under the relevant authority only, complete any required database verification/action, then promote candidate `628ada71d99e3ce115c3ba8f26e00518e5164336` with the verified public configuration.
+6. Run owned/cross-user Auth, save/retry, exact replay, course and identity-transition smoke checks; monitor the agreed error thresholds/window. Invoke application rollback or database incident recovery according to the failure type, preserving later writes.
+
+## Final verdict for this continuation
+
+**BLOCKED — ENVIRONMENT/VALIDATION INCOMPLETE**
+
+The previously missing connection and untested logical-backup evidence are resolved for the documented scope. The observed production baseline change and platform-recovery limits prevent a release-ready claim. No product source or migration changed. All production operations performed by this agent were read-only. This report's concurrent addition is preserved; report changes are left uncommitted to avoid staging another writer's work. Protected `supabase/.temp/` remains untracked and untouched.
+
+# Owner-authorized production rollout — 2026-09-20 UTC
+
+This section supersedes the preceding rollout stop condition. The owner authorized the documented recovery limitations, migration004, and deployment of the validated candidate.
+
+## Production migration
+
+Applied only `supabase/migrations/004_v3_learning.sql` to Supabase project `vvyozwyodgyszkzuuznr` in one transaction and recorded ledger version004 with statement count25. The live migration matched the reviewed file. Post-migration verification passed for the ledger, expected V3 tables and `case_attempts` columns, owner RLS policies, grants/RPCs, unchanged historical row counts, and public schema shape. The corrected V2 authenticated write/replay check passed inside a rolled-back transaction. No prior migration was modified or rerun, and no synthetic database write was committed.
+
+## Application deployment
+
+- Immutable Vercel URL: `https://cases-f471yipv7-22amiibos-projects.vercel.app`
+- Deployment ID: `dpl_Dg7VsK8oS9J8W2yUiBetZYaJ4Bex`
+- Commit: `628ada71d99e3ce115c3ba8f26e00518e5164336`
+- Production alias: `https://cases-pi-five.vercel.app`
+- Vercel state: Ready; production aliases resolved to this deployment
+
+The production build completed successfully. Its non-blocking warning was that npm's allow-scripts policy did not approve the `unrs-resolver@1.12.2` postinstall script. Vercel CLI bootstrap also reported one dependency engine warning and a deprecated `tar` dependency warning.
+
+## Focused production smoke
+
+The owner's normal Chrome session remained authenticated in the production application. The isolated Playwright Chromium profile could request a magic link but did not establish a session; the owner reported the application works and retains login in normal Chrome. This was classified as an isolated automation-profile limitation, not a demonstrated production authentication failure. Automated retries were stopped at the owner's direction.
+
+| Check | Result |
+| --- | --- |
+| Sign-in/session retention | Passed by owner observation in normal Chrome |
+| Practice | Unverified post-deploy |
+| One flagship lab | Unverified post-deploy |
+| Activity save/history | Unverified post-deploy |
+| Progress | Unverified post-deploy |
+| AlpineFit Practice Mode | Unverified post-deploy |
+| AlpineFit Interview Mode | Unverified post-deploy |
+| Case replay/debrief | Unverified post-deploy |
+| Profitability course resume/progress | Unverified post-deploy |
+| Logout/login identity isolation | Unverified post-deploy |
+
+The test harness performed no production smoke-test writes before authentication stopped it. No application rollback or destructive database rollback was performed.
+
+## Final production status
+
+**RELEASED — production migration and application deployment succeeded. Post-deploy authenticated browser coverage is limited.** No concrete production application failure was observed. The known-good V2 deployment remains the application rollback path while retaining the additive V3 schema and history. The next owner action is to exercise the unverified V3 flows during normal use and report any material failure; a material regression should trigger the retained V2 application rollback path.
